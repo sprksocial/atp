@@ -1,4 +1,4 @@
-import { cidForCbor } from "@atproto/common";
+import { cidForCbor } from "@atp/common";
 import { randomBytes } from "@atproto/crypto";
 import type { LexiconDoc } from "@atproto/lexicon";
 import { ResponseType, XrpcClient, XRPCError } from "@atproto/xrpc";

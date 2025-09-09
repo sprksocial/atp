@@ -1,4 +1,4 @@
-import { subsystemLogger } from "@atproto/common";
+import { subsystemLogger } from "@atp/common";
 
 /**
  * Logger instance for XRPC streaming operations.

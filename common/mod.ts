@@ -1,4 +1,3 @@
-export * as util from "./util.ts";
 export * as check from "./check.ts";
 
 export * from "./env.ts";
@@ -12,3 +11,5 @@ export * from "./types.ts";
 export * from "./tid.ts";
 export * from "./strings.ts";
 export * from "./logger.ts";
+export * from "./dates.ts";
+export * from "./util.ts";

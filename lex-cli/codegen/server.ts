@@ -61,7 +61,7 @@ const indexTs = (
     const extension = options?.useJsExtension ? ".js" : ".ts";
     //= import {createServer as createXrpcServer, Server as XrpcServer} from '@sprk/xrpc-server'
     file.addImportDeclaration({
-      moduleSpecifier: "@sprk/xrpc-server",
+      moduleSpecifier: "@atp/xrpc-server",
       namedImports: [
         { name: "Auth", isTypeOnly: true },
         { name: "Options", alias: "XrpcOptions", isTypeOnly: true },
@@ -257,9 +257,7 @@ function genNamespaceCls(file: SourceFile, ns: DefTreeNode) {
     const methodType = isSubscription ? "streamMethod" : "method";
     method.setBodyText(
       [
-        // Placing schema on separate line, since the following one was being formatted
-        // into multiple lines and causing the ts-ignore to ignore the wrong line.
-        `const nsid = '${userType.nsid}' // @ts-ignore - userType.nsid is dynamically generated and TypeScript can't infer its type`,
+        `const nsid = '${userType.nsid}' // @ts-ignore - dynamically generated`,
         `return this._server.xrpc.${methodType}(nsid, cfg)`,
       ].join("\n"),
     );
@@ -430,7 +428,7 @@ function genServerXrpcStreaming(
   const def = lexicons.getDefOrThrow(lexUri, ["subscription"]);
 
   file.addImportDeclaration({
-    moduleSpecifier: "@sprk/xrpc-server",
+    moduleSpecifier: "@atp/xrpc-server",
     namedImports: [{ name: "ErrorFrame" }],
   });
 

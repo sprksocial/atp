@@ -1,4 +1,4 @@
-import { byteIterableToStream } from "@atproto/common";
+import { byteIterableToStream } from "@atp/common";
 import type { LexiconDoc } from "@atproto/lexicon";
 import { XrpcClient } from "@atproto/xrpc";
 import * as xrpcServer from "../mod.ts";

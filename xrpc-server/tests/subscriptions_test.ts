@@ -1,5 +1,5 @@
 import { WebSocket, type WebSocketServer } from "ws";
-import { wait } from "@atproto/common";
+import { wait } from "@atp/common";
 import type { LexiconDoc } from "@atproto/lexicon";
 import {
   byFrame,

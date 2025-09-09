@@ -1,4 +1,4 @@
-import { SECOND, wait } from "@atproto/common";
+import { SECOND, wait } from "@atp/common";
 import { CloseCode, DisconnectError, type WebSocketOptions } from "./types.ts";
 
 /**

@@ -26,9 +26,9 @@ export class XrpcStreamServer {
       async (socket: WebSocket, req: Request) => {
         socket.onerror = (ev: Event | ErrorEvent) => {
           if (ev instanceof ErrorEvent) {
-            logger.error(ev.error, "websocket error");
+            logger.error("websocket error", { error: ev.error });
           } else {
-            logger.error(ev, "websocket error");
+            logger.error("websocket error", { ev });
           }
         };
         try {
@@ -58,7 +58,7 @@ export class XrpcStreamServer {
           if (err instanceof DisconnectError) {
             return socket.close(err.wsCode, err.xrpcCode);
           } else {
-            logger.error({ err }, "websocket server error");
+            logger.error("websocket server error", { err });
             return socket.close(CloseCode.Abnormal);
           }
         }

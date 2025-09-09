@@ -11,7 +11,6 @@
     "@std/encoding": "jsr:@std/encoding@^1.0.10",
     "zod": "jsr:@zod/zod@^4.0.17",
     "hono": "jsr:@hono/hono@^4.7.10",
-    "http-errors": "npm:http-errors@^2.0.0",
     "multiformats": "npm:multiformats@^13.3.6",
     "rate-limiter-flexible": "npm:rate-limiter-flexible@^2.4.1",
     "uint8arrays": "npm:uint8arrays@3.0.0",

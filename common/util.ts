@@ -158,15 +158,6 @@ export function ui8ToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
   ) as ArrayBuffer;
 }
 
-export function toSimplifiedISOSafe(dateStr: string) {
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) {
-    return new Date(0).toISOString();
-  }
-  const iso = date.toISOString();
-  return iso; // YYYY-MM-DDTHH:mm:ss.sssZ
-}
-
 export type RetryOptions = {
   maxRetries?: number;
   getWaitMs?: (n: number) => number | null;

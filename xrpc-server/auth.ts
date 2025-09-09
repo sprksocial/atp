@@ -1,6 +1,6 @@
 import * as ui8 from "uint8arrays";
-import * as common from "@atproto/common";
-import { MINUTE } from "@atproto/common";
+import * as common from "@atp/common";
+import { MINUTE } from "@atp/common";
 import * as crypto from "@atproto/crypto";
 import { AuthRequiredError } from "./errors.ts";
 
@@ -152,7 +152,10 @@ export const verifyJwt = async (
   jwtStr: string,
   ownDid: string | null,
   lxm: string | null,
-  getSigningKey: (iss: string, forceRefresh: boolean) => Promise<string>,
+  getSigningKey: (
+    iss: string,
+    forceRefresh: boolean,
+  ) => Promise<string> | string,
   verifySignatureWithKey: VerifySignatureWithKeyFn =
     cryptoVerifySignatureWithKey,
 ): Promise<ServiceJwtPayload> => {

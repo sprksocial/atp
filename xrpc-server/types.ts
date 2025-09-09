@@ -1,3 +1,4 @@
+import type { Context, HonoRequest, Next } from "hono";
 import { z } from "zod";
 import type { ErrorResult, XRPCError } from "./errors.ts";
 import type { CalcKeyFn, CalcPointsFn } from "./rate-limiter.ts";
@@ -11,13 +12,14 @@ export type Awaitable<T> = T | Promise<T>;
 
 /**
  * Handler function for catching all unmatched routes.
- * @param req - The HTTP request object
- * @returns A promise that resolves to a Response
+ * @param c - The Hono context object
+ * @param next - The next middleware function
+ * @returns A promise that resolves to void or a Response
  */
 export type CatchallHandler = (
-  req: Request,
-  res: Response,
-) => Promise<Response>;
+  c: Context,
+  next: Next,
+) => Promise<void | Response>;
 
 /**
  * Configuration options for the XRPC server.
@@ -52,6 +54,11 @@ export type Options = {
    */
   errorParser?: (err: unknown) => XRPCError;
 };
+
+/**
+ * Raw query parameters from the HTTP request before type conversion.
+ */
+export type UndecodedParams = HonoRequest["query"];
 
 /**
  * Basic primitive types supported in XRPC parameters.
@@ -163,6 +170,7 @@ export type AuthVerifier<C, A extends AuthResult = AuthResult> =
   | ((ctx: C) => Awaitable<A | ErrorResult>)
   | ((ctx: C) => Awaitable<A>);
 
+// Handler context that combines Hono Context with XRPC-specific properties
 /**
  * Context object provided to XRPC method handlers containing request data and utilities.
  * @template A - Authentication type

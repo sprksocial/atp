@@ -54,8 +54,9 @@ import {
   WrappedRateLimiter,
   type WrappedRateLimiterOptions,
 } from "./rate-limiter.ts";
-import type { CatchallHandler, HandlerInput } from "./types.ts";
+import type { HandlerInput } from "./types.ts";
 import { assert } from "@std/assert";
+import type { CatchallHandler } from "./types.ts";
 
 /**
  * Creates a new XRPC server instance.
@@ -403,6 +404,7 @@ export class Server {
           resetRouteRateLimits: async () => {},
         };
 
+        // Apply rate limiting (route-specific, which includes global if configured)
         if (routeLimiter) {
           const result = await routeLimiter.consume(ctx);
           if (result instanceof RateLimitExceededError) {
@@ -417,7 +419,7 @@ export class Server {
 
         if (isHandlerPipeThroughBuffer(output)) {
           setHeaders(c, output.headers);
-          return c.body(new Uint8Array(output.buffer), 200, {
+          return c.body(output.buffer.buffer as ArrayBuffer, 200, {
             "Content-Type": output.encoding,
           });
         } else if (isHandlerPipeThroughStream(output)) {
@@ -579,39 +581,6 @@ function createErrorHandler(opts: Options) {
       statusCode as 500,
     );
   };
-}
-
-/**
- * Type guard to check if an object is a Pino HTTP request object.
- * @param obj - The object to check
- * @returns True if the object has a req property
- * @private
- */
-function _isPinoHttpRequest(obj: unknown): obj is {
-  req: unknown;
-} {
-  return (
-    !!obj &&
-    typeof obj === "object" &&
-    "req" in obj
-  );
-}
-
-/**
- * Converts an error to a simplified error-like object for logging.
- * @param err - The error to convert
- * @returns A simplified error object or the original value
- * @private
- */
-function _toSimplifiedErrorLike(err: unknown) {
-  if (err instanceof Error) {
-    return {
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-    };
-  }
-  return err;
 }
 
 /**

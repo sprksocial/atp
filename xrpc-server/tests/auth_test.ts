@@ -1,5 +1,5 @@
 import * as jose from "npm:jose";
-import { MINUTE } from "@atproto/common";
+import { MINUTE } from "@atp/common";
 import { Secp256k1Keypair } from "@atproto/crypto";
 import type { LexiconDoc } from "@atproto/lexicon";
 import { XrpcClient, XRPCError } from "@atproto/xrpc";
@@ -58,11 +58,6 @@ type AuthTestResponse = {
   original: string | undefined;
 };
 
-type AuthTestAuth = {
-  credentials: { username: string };
-  artifacts: { original: string };
-};
-
 server.method("io.example.authTest", {
   auth: createBasicAuth({ username: "admin", password: "password" }),
   handler: (ctx: xrpcServer.HandlerContext) => {
@@ -90,7 +85,7 @@ Deno.test({
     client = new XrpcClient(`http://localhost:${port}`, LEXICONS);
 
     // Tests
-    await Deno.test("creates and validates service auth headers", async () => {
+    Deno.test("creates and validates service auth headers", async () => {
       const keypair = await Secp256k1Keypair.create();
       const iss = "did:example:alice";
       const aud = "did:example:bob";
@@ -104,7 +99,7 @@ Deno.test({
         token,
         null,
         null,
-        async () => await keypair.did(),
+        () => keypair.did(),
       );
       assertEquals(validated.iss, iss);
       assertEquals(validated.aud, aud);
@@ -115,7 +110,7 @@ Deno.test({
       assert(validated.lxm === undefined);
     });
 
-    await Deno.test("creates and validates service auth headers bound to a particular method", async () => {
+    Deno.test("creates and validates service auth headers bound to a particular method", async () => {
       const keypair = await Secp256k1Keypair.create();
       const iss = "did:example:alice";
       const aud = "did:example:bob";
@@ -130,14 +125,14 @@ Deno.test({
         token,
         null,
         lxm,
-        async () => await keypair.did(),
+        () => keypair.did(),
       );
       assertEquals(validated.iss, iss);
       assertEquals(validated.aud, aud);
       assertEquals(validated.lxm, lxm);
     });
 
-    await Deno.test("fails on bad auth before invalid request payload", async () => {
+    Deno.test("fails on bad auth before invalid request payload", async () => {
       try {
         await client.call(
           "io.example.authTest",
@@ -160,7 +155,7 @@ Deno.test({
       }
     });
 
-    await Deno.test("fails on invalid request payload after good auth", async () => {
+    Deno.test("fails on invalid request payload after good auth", async () => {
       try {
         await client.call(
           "io.example.authTest",
@@ -183,7 +178,7 @@ Deno.test({
       }
     });
 
-    await Deno.test("succeeds on good auth and payload", async () => {
+    Deno.test("succeeds on good auth and payload", async () => {
       const res = await client.call(
         "io.example.authTest",
         {},
@@ -202,7 +197,7 @@ Deno.test({
       });
     });
 
-    await Deno.test("verifyJwt tests", async (t) => {
+    Deno.test("verifyJwt tests", async (t) => {
       await t.step("fails on expired jwt", async () => {
         const keypair = await Secp256k1Keypair.create();
         const jwt = await xrpcServer.createServiceJwt({
@@ -218,7 +213,7 @@ Deno.test({
               jwt,
               "did:example:aud",
               null,
-              async () => await keypair.did(),
+              () => keypair.did(),
             ),
           Error,
           "jwt expired",
@@ -239,7 +234,7 @@ Deno.test({
               jwt,
               "did:example:aud2",
               null,
-              async () => await keypair.did(),
+              () => keypair.did(),
             ),
           Error,
           "jwt audience does not match service did",
@@ -260,7 +255,7 @@ Deno.test({
               jwt,
               "did:example:aud1",
               "com.atproto.repo.putRecord",
-              async () => await keypair.did(),
+              () => keypair.did(),
             ),
           Error,
           "bad jwt lexicon method",
@@ -281,7 +276,7 @@ Deno.test({
               jwt,
               "did:example:aud1",
               "com.atproto.repo.putRecord",
-              async () => await keypair.did(),
+              () => keypair.did(),
             ),
           Error,
           "missing jwt lexicon method",
@@ -303,13 +298,13 @@ Deno.test({
           jwt,
           "did:example:aud",
           null,
-          async (_did, forceRefresh) => {
+          (_did, forceRefresh) => {
             if (forceRefresh) {
               usedKeypair2 = true;
-              return await keypair2.did();
+              return keypair2.did();
             } else {
               usedKeypair1 = true;
-              return await keypair1.did();
+              return keypair1.did();
             }
           },
         );
@@ -338,8 +333,8 @@ Deno.test({
             jwt,
             "did:example:aud",
             null,
-            async () => {
-              return await keypair.did();
+            () => {
+              return keypair.did();
             },
           );
           assertEquals(tryVerify, payload);
