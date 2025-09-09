@@ -1,0 +1,16 @@
+{
+  "name": "@atp/lex-cli",
+  "version": "0.1.0-alpha.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "@cliffy/ansi": "jsr:@cliffy/ansi@^1.0.0-rc.8",
+    "@cliffy/command": "jsr:@cliffy/command@^1.0.0-rc.8",
+    "@std/fs": "jsr:@std/fs@^1.0.19",
+    "@std/path": "jsr:@std/path@^1.1.2",
+    "@atproto/lexicon": "npm:@atproto/lexicon@^0.4.14",
+    "@atproto/syntax": "npm:@atproto/syntax@^0.4.1",
+    "ts-morph": "jsr:@ts-morph/ts-morph@^26.0.0",
+    "zod": "jsr:@zod/zod@^4.1.5"
+  }
+}

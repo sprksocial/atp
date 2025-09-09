@@ -1,0 +1,3 @@
+{
+  "workspace": ["xrpc-server", "lex-cli", "common"]
+}
