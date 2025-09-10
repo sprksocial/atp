@@ -1,4 +1,3 @@
-import * as uint8arrays from "uint8arrays";
 import { cborDecodeMulti, cborEncode } from "@atp/common";
 import type {
   ErrorFrameBody,
@@ -35,7 +34,12 @@ export abstract class Frame {
    * @returns {Uint8Array} The serialized frame as bytes
    */
   toBytes(): Uint8Array {
-    return uint8arrays.concat([cborEncode(this.header), cborEncode(this.body)]);
+    const headerBytes = cborEncode(this.header);
+    const bodyBytes = cborEncode(this.body);
+    const result = new Uint8Array(headerBytes.length + bodyBytes.length);
+    result.set(headerBytes, 0);
+    result.set(bodyBytes, headerBytes.length);
+    return result;
   }
 
   /**

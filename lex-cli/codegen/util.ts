@@ -1,5 +1,5 @@
 import type { LexiconDoc, LexUserType } from "@atproto/lexicon";
-import { NSID } from "@atproto/syntax";
+import { NSID } from "@atp/syntax";
 
 export interface CodeGenOptions {
   useJsExtension?: boolean;

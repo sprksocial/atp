@@ -1,4 +1,4 @@
-import { CID } from "multiformats/cid";
+import { CID } from "npm:multiformats/cid";
 import type { LexiconDoc } from "@atproto/lexicon";
 import { XrpcClient } from "@atproto/xrpc";
 import * as xrpcServer from "../mod.ts";

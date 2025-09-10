@@ -12,6 +12,7 @@
     "jsr:@logtape/file@^1.0.4": "1.0.4",
     "jsr:@logtape/logtape@*": "1.0.4",
     "jsr:@logtape/logtape@^1.0.4": "1.0.4",
+    "jsr:@std/assert@*": "1.0.14",
     "jsr:@std/assert@^1.0.14": "1.0.14",
     "jsr:@std/bytes@*": "1.0.6",
     "jsr:@std/bytes@^1.0.2": "1.0.6",
@@ -41,13 +42,12 @@
     "npm:@atproto/crypto@~0.4.4": "0.4.4",
     "npm:@atproto/lexicon@~0.4.11": "0.4.14",
     "npm:@atproto/lexicon@~0.4.14": "0.4.14",
-    "npm:@atproto/syntax@~0.4.1": "0.4.1",
     "npm:@atproto/xrpc@0.7": "0.7.4",
     "npm:@ipld/dag-cbor@^9.2.5": "9.2.5",
     "npm:@types/node@*": "24.2.0",
     "npm:cbor-x@*": "1.6.0",
     "npm:jose@*": "6.1.0",
-    "npm:multiformats@^13.3.6": "13.4.0",
+    "npm:multiformats@*": "13.4.0",
     "npm:multiformats@^13.4.0": "13.4.0",
     "npm:rate-limiter-flexible@^2.4.1": "2.4.2",
     "npm:uint8arrays@3.0.0": "3.0.0",
@@ -373,8 +373,7 @@
           "jsr:@std/path@^1.1.2",
           "jsr:@ts-morph/ts-morph@26",
           "jsr:@zod/zod@^4.1.5",
-          "npm:@atproto/lexicon@~0.4.14",
-          "npm:@atproto/syntax@~0.4.1"
+          "npm:@atproto/lexicon@~0.4.14"
         ]
       },
       "xrpc-server": {
@@ -386,7 +385,6 @@
           "npm:@atproto/crypto@~0.4.4",
           "npm:@atproto/lexicon@~0.4.11",
           "npm:@atproto/xrpc@0.7",
-          "npm:multiformats@^13.3.6",
           "npm:rate-limiter-flexible@^2.4.1",
           "npm:uint8arrays@3.0.0",
           "npm:ws@^8.12.0"
