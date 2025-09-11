@@ -1,7 +1,7 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
 import { AtUri, ensureValidAtUri, ensureValidAtUriRegex } from "../mod.ts";
 
-Deno.test("At Uris - parses valid at uris", () => {
+Deno.test("parses valid at uris", () => {
   //                 input   host    path    query   hash
   type AtUriTest = [string, string, string, string, string];
   const TESTS: AtUriTest[] = [
@@ -255,7 +255,7 @@ Deno.test("At Uris - parses valid at uris", () => {
   }
 });
 
-Deno.test("At Uris - handles ATP-specific parsing", () => {
+Deno.test("handles ATP-specific parsing", () => {
   {
     const urip = new AtUri("at://foo.com");
     assertEquals(urip.collection, "");
@@ -273,7 +273,7 @@ Deno.test("At Uris - handles ATP-specific parsing", () => {
   }
 });
 
-Deno.test("At Uris - supports modifications", () => {
+Deno.test("supports modifications", () => {
   const urip = new AtUri("at://foo.com");
   assertEquals(urip.toString(), "at://foo.com/");
 
@@ -313,7 +313,7 @@ Deno.test("At Uris - supports modifications", () => {
   assertEquals(urip.toString(), "at://foo.com/foo?foo=bar&baz=buux#hash");
 });
 
-Deno.test("At Uris - supports relative URIs", () => {
+Deno.test("supports relative URIs", () => {
   //                 input   path    query   hash
   type AtUriTest = [string, string, string, string];
   const TESTS: AtUriTest[] = [
@@ -358,7 +358,7 @@ Deno.test("At Uris - supports relative URIs", () => {
   }
 });
 
-Deno.test("AtUri validation - enforces spec basics", () => {
+Deno.test("validation enforces spec basics", () => {
   const expectValid = (h: string) => {
     ensureValidAtUri(h);
     ensureValidAtUriRegex(h);
@@ -426,7 +426,7 @@ Deno.test("AtUri validation - enforces spec basics", () => {
   );
 });
 
-Deno.test("AtUri validation - has specified behavior on edge cases", () => {
+Deno.test("validation has specified behavior on edge cases", () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidAtUri(h));
     assertThrows(() => ensureValidAtUriRegex(h));
@@ -442,7 +442,7 @@ Deno.test("AtUri validation - has specified behavior on edge cases", () => {
   expectInvalid("at://did:plc:asdf123/12345");
 });
 
-Deno.test("AtUri validation - enforces no trailing slashes", () => {
+Deno.test("validation enforces no trailing slashes", () => {
   const expectValid = (h: string) => {
     ensureValidAtUri(h);
     ensureValidAtUriRegex(h);
@@ -466,7 +466,7 @@ Deno.test("AtUri validation - enforces no trailing slashes", () => {
   expectInvalid("at://did:plc:asdf123/com.atproto.feed.post/record/#/frag");
 });
 
-Deno.test("AtUri validation - enforces strict paths", () => {
+Deno.test("validation enforces strict paths", () => {
   const expectValid = (h: string) => {
     ensureValidAtUri(h);
     ensureValidAtUriRegex(h);
@@ -480,7 +480,7 @@ Deno.test("AtUri validation - enforces strict paths", () => {
   expectInvalid("at://did:plc:asdf123/com.atproto.feed.post/asdf123/asdf");
 });
 
-Deno.test("AtUri validation - is restrictive about record keys", () => {
+Deno.test("validation is restrictive about record keys", () => {
   const expectValid = (h: string) => {
     ensureValidAtUri(h);
     ensureValidAtUriRegex(h);
@@ -517,7 +517,7 @@ Deno.test("AtUri validation - is restrictive about record keys", () => {
   expectInvalid("at://did:plc:asdf123/com.atproto.feed.post/..");
 });
 
-Deno.test("AtUri validation - properly validates URL encoding in record keys", () => {
+Deno.test("properly validates URL encoding in record keys", () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidAtUri(h));
     assertThrows(() => ensureValidAtUriRegex(h));
@@ -563,7 +563,7 @@ Deno.test("AtUri validation - is very permissive about fragments", () => {
   expectValid("at://did:plc:asdf123#/,");
 });
 
-Deno.test("AtUri validation - conforms to interop valid ATURIs", async () => {
+Deno.test("validation conforms to interop valid ATURIs", async () => {
   const expectValid = (h: string) => {
     ensureValidAtUri(h);
     ensureValidAtUriRegex(h);
@@ -582,7 +582,7 @@ Deno.test("AtUri validation - conforms to interop valid ATURIs", async () => {
   }
 });
 
-Deno.test("AtUri validation - conforms to interop invalid ATURIs", async () => {
+Deno.test("validation conforms to interop invalid ATURIs", async () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidAtUri(h));
     assertThrows(() => ensureValidAtUriRegex(h));

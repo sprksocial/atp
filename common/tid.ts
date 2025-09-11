@@ -91,7 +91,6 @@ export class TID {
     return this.str;
   }
 
-  // newer > older
   compareTo(other: TID): number {
     if (this.str > other.str) return 1;
     if (this.str < other.str) return -1;

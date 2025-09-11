@@ -2,7 +2,7 @@ import { concat } from "jsr:@std/bytes";
 import { Buffer } from "jsr:@std/io";
 
 export const forwardStreamErrors = (..._streams: ReadableStream[]) => {
-  // Web Streams don't have the same error forwarding mechanism as Node streams
+  // Web Streams don't have the same error forwarding mechanism as streams
   // This is a no-op in the Web Streams world since error handling is done differently
 };
 
@@ -60,7 +60,7 @@ export const streamToBytes = async (
 };
 
 // streamToBuffer identifier name already taken by @atproto/common-web
-export const streamToNodeBuffer = async (
+export const streamToBuffer = async (
   stream:
     | Iterable<Uint8Array>
     | AsyncIterable<Uint8Array>

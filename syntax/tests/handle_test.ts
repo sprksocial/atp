@@ -6,7 +6,7 @@ import {
   normalizeAndEnsureValidHandle,
 } from "../mod.ts";
 
-Deno.test("handle validation - allows valid handles", () => {
+Deno.test("validation allows valid handles", () => {
   const expectValid = (h: string) => {
     ensureValidHandle(h);
     ensureValidHandleRegex(h);
@@ -42,7 +42,7 @@ Deno.test("handle validation - allows valid handles", () => {
 
 // NOTE: we may change this at the proto level; currently only disallowed at
 // the registration level
-Deno.test("handle validation - allows .local and .arpa handles (proto-level)", () => {
+Deno.test("validation allows .local and .arpa handles (proto-level)", () => {
   const expectValid = (h: string) => {
     ensureValidHandle(h);
     ensureValidHandleRegex(h);
@@ -52,7 +52,7 @@ Deno.test("handle validation - allows .local and .arpa handles (proto-level)", (
   expectValid("laptop.arpa");
 });
 
-Deno.test("handle validation - allows punycode handles", () => {
+Deno.test("validation allows punycode handles", () => {
   const expectValid = (h: string) => {
     ensureValidHandle(h);
     ensureValidHandleRegex(h);
@@ -71,7 +71,7 @@ Deno.test("handle validation - allows punycode handles", () => {
   expectValid("xn--2lb.com");
 });
 
-Deno.test("handle validation - allows onion (Tor) handles", () => {
+Deno.test("validation allows onion (Tor) handles", () => {
   const expectValid = (h: string) => {
     ensureValidHandle(h);
     ensureValidHandleRegex(h);
@@ -96,7 +96,7 @@ Deno.test("handle validation - allows onion (Tor) handles", () => {
   );
 });
 
-Deno.test("handle validation - throws on invalid handles", () => {
+Deno.test("validation throws on invalid handles", () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidHandle(h), InvalidHandleError);
     assertThrows(() => ensureValidHandleRegex(h), InvalidHandleError);
@@ -142,7 +142,7 @@ Deno.test("handle validation - throws on invalid handles", () => {
   expectInvalid("john.tes-");
 });
 
-Deno.test('handle validation - throws on "dotless" TLD handles', () => {
+Deno.test("validation throws on 'dotless' TLD handles", () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidHandle(h), InvalidHandleError);
     assertThrows(() => ensureValidHandleRegex(h), InvalidHandleError);
@@ -154,7 +154,7 @@ Deno.test('handle validation - throws on "dotless" TLD handles', () => {
   expectInvalid("io");
 });
 
-Deno.test("handle validation - correctly validates corner cases (modern vs. old RFCs)", () => {
+Deno.test("validation correctly validates corner cases (modern vs. old RFCs)", () => {
   const expectValid = (h: string) => {
     ensureValidHandle(h);
     ensureValidHandleRegex(h);
@@ -183,7 +183,7 @@ Deno.test("handle validation - correctly validates corner cases (modern vs. old 
   expectInvalid("thing.0aa");
 });
 
-Deno.test("handle validation - does not allow IP addresses as handles", () => {
+Deno.test("validation does not allow IP addresses as handles", () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidHandle(h), InvalidHandleError);
     assertThrows(() => ensureValidHandleRegex(h), InvalidHandleError);
@@ -195,7 +195,7 @@ Deno.test("handle validation - does not allow IP addresses as handles", () => {
   expectInvalid("2600:3c03::f03c:9100:feb0:af1f");
 });
 
-Deno.test("handle validation - is consistent with examples from stackoverflow", () => {
+Deno.test("validation is consistent with examples from stackoverflow", () => {
   const expectValid = (h: string) => {
     ensureValidHandle(h);
     ensureValidHandleRegex(h);
@@ -235,7 +235,7 @@ Deno.test("handle validation - is consistent with examples from stackoverflow", 
   badStackoverflow.forEach(expectInvalid);
 });
 
-Deno.test("handle validation - conforms to interop valid handles", async () => {
+Deno.test("validation conforms to interop valid handles", async () => {
   const expectValid = (h: string) => {
     ensureValidHandle(h);
     ensureValidHandleRegex(h);
@@ -254,7 +254,26 @@ Deno.test("handle validation - conforms to interop valid handles", async () => {
   }
 });
 
-Deno.test("handle validation - conforms to interop invalid handles", async () => {
+Deno.test("validation conforms to interop invalid handles", async () => {
+  const expectInvalid = (h: string) => {
+    assertThrows(() => ensureValidHandle(h), InvalidHandleError);
+    assertThrows(() => ensureValidHandleRegex(h), InvalidHandleError);
+  };
+
+  const filePath =
+    new URL("./interop/handle_syntax_invalid.txt", import.meta.url).pathname;
+  const fileContent = await Deno.readTextFile(filePath);
+  const lines = fileContent.split("\n");
+
+  for (const line of lines) {
+    if (line.startsWith("#") || line.length === 0) {
+      continue;
+    }
+    expectInvalid(line);
+  }
+});
+
+Deno.test("validation conforms to interop invalid handles", async () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidHandle(h), InvalidHandleError);
     assertThrows(() => ensureValidHandleRegex(h), InvalidHandleError);
@@ -278,7 +297,7 @@ Deno.test("normalization - normalizes handles", () => {
   assertEquals(normalized, "john.test");
 });
 
-Deno.test("normalization - throws on invalid normalized handles", () => {
+Deno.test("normalization throws on invalid normalized handles", () => {
   assertThrows(
     () => normalizeAndEnsureValidHandle("JoH!n.TeST"),
     InvalidHandleError,

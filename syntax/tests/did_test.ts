@@ -5,7 +5,7 @@ import {
   InvalidDidError,
 } from "../mod.ts";
 
-Deno.test("DID permissive validation - enforces spec details", () => {
+Deno.test("validation enforces spec details", () => {
   const expectValid = (h: string) => {
     ensureValidDid(h);
     ensureValidDidRegex(h);
@@ -60,7 +60,7 @@ Deno.test("DID permissive validation - enforces spec details", () => {
   );
 });
 
-Deno.test("DID permissive validation - allows some real DID values", () => {
+Deno.test("validation allows some real DID values", () => {
   const expectValid = (h: string) => {
     ensureValidDid(h);
     ensureValidDidRegex(h);
@@ -74,7 +74,7 @@ Deno.test("DID permissive validation - allows some real DID values", () => {
   expectValid("did:ethr:0xb9c5714089478a327f09197987f16f9e5d936e8a");
 });
 
-Deno.test("DID permissive validation - conforms to interop valid DIDs", async () => {
+Deno.test("validation conforms to interop valid DIDs", async () => {
   const expectValid = (h: string) => {
     ensureValidDid(h);
     ensureValidDidRegex(h);
@@ -93,7 +93,7 @@ Deno.test("DID permissive validation - conforms to interop valid DIDs", async ()
   }
 });
 
-Deno.test("DID permissive validation - conforms to interop invalid DIDs", async () => {
+Deno.test("validation conforms to interop invalid DIDs", async () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidDid(h), InvalidDidError);
     assertThrows(() => ensureValidDidRegex(h), InvalidDidError);

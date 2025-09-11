@@ -184,7 +184,7 @@ export const ipldToJson = (val: IpldValue): JsonValue => {
     // convert bytes
     if (val instanceof Uint8Array) {
       return {
-        $bytes: btoa(String.fromCharCode(...val)),
+        $bytes: btoa(String.fromCharCode(...val)).replace(/=+$/, ""),
       };
     }
     // convert cids

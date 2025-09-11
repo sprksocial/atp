@@ -47,16 +47,20 @@ export const parseLanguage = (langTag: string): LanguageTag | null => {
   const parsed = langTag.match(bcp47Regexp);
   if (!parsed?.groups) return null;
   const parts = parsed.groups;
-  return {
-    grandfathered: parts.grandfathered,
-    language: parts.language,
-    extlang: parts.extlang,
-    script: parts.script,
-    region: parts.region,
-    variant: parts.variant,
-    extension: parts.extension,
-    privateUse: parts.privateUseA || parts.privateUseB,
-  };
+  const result: LanguageTag = {};
+
+  if (parts.grandfathered) result.grandfathered = parts.grandfathered;
+  if (parts.language) result.language = parts.language;
+  if (parts.extlang) result.extlang = parts.extlang;
+  if (parts.script) result.script = parts.script;
+  if (parts.region) result.region = parts.region;
+  if (parts.variant) result.variant = parts.variant;
+  if (parts.extension) result.extension = parts.extension;
+  if (parts.privateUseA || parts.privateUseB) {
+    result.privateUse = parts.privateUseA || parts.privateUseB;
+  }
+
+  return result;
 };
 
 export const validateLanguage = (langTag: string): boolean => {

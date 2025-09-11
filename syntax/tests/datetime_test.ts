@@ -7,7 +7,7 @@ import {
   normalizeDatetimeAlways,
 } from "../mod.ts";
 
-Deno.test("datetime validation - conforms to interop valid datetimes", async () => {
+Deno.test("conforms to interop valid datetimes", async () => {
   const expectValid = (h: string) => {
     ensureValidDatetime(h);
     normalizeDatetime(h);
@@ -30,7 +30,7 @@ Deno.test("datetime validation - conforms to interop valid datetimes", async () 
   }
 });
 
-Deno.test("datetime validation - conforms to interop invalid datetimes", async () => {
+Deno.test("conforms to interop invalid datetimes", async () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidDatetime(h), InvalidDatetimeError);
   };
@@ -48,7 +48,7 @@ Deno.test("datetime validation - conforms to interop invalid datetimes", async (
   }
 });
 
-Deno.test("datetime validation - conforms to interop invalid parse (semantics) datetimes", async () => {
+Deno.test("conforms to interop invalid parse (semantics) datetimes", async () => {
   const expectInvalid = (h: string) => {
     assertThrows(() => ensureValidDatetime(h), InvalidDatetimeError);
   };
