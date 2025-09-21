@@ -16,13 +16,14 @@ const cidSchema = z.unknown().transform((obj, ctx): CID => {
   return cid;
 });
 
-const carHeader = z.object({
-  version: z.literal(1),
-  roots: z.array(cidSchema),
-});
+const carHeader: z.ZodObject<{ version: z.ZodLiteral<1>; roots: z.ZodArray }> =
+  z.object({
+    version: z.literal(1),
+    roots: z.array(cidSchema),
+  });
 export type CarHeader = z.infer<typeof carHeader>;
 
-export const schema = {
+export const schema: Record<string, z.ZodTypeAny> = {
   cid: cidSchema,
   carHeader,
   bytes: z.instanceof(Uint8Array),

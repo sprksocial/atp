@@ -12,7 +12,9 @@ import { concat, equals } from "@std/bytes";
 export const cborEncode = cborCodec.encode;
 export const cborDecode = cborCodec.decode;
 
-export const dataToCborBlock = (data: unknown) => {
+export const dataToCborBlock = (
+  data: unknown,
+): Promise<mf.BlockView> => {
   return Block.encode({
     value: data,
     codec: cborCodec,
@@ -44,7 +46,10 @@ export const cborBytesToRecord = (
   return val as Record<string, unknown>;
 };
 
-export const verifyCidForBytes = async (cid: CID, bytes: Uint8Array) => {
+export const verifyCidForBytes = async (
+  cid: CID,
+  bytes: Uint8Array,
+): Promise<void> => {
   const digest = await sha256.digest(bytes);
   const expected = CID.createV1(cid.code, digest);
   if (!cid.equals(expected)) {

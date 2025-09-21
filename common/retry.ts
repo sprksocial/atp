@@ -35,13 +35,15 @@ export async function retry<T>(
   throw doneError;
 }
 
-export function createRetryable(retryable: (err: unknown) => boolean) {
+export function createRetryable(retryable: (err: unknown) => boolean): {
+  <T>(fn: () => Promise<T>, opts?: RetryOptions): Promise<T>;
+} {
   return <T>(fn: () => Promise<T>, opts?: RetryOptions) =>
     retry(fn, { ...opts, retryable });
 }
 
 // Waits exponential backoff with max and jitter: ~100, ~200, ~400, ~800, ~1000, ~1000, ...
-export function backoffMs(n: number, multiplier = 100, max = 1000) {
+export function backoffMs(n: number, multiplier = 100, max = 1000): number {
   const exponentialMs = Math.pow(2, n) * multiplier;
   const ms = Math.min(exponentialMs, max);
   return jitter(ms);

@@ -52,7 +52,7 @@ async function ensureConfigured() {
 
 const subsystemLoggers: Record<string, Logger> = {};
 
-export const subsystemLogger = (name: string) => {
+export const subsystemLogger = (name: string): Logger => {
   if (subsystemLoggers[name]) return subsystemLoggers[name];
 
   const subsystemEnabled = enabled &&

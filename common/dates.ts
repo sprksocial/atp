@@ -3,7 +3,7 @@ export const MINUTE = SECOND * 60;
 export const HOUR = MINUTE * 60;
 export const DAY = HOUR * 24;
 
-export const lessThanAgoMs = (time: Date, range: number) => {
+export const lessThanAgoMs = (time: Date, range: number): boolean => {
   return Date.now() < time.getTime() + range;
 };
 
@@ -26,7 +26,7 @@ function isValidISODateString(dateString: string): boolean {
   return !isNaN(date.getTime()) && date.toISOString() === dateString;
 }
 
-export function toSimplifiedISOSafe(dateStr: string) {
+export function toSimplifiedISOSafe(dateStr: string): string {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) {
     return new Date(0).toISOString();

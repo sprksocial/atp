@@ -1,15 +1,17 @@
 import { decodeBase64 } from "@std/encoding";
 
-export function obfuscateEmail(email: string) {
+export function obfuscateEmail(email: string): string {
   const [local, domain] = email.split("@");
   return `${obfuscateWord(local)}@${obfuscateWord(domain)}`;
 }
 
-export function obfuscateWord(word: string) {
+export function obfuscateWord(word: string): string {
   return `${word.charAt(0)}***${word.charAt(word.length - 1)}`;
 }
 
-export function obfuscateHeaders(headers: Record<string, string>) {
+export function obfuscateHeaders(
+  headers: Record<string, string>,
+): Record<string, string> {
   const obfuscatedHeaders: Record<string, string> = {};
   for (const key in headers) {
     if (key.toLowerCase() === "authorization") {

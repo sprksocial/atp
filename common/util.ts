@@ -39,11 +39,11 @@ export function omit(
   return dst;
 }
 
-export const jitter = (maxMs: number) => {
+export const jitter = (maxMs: number): number => {
   return Math.round((Math.random() - 0.5) * maxMs * 2);
 };
 
-export const wait = (ms: number) => {
+export const wait = (ms: number): Promise<void> => {
   return new Promise((res) => setTimeout(res, ms));
 };
 
@@ -110,7 +110,7 @@ export const s32decode = (s: string): number => {
 export const asyncFilter = async <T>(
   arr: T[],
   fn: (t: T) => Promise<boolean>,
-) => {
+): Promise<T[]> => {
   const results = await Promise.all(arr.map((t) => fn(t)));
   return arr.filter((_, i) => results[i]);
 };
