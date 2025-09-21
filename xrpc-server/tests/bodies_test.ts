@@ -1,7 +1,7 @@
 import { cidForCbor } from "@atp/common";
 import { randomBytes } from "@atproto/crypto";
 import type { LexiconDoc } from "@atproto/lexicon";
-import { ResponseType, XrpcClient, XRPCError } from "@atproto/xrpc";
+import { ResponseType, XrpcClient, XRPCError } from "@atp/xrpc";
 import * as xrpcServer from "../mod.ts";
 import { logger } from "../logger.ts";
 import { closeServer, createServer } from "./_util.ts";
@@ -190,7 +190,7 @@ Deno.test({
     const client = new XrpcClient(url, LEXICONS);
 
     // Tests
-    await Deno.test("validates input and output bodies", async () => {
+    Deno.test("validates input and output bodies", async () => {
       const res1 = await client.call(
         "io.example.validationTest",
         {},
@@ -238,7 +238,9 @@ Deno.test({
           client.call(
             "io.example.validationTest",
             {},
-            new Blob([randomBytes(123)], { type: "image/jpeg" }),
+            new Blob([new Uint8Array(randomBytes(123))], {
+              type: "image/jpeg",
+            }),
           ),
         Error,
         "Wrong request encoding (Content-Type): image/jpeg",
@@ -328,7 +330,7 @@ Deno.test({
       }
     });
 
-    await Deno.test("supports ArrayBuffers", async () => {
+    Deno.test("supports ArrayBuffers", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
 
@@ -343,14 +345,14 @@ Deno.test({
       assertEquals(bytesResponse.data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports empty payload on procedures with encoding", async () => {
+    Deno.test("supports empty payload on procedures with encoding", async () => {
       const bytes = new Uint8Array(0);
       const expectedCid = await cidForCbor(bytes);
       const bytesResponse = await client.call("io.example.blobTest", {}, bytes);
       assertEquals(bytesResponse.data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports upload of empty txt file", async () => {
+    Deno.test("supports upload of empty txt file", async () => {
       const txtFile = new Blob([], { type: "text/plain" });
       const expectedCid = await cidForCbor(await txtFile.arrayBuffer());
       const fileResponse = await client.call(
@@ -364,7 +366,7 @@ Deno.test({
     // This does not work because the xrpc-server will add a json middleware
     // regardless of the "input" definition. This is probably a behavior that
     // should be fixed in the xrpc-server.
-    await Deno.test({
+    Deno.test({
       name: "supports upload of json data",
       ignore: true,
       async fn() {
@@ -383,7 +385,7 @@ Deno.test({
       },
     });
 
-    await Deno.test("supports ArrayBufferView", async () => {
+    Deno.test("supports ArrayBufferView", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
 
@@ -395,31 +397,31 @@ Deno.test({
       assertEquals(bufferResponse.data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports Blob", async () => {
+    Deno.test("supports Blob", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
 
       const blobResponse = await client.call(
         "io.example.blobTest",
         {},
-        new Blob([bytes], { type: "application/octet-stream" }),
+        new Blob([new Uint8Array(bytes)], { type: "application/octet-stream" }),
       );
       assertEquals(blobResponse.data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports Blob without explicit type", async () => {
+    Deno.test("supports Blob without explicit type", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
 
       const blobResponse = await client.call(
         "io.example.blobTest",
         {},
-        new Blob([bytes]),
+        new Blob([new Uint8Array(bytes)]),
       );
       assertEquals(blobResponse.data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports ReadableStream", async () => {
+    Deno.test("supports ReadableStream", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
 
@@ -437,7 +439,7 @@ Deno.test({
       assertEquals(streamResponse.data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports blob uploads", async () => {
+    Deno.test("supports blob uploads", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
 
@@ -447,7 +449,7 @@ Deno.test({
       assertEquals(data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports identity encoding", async () => {
+    Deno.test("supports identity encoding", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
 
@@ -458,7 +460,7 @@ Deno.test({
       assertEquals(data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports gzip encoding", async () => {
+    Deno.test("supports gzip encoding", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
       const compressedBytes = await compressData(bytes, "gzip");
@@ -477,7 +479,7 @@ Deno.test({
       assertEquals(data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports deflate encoding", async () => {
+    Deno.test("supports deflate encoding", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
       const compressedBytes = await compressData(bytes, "deflate");
@@ -496,7 +498,7 @@ Deno.test({
       assertEquals(data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports br encoding", async () => {
+    Deno.test("supports br encoding", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
       // Note: Using gzip as fallback since brotli compression isn't widely supported
@@ -516,7 +518,7 @@ Deno.test({
       assertEquals(data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports multiple encodings", async () => {
+    Deno.test("supports multiple encodings", async () => {
       const bytes = randomBytes(1024);
       const expectedCid = await cidForCbor(bytes);
 
@@ -540,7 +542,7 @@ Deno.test({
       assertEquals(data.cid, expectedCid.toString());
     });
 
-    await Deno.test("fails gracefully on invalid encodings", async () => {
+    Deno.test("fails gracefully on invalid encodings", async () => {
       const bytes = randomBytes(1024);
       const compressedBytes = await compressData(bytes, "gzip");
 
@@ -562,7 +564,7 @@ Deno.test({
       );
     });
 
-    await Deno.test("supports empty payload", async () => {
+    Deno.test("supports empty payload", async () => {
       const bytes = new Uint8Array(0);
       const expectedCid = await cidForCbor(bytes);
 
@@ -574,7 +576,7 @@ Deno.test({
       assertEquals(result.data.cid, expectedCid.toString());
     });
 
-    await Deno.test("supports max blob size (based on content-length)", async () => {
+    Deno.test("supports max blob size (based on content-length)", async () => {
       const bytes = randomBytes(BLOB_LIMIT + 1);
 
       // Exactly the number of allowed bytes
@@ -593,7 +595,7 @@ Deno.test({
       );
     });
 
-    await Deno.test("supports max blob size (missing content-length)", async () => {
+    Deno.test("supports max blob size (missing content-length)", async () => {
       // We stream bytes in these tests so that content-length isn't included.
       const bytes = randomBytes(BLOB_LIMIT + 1);
 
@@ -623,19 +625,19 @@ Deno.test({
       );
     });
 
-    await Deno.test("requires any parsable Content-Type for blob uploads", async () => {
+    Deno.test("requires any parsable Content-Type for blob uploads", async () => {
       // not a real mimetype, but correct syntax
       await client.call("io.example.blobTest", {}, randomBytes(BLOB_LIMIT), {
         encoding: "some/thing",
       });
     });
 
-    await Deno.test("errors on an empty Content-type on blob upload", async () => {
+    Deno.test("errors on an empty Content-type on blob upload", async () => {
       // empty mimetype, but correct syntax
       const res = await fetch(`${url}/xrpc/io.example.blobTest`, {
         method: "post",
         headers: { "Content-Type": "" },
-        body: randomBytes(BLOB_LIMIT),
+        body: new Uint8Array(randomBytes(BLOB_LIMIT)),
         // @ts-ignore see note in @atproto/xrpc/client.ts
         duplex: "half",
       });

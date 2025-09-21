@@ -1,4 +1,4 @@
-import { assertEquals, assertStrictEquals } from "jsr:@std/assert";
+import { assertEquals, assertStrictEquals } from "@std/assert";
 import * as util from "../util.ts";
 
 Deno.test("noUndefinedVals - removes undefined top-level keys", () => {

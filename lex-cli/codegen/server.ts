@@ -59,17 +59,31 @@ const indexTs = (
 ) =>
   gen(project, "/index.ts", (file) => {
     const extension = options?.useJsExtension ? ".js" : ".ts";
-    //= import {createServer as createXrpcServer, Server as XrpcServer} from '@sprk/xrpc-server'
+
+    // Check if there are any subscription types
+    const hasSubscriptions = lexiconDocs.some((doc) =>
+      doc.defs.main?.type === "subscription"
+    );
+
+    //= import {createServer as createXrpcServer, Server as XrpcServer} from '@atp/xrpc-server'
+    const namedImports = [
+      { name: "Auth", isTypeOnly: true },
+      { name: "Options", alias: "XrpcOptions", isTypeOnly: true },
+      { name: "Server", alias: "XrpcServer" },
+      { name: "MethodConfigOrHandler", isTypeOnly: true },
+      { name: "createServer", alias: "createXrpcServer" },
+    ];
+
+    if (hasSubscriptions) {
+      namedImports.splice(3, 0, {
+        name: "StreamConfigOrHandler",
+        isTypeOnly: true,
+      });
+    }
+
     file.addImportDeclaration({
       moduleSpecifier: "@atp/xrpc-server",
-      namedImports: [
-        { name: "Auth", isTypeOnly: true },
-        { name: "Options", alias: "XrpcOptions", isTypeOnly: true },
-        { name: "Server", alias: "XrpcServer" },
-        { name: "StreamConfigOrHandler", isTypeOnly: true },
-        { name: "MethodConfigOrHandler", isTypeOnly: true },
-        { name: "createServer", alias: "createXrpcServer" },
-      ],
+      namedImports,
     });
     //= import {schemas} from './lexicons.ts'
     file

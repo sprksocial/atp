@@ -1,4 +1,4 @@
-import * as ui8 from "npm:uint8arrays";
+import * as ui8 from "uint8arrays";
 import {
   cborDecode,
   cborEncode,
@@ -8,7 +8,7 @@ import {
   jsonToIpld,
 } from "../mod.ts";
 import { vectors } from "./interop/ipld-vectors.ts";
-import { assert, assertEquals } from "jsr:@std/assert";
+import { assert, assertEquals } from "@std/assert";
 
 for (const vector of vectors) {
   Deno.test(`passes test vector: ${vector.name}`, async () => {

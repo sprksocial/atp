@@ -230,17 +230,9 @@ export type RateLimiterCreator<T extends HandlerContext = HandlerContext> = <
  * @template P - Parameters type
  * @template I - Input type
  */
-export type MethodAuthContext<
-  P extends Params = Params,
-  I extends Input = Input,
-> = {
-  /** Parsed request parameters */
+export type MethodAuthContext<P extends Params = Params> = {
   params: P;
-  /** Request input data */
-  input: I;
-  /** HTTP request object */
   req: Request;
-  /** HTTP response object */
   res: Response;
 };
 
@@ -253,8 +245,7 @@ export type MethodAuthContext<
 export type MethodAuthVerifier<
   A extends AuthResult = AuthResult,
   P extends Params = Params,
-  I extends Input = Input,
-> = (ctx: MethodAuthContext<P, I>) => Awaitable<A>;
+> = (ctx: MethodAuthContext<P>) => Awaitable<A>;
 
 /**
  * Context object for streaming handlers.

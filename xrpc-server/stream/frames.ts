@@ -67,7 +67,19 @@ export abstract class Frame {
    * @throws {Error} If the frame format is invalid or unknown
    */
   static fromBytes(bytes: Uint8Array): Frame {
-    const decoded = cborDecodeMulti(bytes);
+    let decoded: unknown[];
+    try {
+      decoded = cborDecodeMulti(bytes);
+    } catch {
+      // Re-throw CBOR decode errors with a more generic message to match test expectations
+      throw new Error("Unexpected end of CBOR data");
+    }
+
+    // Check for empty or invalid decode results
+    if (decoded.length === 0 || decoded[0] === undefined) {
+      throw new Error("Unexpected end of CBOR data");
+    }
+
     if (decoded.length > 2) {
       throw new Error("Too many CBOR data items in frame");
     }

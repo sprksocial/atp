@@ -1,4 +1,4 @@
-import { ResponseType, XRPCError } from "@atproto/xrpc";
+import { ResponseType, XRPCError } from "@atp/xrpc";
 import { Frame } from "./frames.ts";
 import type { MessageFrame } from "./frames.ts";
 
@@ -22,33 +22,112 @@ import type { MessageFrame } from "./frames.ts";
 export async function* byFrame(
   ws: WebSocket,
 ): AsyncGenerator<Frame> {
-  const messageQueue: Frame[] = [];
-  let error: Error | null = null;
-  let done = false;
+  // Wait for connection if still connecting
+  if (ws.readyState === WebSocket.CONNECTING) {
+    await new Promise<void>((resolve, reject) => {
+      const onOpen = () => {
+        ws.removeEventListener("open", onOpen);
+        ws.removeEventListener("error", onError);
+        resolve();
+      };
 
-  ws.onmessage = (ev) => {
-    if (ev.data instanceof Uint8Array) {
-      messageQueue.push(Frame.fromBytes(ev.data));
-    }
-  };
-  ws.onerror = (ev) => {
-    if (ev instanceof ErrorEvent) {
-      error = ev.error;
-    }
-  };
-  ws.onclose = () => {
-    done = true;
-  };
+      const onError = (event: Event | ErrorEvent) => {
+        ws.removeEventListener("open", onOpen);
+        ws.removeEventListener("error", onError);
+        const error = event instanceof ErrorEvent && event.error
+          ? event.error
+          : new Error("WebSocket connection failed");
+        reject(error);
+      };
 
-  while (!done && !error) {
-    if (messageQueue.length > 0) {
-      yield messageQueue.shift()!;
-    } else {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+      ws.addEventListener("open", onOpen);
+      ws.addEventListener("error", onError);
+    });
   }
 
-  if (error) throw error;
+  // If already closed, return immediately
+  if (ws.readyState === WebSocket.CLOSED) {
+    return;
+  }
+
+  // Process messages until connection closes
+  while (ws.readyState === WebSocket.OPEN) {
+    try {
+      const frame = await waitForNextFrame(ws);
+      if (frame) {
+        yield frame;
+      } else {
+        // Connection closed normally
+        break;
+      }
+    } catch (error) {
+      // WebSocket error occurred
+      throw error;
+    }
+  }
+}
+
+/**
+ * Waits for the next frame from a WebSocket connection.
+ * Returns null if the connection closes normally.
+ */
+function waitForNextFrame(ws: WebSocket): Promise<Frame | null> {
+  return new Promise<Frame | null>((resolve, reject) => {
+    const cleanup = () => {
+      ws.removeEventListener("message", onMessage);
+      ws.removeEventListener("error", onError);
+      ws.removeEventListener("close", onClose);
+    };
+
+    const onMessage = async (event: MessageEvent) => {
+      cleanup();
+      try {
+        let data: Uint8Array;
+        if (event.data instanceof Uint8Array) {
+          data = event.data;
+        } else if (event.data instanceof Blob) {
+          data = new Uint8Array(await event.data.arrayBuffer());
+        } else {
+          // Ignore non-binary data (e.g., ping/pong)
+          // Re-attach listeners and wait for next message
+          attachListeners();
+          return;
+        }
+
+        const frame = Frame.fromBytes(data);
+        resolve(frame);
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
+    };
+
+    const onError = (event: Event | ErrorEvent) => {
+      cleanup();
+      const error = event instanceof ErrorEvent && event.error
+        ? event.error
+        : new Error("WebSocket error");
+      reject(error);
+    };
+
+    const onClose = () => {
+      cleanup();
+      resolve(null); // Signal end of stream
+    };
+
+    const attachListeners = () => {
+      ws.addEventListener("message", onMessage, { once: true });
+      ws.addEventListener("error", onError, { once: true });
+      ws.addEventListener("close", onClose, { once: true });
+    };
+
+    // Check if connection is already closed before attaching listeners
+    if (ws.readyState === WebSocket.CLOSED) {
+      resolve(null);
+      return;
+    }
+
+    attachListeners();
+  });
 }
 
 /**
@@ -91,7 +170,7 @@ export function ensureChunkIsMessage(frame: Frame): MessageFrame<unknown> {
     return frame;
   } else if (frame.isError()) {
     // @TODO work -1 error code into XRPCError
-    throw new XRPCError(-1, frame.code, frame.message);
+    throw new XRPCError(3, frame.code, frame.message);
   } else {
     throw new XRPCError(ResponseType.Unknown, undefined, "Unknown frame type");
   }

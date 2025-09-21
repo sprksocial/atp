@@ -1,5 +1,5 @@
-import { concat } from "jsr:@std/bytes";
-import { Buffer } from "jsr:@std/io";
+import { concat } from "@std/bytes";
+import { Buffer } from "@std/io";
 
 export const forwardStreamErrors = (..._streams: ReadableStream[]) => {
   // Web Streams don't have the same error forwarding mechanism as streams
@@ -199,9 +199,15 @@ function createDecoder(
     // https://www.rfc-editor.org/rfc/rfc9112.html#section-7.2
     case "gzip":
     case "x-gzip":
-      return new DecompressionStream("gzip");
+      return new DecompressionStream("gzip") as TransformStream<
+        Uint8Array,
+        Uint8Array
+      >;
     case "deflate":
-      return new DecompressionStream("deflate");
+      return new DecompressionStream("deflate") as TransformStream<
+        Uint8Array,
+        Uint8Array
+      >;
     case "br":
       throw new TypeError(
         `Brotli decompression is not supported in this Deno implementation`,

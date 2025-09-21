@@ -1,9 +1,4 @@
-import {
-  assert,
-  assertEquals,
-  assertFalse,
-  assertThrows,
-} from "jsr:@std/assert";
+import { assert, assertEquals, assertFalse, assertThrows } from "@std/assert";
 import { TID } from "../tid.ts";
 
 Deno.test("creates a new TID", () => {

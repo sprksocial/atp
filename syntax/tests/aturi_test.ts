@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "jsr:@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 import { AtUri, ensureValidAtUri, ensureValidAtUriRegex } from "../mod.ts";
 
 Deno.test("parses valid at uris", () => {

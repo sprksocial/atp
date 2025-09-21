@@ -37,22 +37,22 @@ export class AtUri {
     this.searchParams = parsed.searchParams;
   }
 
-  static make(handleOrDid: string, collection?: string, rkey?: string) {
+  static make(handleOrDid: string, collection?: string, rkey?: string): AtUri {
     let str = handleOrDid;
     if (collection) str += "/" + collection;
     if (rkey) str += "/" + rkey;
     return new AtUri(str);
   }
 
-  get protocol() {
+  get protocol(): string {
     return "at:";
   }
 
-  get origin() {
+  get origin(): string {
     return `at://${this.host}`;
   }
 
-  get hostname() {
+  get hostname(): string {
     return this.host;
   }
 
@@ -60,7 +60,7 @@ export class AtUri {
     this.host = v;
   }
 
-  get search() {
+  get search(): string {
     return this.searchParams.toString();
   }
 
@@ -68,7 +68,7 @@ export class AtUri {
     this.searchParams = new URLSearchParams(v);
   }
 
-  get collection() {
+  get collection(): string {
     return this.pathname.split("/").filter(Boolean)[0] || "";
   }
 
@@ -78,7 +78,7 @@ export class AtUri {
     this.pathname = parts.join("/");
   }
 
-  get rkey() {
+  get rkey(): string {
     return this.pathname.split("/").filter(Boolean)[1] || "";
   }
 
@@ -89,11 +89,11 @@ export class AtUri {
     this.pathname = parts.join("/");
   }
 
-  get href() {
+  get href(): string {
     return this.toString();
   }
 
-  toString() {
+  toString(): string {
     let path = this.pathname || "/";
     if (!path.startsWith("/")) {
       path = `/${path}`;

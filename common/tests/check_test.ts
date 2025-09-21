@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
 import { check } from "../mod.ts";
-import { assertEquals, assertThrows } from "jsr:@std/assert";
+import { assertEquals, assertThrows } from "@std/assert";
 
 Deno.test("checks object against definition", () => {
   const checkable: check.Checkable<boolean> = {

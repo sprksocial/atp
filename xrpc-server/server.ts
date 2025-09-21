@@ -15,21 +15,20 @@ import {
   MethodNotImplementedError,
   XRPCError,
 } from "./errors.ts";
-import {
-  type RateLimiterI,
-  RateLimitExceededError,
-  RouteRateLimiter,
-} from "./rate-limiter.ts";
+import { type RateLimiterI, RouteRateLimiter } from "./rate-limiter.ts";
 import { ErrorFrame, XrpcStreamServer } from "./stream/index.ts";
+import { StreamConnection } from "./stream/connection.ts";
 import {
   type Auth,
+  type AuthResult,
+  type AuthVerifier,
+  type Awaitable,
   type HandlerContext,
   type HandlerSuccess,
   type Input,
   isHandlerPipeThroughBuffer,
   isHandlerPipeThroughStream,
   isSharedRateLimitOpts,
-  type MethodAuthVerifier,
   type MethodConfig,
   type MethodConfigOrHandler,
   type Options,
@@ -41,12 +40,13 @@ import {
 import {
   asArray,
   createInputVerifier,
-  decodeUrlQueryParams,
+  decodeQueryParams,
   getQueryParams,
   parseUrlNsid,
   setHeaders,
   validateOutput,
 } from "./util.ts";
+import { ipldToJson } from "@atp/common";
 import {
   type CalcKeyFn,
   type CalcPointsFn,
@@ -54,9 +54,8 @@ import {
   WrappedRateLimiter,
   type WrappedRateLimiterOptions,
 } from "./rate-limiter.ts";
-import type { HandlerInput } from "./types.ts";
 import { assert } from "@std/assert";
-import type { CatchallHandler } from "./types.ts";
+import type { CatchallHandler, RouteOptions } from "./types.ts";
 
 /**
  * Creates a new XRPC server instance.
@@ -108,6 +107,32 @@ export class Server {
     // Add global middleware
     this.app.use("*", this.catchall);
     this.app.onError(createErrorHandler(opts));
+
+    // Add 404 handler to catch unmatched XRPC routes
+    this.app.notFound((c) => {
+      const nsid = parseUrlNsid(c.req.url);
+      if (nsid) {
+        const def = this.lex.getDef(nsid);
+        if (def) {
+          const expectedMethod = def.type === "procedure"
+            ? "POST"
+            : def.type === "query"
+            ? "GET"
+            : null;
+          if (expectedMethod != null && expectedMethod !== c.req.method) {
+            const error = new InvalidRequestError(
+              `Incorrect HTTP method (${c.req.method}) expected ${expectedMethod}`,
+            );
+            throw error;
+          }
+        } else {
+          const error = new MethodNotImplementedError();
+          throw error;
+        }
+      }
+      // For non-XRPC routes, return standard 404
+      return c.text("Not Found", 404);
+    });
 
     if (opts.rateLimits) {
       const { global, shared, creator, bypass } = opts.rateLimits;
@@ -247,8 +272,10 @@ export class Server {
    * Catchall handler that processes all XRPC routes and applies global rate limiting.
    * Only applies to routes starting with "/xrpc/".
    */
-  catchall: CatchallHandler = async (c, next) => { // catchall handler only applies to XRPC routes
-    if (!c.req.url.startsWith("/xrpc/")) return next();
+  catchall: CatchallHandler = async (c, next) => {
+    if (!c.req.url.includes("/xrpc/")) {
+      return await next();
+    }
 
     // Validate the NSID
     const nsid = parseUrlNsid(c.req.url);
@@ -264,10 +291,12 @@ export class Server {
           auth: undefined,
           params: {},
           input: undefined,
-          async resetRouteRateLimits() {},
+          async resetRouteRateLimits(): Promise<void> {
+            // Global rate limits don't have route-specific resets
+          },
         });
       } catch {
-        return next();
+        return await next();
       }
     }
 
@@ -288,11 +317,11 @@ export class Server {
     }
 
     if (this.options.catchall) {
-      await this.options.catchall(c, next);
+      return await this.options.catchall(c, next);
     } else if (!def) {
       throw new MethodNotImplementedError();
     } else {
-      await next();
+      return await next();
     }
   };
 
@@ -304,14 +333,17 @@ export class Server {
    * @protected
    */
   protected createParamsVerifier(
-    _nsid: string,
+    nsid: string,
     def: LexXrpcQuery | LexXrpcProcedure | LexXrpcSubscription,
-  ): (query: Record<string, unknown>) => Params {
-    if (!def.parameters) {
-      return () => ({});
-    }
-    return (query: Record<string, unknown>) => {
-      return query as Params;
+  ): (req: Request) => Params {
+    return (req: Request): Params => {
+      const queryParams = getQueryParams(req.url);
+      const params: Params = decodeQueryParams(def, queryParams);
+      try {
+        return this.lex.assertValidXrpcParams(nsid, params) as Params;
+      } catch (e) {
+        throw new InvalidRequestError(String(e));
+      }
     };
   }
 
@@ -325,35 +357,26 @@ export class Server {
   protected createInputVerifier(
     nsid: string,
     def: LexXrpcQuery | LexXrpcProcedure,
-  ): (req: Request) => Promise<HandlerInput | undefined> {
-    return createInputVerifier(this.lex, nsid, def);
+    routeOpts: RouteOptions,
+  ): (req: Request) => Awaitable<Input> {
+    return createInputVerifier(nsid, def, routeOpts, this.lex);
   }
 
   /**
    * Creates an authentication verification function.
-   * @param _nsid - The namespace identifier (unused)
-   * @param verifier - Optional custom authentication verifier
+   * @param cfg - Configuration containing optional authentication verifier
    * @returns A function that performs authentication for the method
    * @protected
    */
-  protected createAuthVerifier(
-    _nsid: string,
-    verifier?: MethodAuthVerifier,
-  ): (params: Params, input: Input, req: Request) => Promise<Auth> {
-    return async (
-      params: Params,
-      input: Input,
-      req: Request,
-    ): Promise<Auth> => {
-      if (verifier) {
-        return await verifier({
-          params,
-          input,
-          req,
-          res: new Response(),
-        });
-      }
-      return undefined;
+  protected createAuthVerifier<C, A extends Auth>(cfg: {
+    auth?: AuthVerifier<C, A & AuthResult>;
+  }): ((ctx: C) => Promise<A>) | null {
+    const { auth } = cfg;
+    if (!auth) return null;
+
+    return async (ctx: C) => {
+      const result = await auth(ctx);
+      return excludeErrorResult(result);
     };
   }
 
@@ -368,32 +391,34 @@ export class Server {
   createHandler<A extends Auth = Auth>(
     nsid: string,
     def: LexXrpcQuery | LexXrpcProcedure,
-    routeCfg: MethodConfig<A>,
+    cfg: MethodConfig<A>,
   ): Handler {
-    const verifyParams = this.createParamsVerifier(nsid, def);
-    const verifyInput = this.createInputVerifier(nsid, def);
-    const verifyAuth = this.createAuthVerifier(nsid, routeCfg.auth);
-    const validateReqNSID = () => nsid;
+    const authVerifier = this.createAuthVerifier(cfg);
+    const paramsVerifier = this.createParamsVerifier(nsid, def);
+    const inputVerifier = this.createInputVerifier(nsid, def, {
+      blobLimit: cfg.opts?.blobLimit ?? this.options.payload?.blobLimit,
+      jsonLimit: cfg.opts?.jsonLimit ?? this.options.payload?.jsonLimit,
+      textLimit: cfg.opts?.textLimit ?? this.options.payload?.textLimit,
+    });
     const validateOutputFn = (output?: HandlerSuccess) =>
       this.options.validateResponse && output && def.output
         ? validateOutput(nsid, def, output, this.lex)
         : undefined;
 
-    const routeLimiter = this.createRouteRateLimiter(nsid, routeCfg);
+    const routeLimiter = this.createRouteRateLimiter(nsid, cfg);
 
     return async (c: Context) => {
       try {
-        validateReqNSID();
+        const params = paramsVerifier(c.req.raw);
 
-        const query = getQueryParams(c.req.url);
-        const params = verifyParams(decodeUrlQueryParams(query));
+        const auth: A = authVerifier
+          ? await authVerifier({ req: c.req.raw, res: c.res, params })
+          : (undefined as A);
 
         let input: Input = undefined;
         if (def.type === "procedure") {
-          input = await verifyInput(c.req.raw);
+          input = await inputVerifier(c.req.raw);
         }
-
-        const auth = await verifyAuth(params, input, c.req.raw);
 
         const ctx: HandlerContext<A> = {
           req: c.req.raw,
@@ -401,20 +426,21 @@ export class Server {
           params,
           input,
           auth: auth as A,
-          resetRouteRateLimits: async () => {},
+          resetRouteRateLimits: async () => {
+            if (routeLimiter) {
+              await routeLimiter.reset(ctx);
+            }
+          },
         };
 
         // Apply rate limiting (route-specific, which includes global if configured)
         if (routeLimiter) {
-          const result = await routeLimiter.consume(ctx);
-          if (result instanceof RateLimitExceededError) {
-            throw result;
-          }
+          await routeLimiter.handle(ctx);
         }
 
-        const output = await routeCfg.handler(ctx);
+        const output = await cfg.handler(ctx);
         if (isErrorResult(output)) {
-          throw output.error;
+          throw XRPCError.fromErrorResult(output);
         }
 
         if (isHandlerPipeThroughBuffer(output)) {
@@ -437,7 +463,7 @@ export class Server {
         if (output) {
           setHeaders(c, output.headers);
           if (output.encoding === "application/json") {
-            return c.json(output.body);
+            return c.json(ipldToJson(output.body) as JSON);
           } else {
             return c.body(output.body, 200, {
               "Content-Type": output.encoding,
@@ -455,27 +481,33 @@ export class Server {
   /**
    * Adds a WebSocket subscription handler for the specified NSID.
    * @param nsid - The namespace identifier for the subscription
-   * @param _def - The lexicon definition for the subscription (unused)
-   * @param _config - The stream configuration (unused)
+   * @param def - The lexicon definition for the subscription
+   * @param config - The stream configuration
    * @protected
    */
   protected addSubscription(
     nsid: string,
-    _def: LexXrpcSubscription,
-    _config: StreamConfig,
-  ) {
+    def: LexXrpcSubscription,
+    config: StreamConfig,
+  ): void {
     const server = new XrpcStreamServer({
       noServer: true,
-      handler: async function* (_req: Request, _signal: AbortSignal) {
-        // Stream handler implementation would go here
-        yield new ErrorFrame({
-          error: "NotImplemented",
-          message: "Streaming not implemented",
-        });
-      },
+      handler: config.handler ||
+        (async function* (_req: Request, _signal: AbortSignal) {
+          yield new ErrorFrame({
+            error: "NotImplemented",
+            message: "Streaming not implemented",
+          });
+        }),
     });
 
     this.subscriptions.set(nsid, server);
+
+    // Register WebSocket upgrade route for this subscription
+    this.app.get(`/xrpc/${nsid}`, (c): Response => {
+      const paramVerifier = this.createParamsVerifier(nsid, def);
+      return StreamConnection.upgrade(c.req.raw, nsid, config, paramVerifier);
+    });
   }
 
   /**
@@ -563,8 +595,10 @@ export class Server {
  * @param opts - Server options containing optional error parser
  * @returns An error handler function that converts errors to XRPC error responses
  */
-function createErrorHandler(opts: Options) {
-  return (err: Error, c: Context) => {
+function createErrorHandler(
+  opts: Options,
+): (err: Error, c: Context) => Response {
+  return (err: Error, c: Context): Response => {
     const errorParser = opts.errorParser ||
       ((e: unknown) => XRPCError.fromError(e));
     const xrpcError = errorParser(err);
@@ -573,13 +607,8 @@ function createErrorHandler(opts: Options) {
       ? (xrpcError as { statusCode: number }).statusCode
       : 500;
 
-    return c.json(
-      {
-        error: xrpcError.type || "InternalServerError",
-        message: xrpcError.message || "Internal Server Error",
-      },
-      statusCode as 500,
-    );
+    const payload = xrpcError.payload;
+    return c.json(payload, statusCode as 500);
   };
 }
 
@@ -602,7 +631,7 @@ function buildRateLimiterOptions<C extends HandlerContext = HandlerContext>({
  * Default function for calculating rate limit points consumed per request.
  * Always returns 1 point per request.
  */
-const defaultPoints: CalcPointsFn = () => 1;
+const defaultPoints: CalcPointsFn = (): number => 1;
 
 /**
  * Default function for calculating rate limit keys based on client IP address.

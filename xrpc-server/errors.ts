@@ -5,7 +5,7 @@ import {
   ResponseType,
   ResponseTypeStrings,
   XRPCError as XRPCClientError,
-} from "@atproto/xrpc";
+} from "@atp/xrpc";
 
 // @NOTE Do not depend (directly or indirectly) on "./types" here, as it would
 // create a circular dependency.
@@ -40,24 +40,20 @@ export function isErrorResult(v: unknown): v is ErrorResult {
 }
 
 /**
- * Type guard to check if a value is an HTTP error with status, message, and name properties.
- * @param v - The value to check
- * @returns True if the value has the expected HTTP error structure
+ * Type guard to check if a value is an HTTP Error-like object.
  */
-function isHttpErrorLike(v: unknown): v is {
-  status: number;
-  message: string;
-  name: string;
-} {
+function isHttpErrorLike(
+  value: unknown,
+): value is { status: number; message: string; name: string } {
   return (
-    typeof v === "object" &&
-    v !== null &&
-    "status" in v &&
-    "message" in v &&
-    "name" in v &&
-    typeof (v as { status: unknown }).status === "number" &&
-    typeof (v as { message: unknown }).message === "string" &&
-    typeof (v as { name: unknown }).name === "string"
+    typeof value === "object" &&
+    value !== null &&
+    "status" in value &&
+    "message" in value &&
+    "name" in value &&
+    typeof (value as Record<string, unknown>).status === "number" &&
+    typeof (value as Record<string, unknown>).message === "string" &&
+    typeof (value as Record<string, unknown>).name === "string"
   );
 }
 
@@ -80,13 +76,6 @@ export { ResponseType };
  * Extends the standard Error class with XRPC-specific properties and methods.
  */
 export class XRPCError extends Error {
-  /**
-   * Creates a new XRPCError instance.
-   * @param type - The HTTP response type/status code
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options (including cause)
-   */
   constructor(
     public type: ResponseType,
     public errorMessage?: string,
@@ -96,11 +85,6 @@ export class XRPCError extends Error {
     super(errorMessage, options);
   }
 
-  /**
-   * Gets the HTTP status code for this error.
-   * Validates that the type is a valid HTTP error status code (400-599).
-   * @returns The HTTP status code, or 500 if the type is invalid
-   */
   get statusCode(): number {
     const { type } = this;
 
@@ -131,28 +115,14 @@ export class XRPCError extends Error {
     };
   }
 
-  /**
-   * Gets the string name of the response type.
-   * @returns The response type name (e.g., "BadRequest", "NotFound")
-   */
   get typeName(): string | undefined {
     return ResponseType[this.type];
   }
 
-  /**
-   * Gets the human-readable string description of the response type.
-   * @returns The response type description (e.g., "Bad Request", "Not Found")
-   */
   get typeStr(): string | undefined {
     return ResponseTypeStrings[this.type];
   }
 
-  /**
-   * Converts any error-like value into an XRPCError.
-   * Handles various error types including XRPCError, XRPCClientError, HTTP errors, and generic errors.
-   * @param cause - The error or error-like value to convert
-   * @returns An XRPCError instance
-   */
   static fromError(cause: unknown): XRPCError {
     if (cause instanceof XRPCError) {
       return cause;
@@ -164,12 +134,7 @@ export class XRPCError extends Error {
     }
 
     if (isHttpErrorLike(cause)) {
-      return new XRPCError(
-        cause.status,
-        cause.message,
-        cause.name,
-        { cause },
-      );
+      return new XRPCError(cause.status, cause.message, cause.name, { cause });
     }
 
     if (isErrorResult(cause)) {
@@ -187,11 +152,6 @@ export class XRPCError extends Error {
     );
   }
 
-  /**
-   * Creates an XRPCError from an ErrorResult object.
-   * @param err - The ErrorResult to convert
-   * @returns An XRPCError instance
-   */
   static fromErrorResult(err: ErrorResult): XRPCError {
     return new XRPCError(err.status, err.message, err.error, { cause: err });
   }

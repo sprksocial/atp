@@ -1,4 +1,4 @@
-import { assertThrows } from "jsr:@std/assert";
+import { assertThrows } from "@std/assert";
 import {
   ensureValidDid,
   ensureValidDidRegex,

@@ -42,6 +42,7 @@ export class XrpcStreamServer {
           };
           const safeFrames = wrapIterator(iterator);
           for await (const frame of safeFrames) {
+            // Send the frame first
             await new Promise<void>((res, rej) => {
               try {
                 socket.send((frame as Frame).toBytes());
@@ -50,7 +51,16 @@ export class XrpcStreamServer {
                 rej(err);
               }
             });
+
+            // Check for ErrorFrame after sending and immediately terminate
             if (frame instanceof ErrorFrame) {
+              // Immediately stop the iterator and abort to prevent further frames
+              try {
+                iterator.return?.();
+              } catch {
+                // Ignore errors from iterator.return
+              }
+              ac.abort();
               throw new DisconnectError(CloseCode.Policy, frame.body.error);
             }
           }

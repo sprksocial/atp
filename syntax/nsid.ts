@@ -23,7 +23,7 @@ export class NSID {
     return new NSID(input);
   }
 
-  static isValid(nsid: string) {
+  static isValid(nsid: string): boolean {
     return isValidNsid(nsid);
   }
 
@@ -42,18 +42,18 @@ export class NSID {
     this.segments = parseNsid(nsid);
   }
 
-  get authority() {
+  get authority(): string {
     return this.segments
       .slice(0, this.segments.length - 1)
       .reverse()
       .join(".");
   }
 
-  get name() {
+  get name(): string | undefined {
     return this.segments.at(this.segments.length - 1);
   }
 
-  toString() {
+  toString(): string {
     return this.segments.join(".");
   }
 }

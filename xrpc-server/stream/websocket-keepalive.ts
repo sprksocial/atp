@@ -77,28 +77,97 @@ export class WebSocketKeepAlive {
       try {
         const messageQueue: Uint8Array[] = [];
         let error: Error | null = null;
-        let done = false;
+        let finished = false;
+        let resolveNext: (() => void) | null = null;
 
-        this.ws.onmessage = (ev: MessageEvent) => {
+        const processMessage = (ev: MessageEvent) => {
+          if (ev.data === "pong") {
+            // Handle heartbeat pong responses separately
+            return;
+          }
           if (ev.data instanceof Uint8Array) {
             messageQueue.push(ev.data);
+            if (resolveNext) {
+              resolveNext();
+              resolveNext = null;
+            }
           }
-        };
-        this.ws.onerror = (ev: Event | ErrorEvent) => {
-          if (ev instanceof ErrorEvent) {
-            error = ev.error;
-          }
-        };
-        this.ws.onclose = () => {
-          done = true;
         };
 
-        while (!done && !error && !ac.signal.aborted) {
-          if (messageQueue.length > 0) {
-            yield messageQueue.shift()!;
-          } else {
-            await new Promise((resolve) => setTimeout(resolve, 0));
+        const handleError = (ev: Event | ErrorEvent) => {
+          error = ev instanceof ErrorEvent && ev.error
+            ? ev.error
+            : new Error("WebSocket error");
+          if (resolveNext) {
+            resolveNext();
+            resolveNext = null;
           }
+        };
+
+        const handleClose = () => {
+          finished = true;
+          if (resolveNext) {
+            resolveNext();
+            resolveNext = null;
+          }
+        };
+
+        this.ws.onmessage = processMessage;
+        this.ws.onerror = handleError;
+        this.ws.onclose = handleClose;
+
+        // Wait for connection if still connecting
+        if (this.ws.readyState === WebSocket.CONNECTING) {
+          await new Promise<void>((resolve, reject) => {
+            const onOpen = () => {
+              this.ws!.removeEventListener("open", onOpen);
+              this.ws!.removeEventListener("error", onInitialError);
+              resolve();
+            };
+
+            const onInitialError = (ev: Event | ErrorEvent) => {
+              this.ws!.removeEventListener("open", onOpen);
+              this.ws!.removeEventListener("error", onInitialError);
+              const errorMsg = ev instanceof ErrorEvent && ev.error
+                ? ev.error
+                : new Error("Failed to connect to WebSocket");
+              reject(errorMsg);
+            };
+
+            this.ws!.addEventListener("open", onOpen, { once: true });
+            this.ws!.addEventListener("error", onInitialError, { once: true });
+          });
+        }
+
+        // Main message processing loop
+        while (!finished && !error && !ac.signal.aborted) {
+          // Process any queued messages first
+          while (messageQueue.length > 0) {
+            yield messageQueue.shift()!;
+          }
+
+          // If no messages and not finished, wait for next event
+          if (
+            !finished && !error && !ac.signal.aborted &&
+            messageQueue.length === 0
+          ) {
+            await new Promise<void>((resolve) => {
+              resolveNext = resolve;
+              // Also resolve if abort signal is triggered
+              if (ac.signal.aborted) {
+                resolve();
+              } else {
+                ac.signal.addEventListener("abort", () => resolve(), {
+                  once: true,
+                });
+              }
+            });
+          }
+        }
+
+        // Process any remaining messages
+        while (messageQueue.length > 0) {
+          yield messageQueue.shift()!;
         }
 
         if (error) throw error;
@@ -142,21 +211,35 @@ export class WebSocketKeepAlive {
       ws.send("ping");
     };
 
+    // Store original handlers to chain them properly
+    const originalOnMessage = ws.onmessage;
+    const originalOnClose = ws.onclose;
+
     checkAlive();
     heartbeatInterval = setInterval(
       checkAlive,
       this.opts.heartbeatIntervalMs ?? 10 * SECOND,
     );
 
+    // Chain message handler to handle pong responses
     ws.onmessage = (ev: MessageEvent) => {
       if (ev.data === "pong") {
         isAlive = true;
       }
+      // Always call the original handler for all messages
+      if (originalOnMessage) {
+        originalOnMessage.call(ws, ev);
+      }
     };
-    ws.onclose = () => {
+
+    // Chain close handler to clean up heartbeat
+    ws.onclose = (ev: CloseEvent) => {
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
         heartbeatInterval = null;
+      }
+      if (originalOnClose) {
+        originalOnClose.call(ws, ev);
       }
     };
   }

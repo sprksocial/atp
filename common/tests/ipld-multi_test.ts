@@ -1,7 +1,7 @@
-import { CID } from "npm:multiformats/cid";
-import * as ui8 from "npm:uint8arrays";
+import { CID } from "multiformats/cid";
+import * as ui8 from "uint8arrays";
 import { cborDecodeMulti, cborEncode, type CborObject } from "../mod.ts";
-import { assert, assertEquals } from "jsr:@std/assert";
+import { assert, assertEquals } from "@std/assert";
 
 Deno.test("decodes concatenated dag-cbor messages", () => {
   const one = {

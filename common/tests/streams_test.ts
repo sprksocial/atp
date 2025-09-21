@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertRejects } from "jsr:@std/assert";
+import { assert, assertEquals, assertRejects } from "@std/assert";
 import * as streams from "../streams.ts";
 
 Deno.test("forwardStreamErrors - is a no-op in Web Streams", () => {

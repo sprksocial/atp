@@ -66,8 +66,8 @@ export function createBasicAuth(allowed: {
 
   return function (ctx: {
     params: xrpc.Params;
-    input: xrpc.Input;
     req: Request;
+    res: Response;
   }) {
     return verifyAuth(ctx.req.headers.get("authorization"));
   };

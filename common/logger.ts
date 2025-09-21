@@ -5,8 +5,8 @@ import {
   type Logger,
   type LogLevel,
   type Sink,
-} from "jsr:@logtape/logtape";
-import { getFileSink } from "jsr:@logtape/file";
+} from "@logtape/logtape";
+import { getFileSink } from "@logtape/file";
 
 const allSystemsEnabled = !Deno.env.get("LOG_SYSTEMS");
 const enabledSystems = (Deno.env.get("LOG_SYSTEMS") || "")

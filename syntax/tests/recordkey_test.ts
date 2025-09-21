@@ -1,4 +1,4 @@
-import { assertThrows } from "jsr:@std/assert";
+import { assertThrows } from "@std/assert";
 import { ensureValidRecordKey, InvalidRecordKeyError } from "../mod.ts";
 
 Deno.test("recordkey validation - conforms to interop valid recordkey", async () => {

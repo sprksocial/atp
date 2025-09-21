@@ -1,4 +1,4 @@
-import { assertThrows } from "jsr:@std/assert";
+import { assertThrows } from "@std/assert";
 import { ensureValidTid, InvalidTidError } from "../mod.ts";
 
 Deno.test("tid validation - conforms to interop valid tid", async () => {

@@ -5,10 +5,23 @@ import type {
   LexXrpcSubscription,
 } from "@atproto/lexicon";
 import { jsonToLex } from "@atproto/lexicon";
-import { InternalServerError, InvalidRequestError } from "./errors.ts";
+import {
+  InternalServerError,
+  InvalidRequestError,
+  ResponseType,
+  XRPCError,
+} from "./errors.ts";
 import { handlerSuccess } from "./types.ts";
-import type { HandlerInput, HandlerSuccess, Params } from "./types.ts";
+import type {
+  Awaitable,
+  HandlerSuccess,
+  Input,
+  Params,
+  RouteOptions,
+} from "./types.ts";
 import type { Context, HonoRequest } from "hono";
+import type { LexXrpcBody } from "@atproto/lexicon";
+import { createDecoders, MaxSizeChecker } from "@atp/common";
 
 function assert(condition: unknown, message?: string): asserts condition {
   if (!condition) {
@@ -105,96 +118,6 @@ export type RequestLike = {
 };
 
 /**
- * Validates the input of an XRPC method against its lexicon definition.
- * Performs content-type validation, body presence checks, and schema validation.
- * @param nsid - The namespace identifier of the method
- * @param def - The lexicon definition for the method
- * @param body - The request body content
- * @param contentType - The Content-Type header value
- * @param lexicons - The lexicon registry for schema validation
- * @returns Validated handler input or undefined for methods without input
- * @throws {InvalidRequestError} If validation fails
- */
-export async function validateInput(
-  nsid: string,
-  def: LexXrpcProcedure | LexXrpcQuery,
-  body: unknown,
-  contentType: string | undefined | null,
-  lexicons: Lexicons,
-): Promise<HandlerInput | undefined> {
-  let processedBody: unknown | Uint8Array = body;
-  if (body instanceof ReadableStream) {
-    const reader = body.getReader();
-    const chunks: Uint8Array[] = [];
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
-    const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-    const tempBody = new Uint8Array(totalLength);
-    let offset = 0;
-    for (const chunk of chunks) {
-      tempBody.set(chunk, offset);
-      offset += chunk.length;
-    }
-    processedBody = tempBody;
-  }
-
-  const bodyPresence = getBodyPresence(processedBody, contentType);
-  if (bodyPresence === "present" && (def.type !== "procedure" || !def.input)) {
-    throw new InvalidRequestError(
-      `A request body was provided when none was expected`,
-    );
-  }
-  if (def.type === "query") {
-    return;
-  }
-  if (bodyPresence === "missing" && def.input) {
-    throw new InvalidRequestError(
-      `A request body is expected but none was provided`,
-    );
-  }
-
-  // mimetype
-  const inputEncoding = normalizeMime(contentType || "");
-  if (
-    def.input?.encoding &&
-    (!inputEncoding || !isValidEncoding(def.input?.encoding, inputEncoding))
-  ) {
-    if (!inputEncoding) {
-      throw new InvalidRequestError(
-        `Request encoding (Content-Type) required but not provided`,
-      );
-    } else {
-      throw new InvalidRequestError(
-        `Wrong request encoding (Content-Type): ${inputEncoding}`,
-      );
-    }
-  }
-
-  if (!inputEncoding) {
-    // no input body
-    return undefined;
-  }
-
-  // if input schema, validate
-  if (def.input?.schema) {
-    try {
-      const lexBody = processedBody ? jsonToLex(processedBody) : processedBody;
-      processedBody = lexicons.assertValidXrpcInput(nsid, lexBody);
-    } catch (e) {
-      throw new InvalidRequestError(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  return {
-    encoding: inputEncoding,
-    body: processedBody,
-  };
-}
-
-/**
  * Validates the output of an XRPC method against its lexicon definition.
  * Performs response body validation, content-type checks, and schema validation.
  * @param nsid - The namespace identifier of the method
@@ -206,48 +129,73 @@ export async function validateInput(
 export function validateOutput(
   nsid: string,
   def: LexXrpcProcedure | LexXrpcQuery,
-  output: HandlerSuccess | undefined,
+  output: HandlerSuccess | void,
   lexicons: Lexicons,
 ): void {
-  // initial validation
-  if (output) {
-    handlerSuccess.parse(output);
-  }
+  if (def.output) {
+    // An output is expected
+    if (output === undefined) {
+      throw new InternalServerError(
+        `A response body is expected but none was provided`,
+      );
+    }
 
-  // response expectation
-  if (output?.body && !def.output) {
-    throw new InternalServerError(
-      `A response body was provided when none was expected`,
-    );
-  }
-  if (!output?.body && def.output) {
-    throw new InternalServerError(
-      `A response body is expected but none was provided`,
-    );
-  }
+    // Fool-proofing (should not be necessary due to type system)
+    const result = handlerSuccess.safeParse(output);
+    if (!result.success) {
+      throw new InternalServerError(`Invalid handler output`, undefined, {
+        cause: result.error,
+      });
+    }
 
-  // mimetype
-  if (
-    def.output?.encoding &&
-    (!output?.encoding ||
-      !isValidEncoding(def.output?.encoding, output?.encoding))
-  ) {
-    throw new InternalServerError(
-      `Invalid response encoding: ${output?.encoding}`,
-    );
-  }
+    // output mime
+    const { encoding } = output;
+    if (!encoding || !isValidEncoding(def.output, encoding)) {
+      throw new InternalServerError(`Invalid response encoding: ${encoding}`);
+    }
 
-  // output schema
-  if (def.output?.schema) {
-    try {
-      const result = lexicons.assertValidXrpcOutput(nsid, output?.body);
-      if (output) {
-        output.body = result;
+    // output schema
+    if (def.output.schema) {
+      try {
+        output.body = lexicons.assertValidXrpcOutput(nsid, output.body);
+      } catch (e) {
+        throw new InternalServerError(
+          e instanceof Error ? e.message : String(e),
+        );
       }
-    } catch (e) {
-      throw new InternalServerError(e instanceof Error ? e.message : String(e));
+    }
+  } else {
+    // Expects no output
+    if (output !== undefined) {
+      throw new InternalServerError(
+        `A response body was provided when none was expected`,
+      );
     }
   }
+}
+
+const ENCODING_ANY = "*/*";
+
+function parseDefEncoding({ encoding }: LexXrpcBody) {
+  return encoding.split(",").map(trimString);
+}
+
+function trimString(str: string): string {
+  return str.trim();
+}
+
+export function parseReqEncoding(req: Request): string {
+  const contentType = req.headers.get("content-type");
+  if (!contentType) {
+    throw new InvalidRequestError(
+      `Request encoding (Content-Type) required but not provided`,
+    );
+  }
+  const encoding = normalizeMime(contentType);
+  if (encoding) return encoding;
+  throw new InvalidRequestError(
+    `Request encoding (Content-Type) required but not provided`,
+  );
 }
 
 /**
@@ -268,12 +216,15 @@ export function normalizeMime(mime: string): string {
  * @param actual - The actual encoding from the request
  * @returns True if the encodings are compatible
  */
-function isValidEncoding(expected: string, actual: string): boolean {
-  if (expected === "*/*") return true;
-  if (expected === actual) return true;
-  if (expected === "application/json" && actual === "json") return true;
-  return false;
+function isValidEncoding(output: LexXrpcBody, encoding: string) {
+  const normalized = normalizeMime(encoding);
+  if (!normalized) return false;
+
+  const allowed = parseDefEncoding(output);
+  return allowed.includes(ENCODING_ANY) || allowed.includes(normalized);
 }
+
+type BodyPresence = "missing" | "empty" | "present";
 
 /**
  * Determines if a request body is present or missing.
@@ -282,20 +233,114 @@ function isValidEncoding(expected: string, actual: string): boolean {
  * @param contentType - The Content-Type header value
  * @returns "present" if body exists, "missing" otherwise
  */
-function getBodyPresence(
-  body: unknown,
-  contentType: string | undefined | null,
-): "present" | "missing" {
-  if (body === undefined || body === null) {
-    return "missing";
+function getBodyPresence(req: Request): BodyPresence {
+  if (req.headers.get("transfer-encoding") != null) return "present";
+  if (req.headers.get("content-length") === "0") return "empty";
+  if (req.headers.get("content-length") != null) return "present";
+  return "missing";
+}
+
+function createBodyParser(
+  inputEncoding: string,
+  options: RouteOptions,
+): ((req: Request, encoding: string) => Promise<unknown>) | undefined {
+  if (inputEncoding === ENCODING_ANY) {
+    // When the lexicon's input encoding is */*, the handler will determine how to process it
+    return;
   }
-  if (typeof body === "string" && body.length === 0 && !contentType) {
-    return "missing";
+  const { jsonLimit, textLimit } = options;
+
+  return async (req: Request, encoding: string): Promise<unknown> => {
+    const contentLength = req.headers.get("content-length");
+    const bodySize = contentLength ? parseInt(contentLength, 10) : 0;
+
+    if (encoding === "application/json" || encoding === "json") {
+      if (jsonLimit && bodySize > jsonLimit) {
+        throw new InvalidRequestError(
+          `Request body too large: ${bodySize} bytes exceeds JSON limit of ${jsonLimit} bytes`,
+        );
+      }
+      const text = await req.text();
+      return JSON.parse(text);
+    } else {
+      if (textLimit && bodySize > textLimit) {
+        throw new InvalidRequestError(
+          `Request body too large: ${bodySize} bytes exceeds text limit of ${textLimit} bytes`,
+        );
+      }
+      return await req.text();
+    }
+  };
+}
+
+function decodeBodyStream(
+  req: Request,
+  maxSize: number | undefined,
+): ReadableStream | null {
+  const contentEncoding = req.headers.get("content-encoding");
+  const contentLength = req.headers.get("content-length");
+
+  if (!req.body) {
+    return null;
   }
-  if (body instanceof Uint8Array && body.length === 0 && !contentType) {
-    return "missing";
+
+  if (!contentEncoding) {
+    return req.body.pipeThrough(new TextDecoderStream());
   }
-  return "present";
+
+  if (!contentLength) {
+    throw new XRPCError(
+      ResponseType.UnsupportedMediaType,
+      "unsupported content-encoding",
+    );
+  }
+
+  const contentLengthParsed = contentLength
+    ? parseInt(contentLength, 10)
+    : undefined;
+
+  if (Number.isNaN(contentLengthParsed)) {
+    throw new XRPCError(ResponseType.InvalidRequest, "invalid content-length");
+  }
+
+  if (
+    maxSize !== undefined &&
+    contentLengthParsed !== undefined &&
+    contentLengthParsed > maxSize
+  ) {
+    throw new XRPCError(
+      ResponseType.PayloadTooLarge,
+      "request entity too large",
+    );
+  }
+
+  let transforms: TransformStream[];
+  try {
+    transforms = createDecoders(contentEncoding);
+  } catch (cause) {
+    throw new XRPCError(
+      ResponseType.UnsupportedMediaType,
+      "unsupported content-encoding",
+      undefined,
+      { cause },
+    );
+  }
+
+  if (maxSize !== undefined) {
+    const maxSizeChecker = new MaxSizeChecker(
+      maxSize,
+      () =>
+        new XRPCError(ResponseType.PayloadTooLarge, "request entity too large"),
+    );
+    transforms.push(maxSizeChecker);
+  }
+
+  let stream: ReadableStream = req.body;
+  for (const transform of transforms) {
+    stream = stream.pipeThrough(transform);
+  }
+
+  return stream;
 }
 
 /**
@@ -473,31 +518,82 @@ export const extractUrlNsid = parseUrlNsid;
  * @returns A function that verifies request input
  */
 export function createInputVerifier(
-  lexicons: Lexicons,
   nsid: string,
   def: LexXrpcProcedure | LexXrpcQuery,
-) {
-  return async (req: Request): Promise<HandlerInput | undefined> => {
-    if (def.type === "query") {
+  options: RouteOptions,
+  lexicons: Lexicons,
+): (req: Request) => Awaitable<Input> {
+  if (def.type === "query" || !def.input) {
+    return (req) => {
+      // @NOTE We allow (and ignore) "empty" bodies
+      if (getBodyPresence(req) === "present") {
+        throw new InvalidRequestError(
+          `A request body was provided when none was expected`,
+        );
+      }
+
       return undefined;
+    };
+  }
+
+  // Lexicon definition expects a request body
+
+  const { input } = def;
+  const { blobLimit } = options;
+
+  const allowedEncodings = parseDefEncoding(input);
+  const checkEncoding = allowedEncodings.includes(ENCODING_ANY)
+    ? undefined // No need to check
+    : (encoding: string) => allowedEncodings.includes(encoding);
+
+  const bodyParser = createBodyParser(input.encoding, options);
+
+  return async (req) => {
+    if (getBodyPresence(req) === "missing") {
+      throw new InvalidRequestError(
+        `A request body is expected but none was provided`,
+      );
     }
 
-    const contentType = req.headers.get("content-type");
-    let body: unknown;
-
-    // Clone the request to avoid consuming the body multiple times
-    const clonedReq = req.clone();
-
-    if (contentType?.includes("application/json")) {
-      body = await clonedReq.json();
-    } else if (contentType?.includes("text/")) {
-      body = await clonedReq.text();
-    } else {
-      const arrayBuffer = await clonedReq.arrayBuffer();
-      body = new Uint8Array(arrayBuffer);
+    const reqEncoding = parseReqEncoding(req);
+    if (checkEncoding && !checkEncoding(reqEncoding)) {
+      throw new InvalidRequestError(
+        `Wrong request encoding (Content-Type): ${reqEncoding}`,
+      );
     }
 
-    return await validateInput(nsid, def, body, contentType, lexicons);
+    let parsedBody: unknown = undefined;
+
+    // Parse body with size limits
+    if (bodyParser) {
+      try {
+        parsedBody = await bodyParser(req, reqEncoding);
+      } catch (e) {
+        throw new InvalidRequestError(
+          e instanceof Error ? e.message : String(e),
+        );
+      }
+    }
+
+    // Validate against schema if defined
+    if (input.schema) {
+      try {
+        const lexBody = parsedBody ? jsonToLex(parsedBody) : parsedBody;
+        parsedBody = lexicons.assertValidXrpcInput(nsid, lexBody);
+      } catch (e) {
+        throw new InvalidRequestError(
+          e instanceof Error ? e.message : String(e),
+        );
+      }
+    }
+
+    // if we parsed the body for schema validation, use that
+    // otherwise, we pass along a decoded readable stream
+    const body = parsedBody !== undefined
+      ? parsedBody
+      : decodeBodyStream(req, blobLimit);
+
+    return { encoding: reqEncoding, body };
   };
 }
 

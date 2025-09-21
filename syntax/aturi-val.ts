@@ -16,7 +16,7 @@ import { ensureValidRecordKey } from "./recordkey.ts";
 //          [a-zA-Z0-9._~:@!$&'\(\)*+,;=-]
 //      - rkey must have at least one char
 //      - regardless of path component, a fragment can follow  as "#" and then a JSON pointer (RFC-6901)
-export const ensureValidAtUri = (uri: string) => {
+export const ensureValidAtUri = (uri: string): void => {
   // JSON pointer is pretty different from rest of URI, so split that out first
   const uriParts = uri.split("#");
   if (uriParts.length > 2) {

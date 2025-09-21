@@ -1,0 +1,15 @@
+{
+  "name": "@atp/xrpc",
+  "version": "0.1.0-alpha.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "@atproto/lexicon": "npm:@atproto/lexicon@^0.5.1",
+    "zod": "jsr:@zod/zod@^4.1.11"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-explicit-any"]
+    }
+  }
+}

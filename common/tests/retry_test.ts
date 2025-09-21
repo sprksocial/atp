@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "jsr:@std/assert";
+import { assertEquals, assertRejects } from "@std/assert";
 import { retry } from "../mod.ts";
 
 Deno.test("retries until max retries", async () => {
