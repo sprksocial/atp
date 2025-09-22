@@ -67,9 +67,9 @@ const indexTs = (
 ) =>
   gen(project, "/index.ts", (file) => {
     const extension = options?.useJsExtension ? ".js" : ".ts";
-    //= import { XrpcClient, type FetchHandler, type FetchHandlerOptions } from '@atproto/xrpc'
+    //= import { XrpcClient, type FetchHandler, type FetchHandlerOptions } from '@atp/xrpc'
     const xrpcImport = file.addImportDeclaration({
-      moduleSpecifier: "@atproto/xrpc",
+      moduleSpecifier: "@atp/xrpc",
     });
     xrpcImport.addNamedImports([
       { name: "XrpcClient" },
@@ -487,9 +487,9 @@ const lexiconTs = (
         main?.type === "subscription" ||
         main?.type === "procedure"
       ) {
-        //= import {HeadersMap, XRPCError} from '@atproto/xrpc'
+        //= import {HeadersMap, XRPCError} from '@atp/xrpc'
         const xrpcImport = file.addImportDeclaration({
-          moduleSpecifier: "@atproto/xrpc",
+          moduleSpecifier: "@atp/xrpc",
         });
         xrpcImport.addNamedImports([
           { name: "HeadersMap" },

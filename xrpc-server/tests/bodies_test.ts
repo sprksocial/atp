@@ -638,7 +638,7 @@ Deno.test({
         method: "post",
         headers: { "Content-Type": "" },
         body: new Uint8Array(randomBytes(BLOB_LIMIT)),
-        // @ts-ignore see note in @atproto/xrpc/client.ts
+        // @ts-ignore see note in @atp/xrpc/client.ts
         duplex: "half",
       });
       const resBody = await res.json();
