@@ -1,4 +1,4 @@
-import type { LexiconDoc } from "@atproto/lexicon";
+import type { LexiconDoc } from "@atp/lexicon";
 import { XrpcClient } from "@atp/xrpc";
 import * as xrpcServer from "../mod.ts";
 import { closeServer, createServer } from "./_util.ts";

@@ -1,4 +1,4 @@
-import type { LexiconDoc, LexUserType } from "@atproto/lexicon";
+import type { LexiconDoc, LexUserType } from "@atp/lexicon";
 import { NSID } from "@atp/syntax";
 
 export interface CodeGenOptions {

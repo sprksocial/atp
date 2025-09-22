@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { ValidationError } from "@atproto/lexicon";
+import type { ValidationError } from "@atp/lexicon";
 
 export type QueryParams = Record<string, unknown>;
 export type HeadersMap = Record<string, string | undefined>;

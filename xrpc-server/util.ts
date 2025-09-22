@@ -1,10 +1,11 @@
-import type {
-  Lexicons,
-  LexXrpcProcedure,
-  LexXrpcQuery,
-  LexXrpcSubscription,
-} from "@atproto/lexicon";
-import { jsonToLex } from "@atproto/lexicon";
+import {
+  jsonToLex,
+  type Lexicons,
+  type LexXrpcBody,
+  type LexXrpcProcedure,
+  type LexXrpcQuery,
+  type LexXrpcSubscription,
+} from "@atp/lexicon";
 import {
   InternalServerError,
   InvalidRequestError,
@@ -20,7 +21,6 @@ import type {
   RouteOptions,
 } from "./types.ts";
 import type { Context, HonoRequest } from "hono";
-import type { LexXrpcBody } from "@atproto/lexicon";
 import { createDecoders, MaxSizeChecker } from "@atp/common";
 
 function assert(condition: unknown, message?: string): asserts condition {

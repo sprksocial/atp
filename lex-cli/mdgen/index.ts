@@ -1,6 +1,6 @@
 import { readFileSync } from "@std/fs/unstable-read-file";
 import { writeFileSync } from "@std/fs/unstable-write-file";
-import type { LexiconDoc } from "@atproto/lexicon";
+import type { LexiconDoc } from "@atp/lexicon";
 
 const INSERT_START = [
   "<!-- START lex generated content. Please keep comment here to allow auto update -->",

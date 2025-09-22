@@ -22,7 +22,7 @@
  * @example Basic server setup with a simple endpoint
  * ```ts
  * import { createServer } from "jsr:@atp/xrpc-server";
- * import type { LexiconDoc } from "@atproto/lexicon";
+ * import type { LexiconDoc } from "@atp/lexicon";
  *
  * const lexicons: LexiconDoc[] = [{
  *   lexicon: 1,

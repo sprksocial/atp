@@ -10,15 +10,14 @@ import type {
   LexObject,
   LexPrimitive,
   LexToken,
-} from "@atproto/lexicon";
+} from "@atp/lexicon";
 import {
   type CodeGenOptions,
   toCamelCase,
   toScreamingSnakeCase,
   toTitleCase,
 } from "./util.ts";
-import type { LexiconDoc } from "@atproto/lexicon";
-import type { LexUserType } from "@atproto/lexicon";
+import type { LexiconDoc, LexUserType } from "@atp/lexicon";
 
 interface Commentable {
   addJsDoc: ({ description }: { description: string }) => JSDoc;
@@ -191,11 +190,11 @@ export function genCommonImports(
     def.type === "object"
   );
 
-  //= import {BlobRef} from '@atproto/lexicon'
+  //= import {BlobRef} from '@atp/lexicon'
   if (needsBlobRef) {
     file
       .addImportDeclaration({
-        moduleSpecifier: "@atproto/lexicon",
+        moduleSpecifier: "@atp/lexicon",
       })
       .addNamedImports([{ name: "BlobRef" }]);
   }

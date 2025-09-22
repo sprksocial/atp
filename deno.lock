@@ -43,9 +43,6 @@
     "jsr:@zod/zod@^4.1.11": "4.1.11",
     "jsr:@zod/zod@^4.1.5": "4.1.5",
     "npm:@atproto/crypto@~0.4.4": "0.4.4",
-    "npm:@atproto/lexicon@~0.4.11": "0.4.14",
-    "npm:@atproto/lexicon@~0.4.14": "0.4.14",
-    "npm:@atproto/lexicon@~0.5.1": "0.5.1",
     "npm:@ipld/dag-cbor@^9.2.5": "9.2.5",
     "npm:@types/node@*": "24.2.0",
     "npm:cbor-x@*": "1.6.0",
@@ -59,7 +56,8 @@
     "npm:rate-limiter-flexible@^2.4.1": "2.4.2",
     "npm:uint8arrays@3.0.0": "3.0.0",
     "npm:uint8arrays@^5.1.0": "5.1.0",
-    "npm:ws@^8.12.0": "8.18.3"
+    "npm:ws@^8.12.0": "8.18.3",
+    "npm:zod@^4.1.11": "4.1.11"
   },
   "jsr": {
     "@cliffy/ansi@1.0.0-rc.8": {
@@ -198,15 +196,6 @@
     }
   },
   "npm": {
-    "@atproto/common-web@0.4.3": {
-      "integrity": "sha512-nRDINmSe4VycJzPo6fP/hEltBcULFxt9Kw7fQk6405FyAWZiTluYHlXOnU7GkQfeUK44OENG1qFTBcmCJ7e8pg==",
-      "dependencies": [
-        "graphemer",
-        "multiformats@9.9.0",
-        "uint8arrays@3.0.0",
-        "zod"
-      ]
-    },
     "@atproto/crypto@0.4.4": {
       "integrity": "sha512-Yq9+crJ7WQl7sxStVpHgie5Z51R05etaK9DLWYG/7bR5T4bhdcIgF6IfklLShtZwLYdVVj+K15s0BqW9a8PSDA==",
       "dependencies": [
@@ -214,29 +203,6 @@
         "@noble/hashes",
         "uint8arrays@3.0.0"
       ]
-    },
-    "@atproto/lexicon@0.4.14": {
-      "integrity": "sha512-jiKpmH1QER3Gvc7JVY5brwrfo+etFoe57tKPQX/SmPwjvUsFnJAow5xLIryuBaJgFAhnTZViXKs41t//pahGHQ==",
-      "dependencies": [
-        "@atproto/common-web",
-        "@atproto/syntax",
-        "iso-datestring-validator",
-        "multiformats@9.9.0",
-        "zod"
-      ]
-    },
-    "@atproto/lexicon@0.5.1": {
-      "integrity": "sha512-y8AEtYmfgVl4fqFxqXAeGvhesiGkxiy3CWoJIfsFDDdTlZUC8DFnZrYhcqkIop3OlCkkljvpSJi1hbeC1tbi8A==",
-      "dependencies": [
-        "@atproto/common-web",
-        "@atproto/syntax",
-        "iso-datestring-validator",
-        "multiformats@9.9.0",
-        "zod"
-      ]
-    },
-    "@atproto/syntax@0.4.1": {
-      "integrity": "sha512-CJdImtLAiFO+0z3BWTtxwk6aY5w4t8orHTMVJgkf++QRJWTxPbIFko/0hrkADB7n2EruDxDSeAgfUGehpH6ngw=="
     },
     "@cbor-extract/cbor-extract-darwin-arm64@2.2.0": {
       "integrity": "sha512-P7swiOAdF7aSi0H+tHtHtr6zrpF3aAq/W9FXx5HektRvLTM2O89xCyXF3pk7pLc7QpaY7AoaE8UowVf9QBdh3w==",
@@ -364,9 +330,6 @@
     "get-port@7.1.0": {
       "integrity": "sha512-QB9NKEeDg3xxVwCCwJQ9+xycaz6pBB6iQ76wiWMl1927n0Kir6alPiP+yuiICLLU4jpMe08dXfpebuQppFA2zw=="
     },
-    "graphemer@1.4.0": {
-      "integrity": "sha512-EtKwoO6kxCL9WO5xipiHTZlSzBm7WLT627TqC/uVRd0HKmq8NXyebnNYxDoBi7wt8eTWrUrKXCOVaFq9x1kgag=="
-    },
     "hash.js@1.1.7": {
       "integrity": "sha512-taOaskGt4z4SOANNseOviYDvjEJinIkRgmp7LbKP2YTTmVxWBl87s/uzK9r+44BclBSp2X7K1hqeNfz9JbBeXA==",
       "dependencies": [
@@ -394,9 +357,6 @@
     },
     "inherits@2.0.4": {
       "integrity": "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ=="
-    },
-    "iso-datestring-validator@2.2.2": {
-      "integrity": "sha512-yLEMkBbLZTlVQqOnQ4FiMujR6T4DEcCb1xizmvXS+OxuhwcbtynoosRzdMA69zZCShCNAbi+gJ71FxZBBXx1SA=="
     },
     "key-encoder@2.0.3": {
       "integrity": "sha512-fgBtpAGIr/Fy5/+ZLQZIPPhsZEcbSlYu/Wu96tNDFNSjSACw5lEIOFeaVdQ/iwrb8oxjlWi6wmWdH76hV6GZjg==",
@@ -466,8 +426,8 @@
     "ws@8.18.3": {
       "integrity": "sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg=="
     },
-    "zod@3.25.76": {
-      "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
+    "zod@4.1.11": {
+      "integrity": "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="
     }
   },
   "remote": {
@@ -508,8 +468,14 @@
           "jsr:@std/path@^1.1.2",
           "jsr:@ts-morph/ts-morph@26",
           "jsr:@zod/zod@^4.1.5",
-          "npm:@atproto/lexicon@~0.4.14",
           "npm:prettier@^3.6.2"
+        ]
+      },
+      "lexicon": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.14",
+          "npm:multiformats@^13.4.1",
+          "npm:zod@^4.1.11"
         ]
       },
       "syntax": {
@@ -519,8 +485,7 @@
       },
       "xrpc": {
         "dependencies": [
-          "jsr:@zod/zod@^4.1.11",
-          "npm:@atproto/lexicon@~0.5.1"
+          "jsr:@zod/zod@^4.1.11"
         ]
       },
       "xrpc-server": {
@@ -531,7 +496,6 @@
           "jsr:@std/encoding@^1.0.10",
           "jsr:@zod/zod@^4.0.17",
           "npm:@atproto/crypto@~0.4.4",
-          "npm:@atproto/lexicon@~0.4.11",
           "npm:get-port@^7.1.0",
           "npm:http-errors@2",
           "npm:key-encoder@^2.0.3",

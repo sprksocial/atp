@@ -3,7 +3,7 @@ import {
   type LexXrpcProcedure,
   type LexXrpcQuery,
   stringifyLex,
-} from "@atproto/lexicon";
+} from "@atp/lexicon";
 import {
   type CallOptions,
   type ErrorResponseBody,

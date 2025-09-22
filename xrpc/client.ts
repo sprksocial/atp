@@ -1,4 +1,4 @@
-import { type LexiconDoc, Lexicons, ValidationError } from "@atproto/lexicon";
+import { type LexiconDoc, Lexicons, ValidationError } from "@atp/lexicon";
 import {
   buildFetchHandler,
   type FetchHandler,

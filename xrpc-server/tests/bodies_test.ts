@@ -1,6 +1,6 @@
 import { cidForCbor } from "@atp/common";
 import { randomBytes } from "@atproto/crypto";
-import type { LexiconDoc } from "@atproto/lexicon";
+import type { LexiconDoc } from "@atp/lexicon";
 import { ResponseType, XrpcClient, XRPCError } from "@atp/xrpc";
 import * as xrpcServer from "../mod.ts";
 import { logger } from "../logger.ts";

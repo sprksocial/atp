@@ -4,7 +4,7 @@ import {
   type SourceFile,
   VariableDeclarationKind,
 } from "ts-morph";
-import { type LexiconDoc, Lexicons, type LexRecord } from "@atproto/lexicon";
+import { type LexiconDoc, Lexicons, type LexRecord } from "@atp/lexicon";
 import { NSID } from "@atp/syntax";
 import type { GeneratedAPI } from "../types.ts";
 import { gen, lexiconsTs, utilTs } from "./common.ts";

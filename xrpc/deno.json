@@ -4,7 +4,6 @@
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
-    "@atproto/lexicon": "npm:@atproto/lexicon@^0.5.1",
     "zod": "jsr:@zod/zod@^4.1.11"
   },
   "lint": {

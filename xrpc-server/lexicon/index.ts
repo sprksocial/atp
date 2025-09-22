@@ -1,7 +1,6 @@
 import { Hono } from "hono";
-import { Lexicons } from "@atproto/lexicon";
+import { type LexiconDoc, Lexicons } from "@atp/lexicon";
 import type { Context, Next } from "hono";
-import type { LexiconDoc } from "@atproto/lexicon";
 
 export function createServer(lexicons?: LexiconDoc[]) {
   const routes = new Hono();

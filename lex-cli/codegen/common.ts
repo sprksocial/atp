@@ -3,7 +3,7 @@ import {
   type SourceFile,
   VariableDeclarationKind,
 } from "ts-morph";
-import type { LexiconDoc } from "@atproto/lexicon";
+import type { LexiconDoc } from "@atp/lexicon";
 import type { GeneratedFile } from "../types.ts";
 import type { CodeGenOptions } from "./util.ts";
 import { format, type Options as PrettierOptions } from "prettier";
@@ -21,7 +21,7 @@ export const utilTs = (
 ) =>
   gen(project, "/util.ts", (file) => {
     file.replaceWithText(`
-import { type ValidationResult } from '@atproto/lexicon'
+import { type ValidationResult } from '@atp/lexicon'
 
 export type OmitKey<T, K extends keyof T> = {
   [K2 in keyof T as K2 extends K ? never : K2]: T[K2]
@@ -152,10 +152,10 @@ export const lexiconsTs = (
         .join("");
     };
 
-    //= import { type LexiconDoc, Lexicons } from '@atproto/lexicon'
+    //= import { type LexiconDoc, Lexicons } from '@atp/lexicon'
     file
       .addImportDeclaration({
-        moduleSpecifier: "@atproto/lexicon",
+        moduleSpecifier: "@atp/lexicon",
       })
       .addNamedImports([
         { name: "LexiconDoc", isTypeOnly: true },

@@ -6,7 +6,7 @@ import {
   type LexXrpcProcedure,
   type LexXrpcQuery,
   type LexXrpcSubscription,
-} from "@atproto/lexicon";
+} from "@atp/lexicon";
 import {
   excludeErrorResult,
   InternalServerError,

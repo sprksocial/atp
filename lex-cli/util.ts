@@ -8,7 +8,7 @@ import { removeSync } from "@std/fs/unstable-remove";
 import { readDirSync } from "@std/fs/unstable-read-dir";
 import { colors } from "@cliffy/ansi/colors";
 import { ZodError } from "zod";
-import { type LexiconDoc, parseLexiconDoc } from "@atproto/lexicon";
+import { type LexiconDoc, parseLexiconDoc } from "@atp/lexicon";
 import type { FileDiff, GeneratedAPI } from "./types.ts";
 
 type RecursiveZodError = {

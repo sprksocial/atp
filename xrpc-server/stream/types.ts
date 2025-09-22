@@ -33,10 +33,10 @@ export type MessageFrameHeader = {
   t?: string;
 };
 
-export const messageFrameHeader = z.object({
+export const messageFrameHeader = z.strictObject({
   op: z.literal(FrameType.Message), // Frame op
   t: z.string().optional(), // Message body type discriminator
-}).strict() as z.ZodType<MessageFrameHeader>;
+}) as z.ZodType<MessageFrameHeader>;
 
 /**
  * Header for error frames.
@@ -47,9 +47,9 @@ export type ErrorFrameHeader = {
   op: FrameType.Error;
 };
 
-export const errorFrameHeader = z.object({
+export const errorFrameHeader = z.strictObject({
   op: z.literal(FrameType.Error),
-}).strict() as z.ZodType<ErrorFrameHeader>;
+}) as z.ZodType<ErrorFrameHeader>;
 
 /**
  * Base type for error frame bodies.
@@ -74,10 +74,10 @@ export type ErrorFrameBody<T extends string = string> = {
   message?: string;
 };
 
-export const errorFrameBody = z.object({
+export const errorFrameBody = z.strictObject({
   error: z.string(), // Error code
   message: z.string().optional(), // Error message
-}).strict() as z.ZodType<ErrorFrameBodyBase>;
+}) as z.ZodType<ErrorFrameBodyBase>;
 
 /**
  * Union type for all frame headers.
