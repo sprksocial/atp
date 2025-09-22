@@ -27,7 +27,9 @@ const command = new Command()
       console.log("This will write the following files:");
       printFileDiff(diff);
       applyFileDiff(diff);
-      await formatGeneratedFiles(outdir);
+      if (typeof Deno !== "undefined") {
+        await formatGeneratedFiles(outdir);
+      }
       console.log("API generated.");
     },
   );

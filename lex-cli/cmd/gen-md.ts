@@ -1,6 +1,9 @@
 import { Command } from "@cliffy/command";
 import { readAllLexicons } from "../util.ts";
 import * as mdGen from "../mdgen/index.ts";
+import process from "node:process";
+
+const isDeno = typeof Deno !== "undefined";
 
 const command = new Command()
   .description("Generate markdown documentation")
@@ -12,7 +15,11 @@ const command = new Command()
         console.error(
           "Must supply the path to a .md file as the first parameter",
         );
-        Deno.exit(1);
+        if (isDeno) {
+          Deno.exit(1);
+        } else {
+          process.exit(1);
+        }
       }
       const lexicons = readAllLexicons(input);
       await mdGen.process(output, lexicons);

@@ -7,19 +7,30 @@ import {
   type Sink,
 } from "@logtape/logtape";
 import { getFileSink } from "@logtape/file";
+import process from "node:process";
 
-const allSystemsEnabled = !Deno.env.get("LOG_SYSTEMS");
-const enabledSystems = (Deno.env.get("LOG_SYSTEMS") || "")
+// Runtime detection for Deno vs Node.js
+const isDeno = typeof Deno !== "undefined";
+const getEnv = (key: string): string | undefined => {
+  if (isDeno) {
+    return Deno.env.get(key);
+  } else {
+    return process.env[key];
+  }
+};
+
+const allSystemsEnabled = !getEnv("LOG_SYSTEMS");
+const enabledSystems = (getEnv("LOG_SYSTEMS") || "")
   .replace(",", " ")
   .split(" ")
   .filter(Boolean);
 
-const enabledEnv = Deno.env.get("LOG_ENABLED");
+const enabledEnv = getEnv("LOG_ENABLED");
 const enabled = enabledEnv === "true" || enabledEnv === "t" ||
   enabledEnv === "1";
 
-const level = (Deno.env.get("LOG_LEVEL") || "info") as LogLevel;
-const logDestination = Deno.env.get("LOG_DESTINATION");
+const level = (getEnv("LOG_LEVEL") || "info") as LogLevel;
+const logDestination = getEnv("LOG_DESTINATION");
 
 // Initialize LogTape configuration
 let configured = false;

@@ -6,6 +6,16 @@ import {
 import type { LexiconDoc } from "@atproto/lexicon";
 import type { GeneratedFile } from "../types.ts";
 import type { CodeGenOptions } from "./util.ts";
+import { format, type Options as PrettierOptions } from "prettier";
+import * as fmt from "deno_fmt";
+
+const PRETTIER_OPTS: PrettierOptions = {
+  parser: "typescript",
+  tabWidth: 2,
+  semi: false,
+  singleQuote: true,
+  trailingComma: "all",
+};
 
 export const utilTs = (
   project: Project,
@@ -276,7 +286,12 @@ export async function gen(
   const file = project.createSourceFile(path);
   gen(file);
   await file.save(); // Save in the "in memory" file system
-  const content = `${banner()}${file.getFullText()}`;
+  let content = `${banner()}${file.getFullText()}`;
+  if (!(typeof Deno !== "undefined")) {
+    content = await format(content, PRETTIER_OPTS);
+  } else {
+    content = await fmt.format(content);
+  }
 
   return { path, content };
 }

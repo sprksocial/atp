@@ -2,6 +2,9 @@
 
 import { Command } from "@cliffy/command";
 import { genApi, genMd, genServer, genTsObj } from "./cmd/index.ts";
+import process from "node:process";
+
+const isDeno = typeof Deno !== "undefined";
 
 await new Command()
   .name("lex-cli")
@@ -10,4 +13,4 @@ await new Command()
   .command("gen-md", genMd)
   .command("gen-server", genServer)
   .command("gen-ts-obj", genTsObj)
-  .parse(Deno.args);
+  .parse(isDeno ? Deno.args : process.argv.slice(2));
