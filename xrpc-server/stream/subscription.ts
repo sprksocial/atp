@@ -6,8 +6,8 @@ import type { WebSocketOptions } from "./types.ts";
 /**
  * Represents a message body in a subscription stream.
  * @interface
- * @property {string} [$type] - Optional type identifier for the message
- * @property {unknown} [key: string] - Additional message properties
+ * @property $type - Optional type identifier for the message
+ * @property [key] - Additional message properties
  */
 interface MessageBody {
   $type?: string;
@@ -21,19 +21,6 @@ interface MessageBody {
  * @template T - The type of messages yielded by the subscription
  */
 export class Subscription<T = unknown> {
-  /**
-   * Creates a new subscription instance.
-   * @constructor
-   * @param {Object} opts - Subscription configuration options
-   * @param {string} opts.service - The base URL of the XRPC service
-   * @param {string} opts.method - The XRPC method to subscribe to
-   * @param {number} [opts.maxReconnectSeconds] - Maximum time in seconds between reconnection attempts
-   * @param {number} [opts.heartbeatIntervalMs] - Interval in milliseconds for sending heartbeat messages
-   * @param {AbortSignal} [opts.signal] - Signal for aborting the subscription
-   * @param {Function} opts.validate - Function to validate and transform incoming messages
-   * @param {Function} [opts.onReconnectError] - Callback for handling reconnection errors
-   * @param {Function} [opts.getParams] - Function to get query parameters for the subscription URL
-   */
   constructor(
     public opts: WebSocketOptions & {
       service: string;
@@ -54,11 +41,6 @@ export class Subscription<T = unknown> {
     },
   ) {}
 
-  /**
-   * Implements the AsyncIterator protocol for the subscription.
-   * Allows using the subscription in a for-await-of loop.
-   * @returns {AsyncGenerator<T>} An async generator that yields validated messages
-   */
   async *[Symbol.asyncIterator](): AsyncGenerator<T> {
     const ws = new WebSocketKeepAlive({
       ...this.opts,
@@ -88,11 +70,6 @@ export class Subscription<T = unknown> {
 
 export default Subscription;
 
-/**
- * Encodes an object of parameters into a URL query string.
- * @param {Record<string, unknown>} obj - The parameters to encode
- * @returns {string} The encoded query string
- */
 function encodeQueryParams(obj: Record<string, unknown>): string {
   const params = new URLSearchParams();
   Object.entries(obj).forEach(([key, value]) => {
@@ -106,13 +83,6 @@ function encodeQueryParams(obj: Record<string, unknown>): string {
   return params.toString();
 }
 
-/**
- * Encodes a single query parameter value into a string or array of strings.
- * Handles various types including strings, numbers, booleans, dates, and arrays.
- * @param {unknown} value - The value to encode
- * @returns {string | string[]} The encoded parameter value(s)
- * @throws {Error} If the value cannot be encoded as a query parameter
- */
 function encodeQueryParam(value: unknown): string | string[] {
   if (typeof value === "string") {
     return value;

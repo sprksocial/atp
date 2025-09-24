@@ -88,9 +88,6 @@ export class XRPCError extends Error {
   get statusCode(): number {
     const { type } = this;
 
-    // Fool-proofing. `new XRPCError(123.5 as number, '')` does not generate a TypeScript error.
-    // Because of this, we can end-up with any numeric value instead of an actual `ResponseType`.
-    // For legacy reasons, the `type` argument is not checked in the constructor, so we check it here.
     if (type < 400 || type >= 600 || !Number.isFinite(type)) {
       return 500;
     }
@@ -162,12 +159,6 @@ export class XRPCError extends Error {
  * Used when the client request is malformed or invalid.
  */
 export class InvalidRequestError extends XRPCError {
-  /**
-   * Creates a new InvalidRequestError.
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options
-   */
   constructor(
     errorMessage?: string,
     customErrorName?: string,
@@ -189,12 +180,6 @@ export class InvalidRequestError extends XRPCError {
  * Used when the request requires authentication but none was provided or it was invalid.
  */
 export class AuthRequiredError extends XRPCError {
-  /**
-   * Creates a new AuthRequiredError.
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options
-   */
   constructor(
     errorMessage?: string,
     customErrorName?: string,
@@ -221,12 +206,6 @@ export class AuthRequiredError extends XRPCError {
  * Used when the client is authenticated but doesn't have permission to access the resource.
  */
 export class ForbiddenError extends XRPCError {
-  /**
-   * Creates a new ForbiddenError.
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options
-   */
   constructor(
     errorMessage?: string,
     customErrorName?: string,
@@ -247,12 +226,6 @@ export class ForbiddenError extends XRPCError {
  * Used when an unexpected error occurs on the server side.
  */
 export class InternalServerError extends XRPCError {
-  /**
-   * Creates a new InternalServerError.
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options
-   */
   constructor(
     errorMessage?: string,
     customErrorName?: string,
@@ -279,12 +252,6 @@ export class InternalServerError extends XRPCError {
  * Used when a dependent service fails or returns an invalid response.
  */
 export class UpstreamFailureError extends XRPCError {
-  /**
-   * Creates a new UpstreamFailureError.
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options
-   */
   constructor(
     errorMessage?: string,
     customErrorName?: string,
@@ -306,12 +273,6 @@ export class UpstreamFailureError extends XRPCError {
  * Used when the server temporarily cannot handle the request due to resource constraints.
  */
 export class NotEnoughResourcesError extends XRPCError {
-  /**
-   * Creates a new NotEnoughResourcesError.
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options
-   */
   constructor(
     errorMessage?: string,
     customErrorName?: string,
@@ -338,12 +299,6 @@ export class NotEnoughResourcesError extends XRPCError {
  * Used when a dependent service times out or takes too long to respond.
  */
 export class UpstreamTimeoutError extends XRPCError {
-  /**
-   * Creates a new UpstreamTimeoutError.
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options
-   */
   constructor(
     errorMessage?: string,
     customErrorName?: string,
@@ -365,12 +320,6 @@ export class UpstreamTimeoutError extends XRPCError {
  * Used when the requested XRPC method is not implemented by the server.
  */
 export class MethodNotImplementedError extends XRPCError {
-  /**
-   * Creates a new MethodNotImplementedError.
-   * @param errorMessage - Optional error message
-   * @param customErrorName - Optional custom error name
-   * @param options - Optional error options
-   */
   constructor(
     errorMessage?: string,
     customErrorName?: string,
@@ -392,12 +341,6 @@ export class MethodNotImplementedError extends XRPCError {
   }
 }
 
-/**
- * Converts an upstream XRPC client error into a downstream ResponseType.
- * Maps client error status codes to appropriate server response types.
- * @param error The upstream XRPC client error
- * @returns Object containing error details and mapped response type
- */
 function mapFromClientError(error: XRPCClientError): {
   error: string;
   message: string;

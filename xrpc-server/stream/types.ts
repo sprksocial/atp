@@ -14,8 +14,8 @@ export enum FrameType {
 /**
  * WebSocket connection options.
  * @interface
- * @property {Record<string, string>} [headers] - Additional headers for the WebSocket connection
- * @property {string[]} [protocols] - WebSocket subprotocols to use
+ * @property [headers] - Additional headers for the WebSocket connection
+ * @property [protocols] - WebSocket subprotocols to use
  */
 export interface WebSocketOptions {
   headers?: Record<string, string>;
@@ -25,8 +25,8 @@ export interface WebSocketOptions {
 /**
  * Header for message frames.
  * @interface
- * @property {FrameType.Message} op - Operation type, always Message
- * @property {string} [t] - Optional message type discriminator
+ * @property op - Operation type, always Message
+ * @property [t] - Optional message type discriminator
  */
 export type MessageFrameHeader = {
   op: FrameType.Message;
@@ -41,7 +41,7 @@ export const messageFrameHeader = z.strictObject({
 /**
  * Header for error frames.
  * @interface
- * @property {FrameType.Error} op - Operation type, always Error
+ * @property op - Operation type, always Error
  */
 export type ErrorFrameHeader = {
   op: FrameType.Error;
@@ -54,8 +54,8 @@ export const errorFrameHeader = z.strictObject({
 /**
  * Base type for error frame bodies.
  * @interface
- * @property {string} error - Error code or identifier
- * @property {string} [message] - Optional error message
+ * @property error - Error code or identifier
+ * @property [message] - Optional error message
  */
 export type ErrorFrameBodyBase = {
   error: string;
@@ -66,8 +66,8 @@ export type ErrorFrameBodyBase = {
  * Generic error frame body with typed error codes.
  * @template T - The type of error codes allowed
  * @interface
- * @property {T} error - Typed error code
- * @property {string} [message] - Optional error message
+ * @property error - Typed error code
+ * @property [message] - Optional error message
  */
 export type ErrorFrameBody<T extends string = string> = {
   error: T;
@@ -94,8 +94,8 @@ export const frameHeader = z.union([
  * Error class for handling WebSocket disconnections.
  * @class
  * @extends Error
- * @property {CloseCode} wsCode - WebSocket close code
- * @property {string} [xrpcCode] - XRPC-specific error code
+ * @property wsCode - WebSocket close code
+ * @property [xrpcCode] - XRPC-specific error code
  */
 export class DisconnectError extends Error {
   constructor(
@@ -106,11 +106,6 @@ export class DisconnectError extends Error {
   }
 }
 
-/**
- * WebSocket close codes as defined in RFC 6455.
- * @see https://www.rfc-editor.org/rfc/rfc6455#section-7.4.1
- * @enum {number}
- */
 export enum CloseCode {
   /** Normal closure, meaning the purpose for which the connection was established has been fulfilled */
   Normal = 1000,

@@ -58,10 +58,9 @@ import { assert } from "@std/assert";
 import type { CatchallHandler, RouteOptions } from "./types.ts";
 
 /**
- * Creates a new XRPC server instance.
+ * Creates a new XRPC server instance
  * @param lexicons - Optional array of lexicon documents to initialize the server with
  * @param options - Optional server configuration options
- * @returns A new Server instance
  */
 export function createServer(
   lexicons?: LexiconDoc[],
@@ -104,11 +103,9 @@ export class Server {
       this.addLexicons(lexicons);
     }
 
-    // Add global middleware
     this.app.use("*", this.catchall);
     this.app.onError(createErrorHandler(opts));
 
-    // Add 404 handler to catch unmatched XRPC routes
     this.app.notFound((c) => {
       const nsid = parseUrlNsid(c.req.url);
       if (nsid) {
@@ -130,7 +127,6 @@ export class Server {
           throw error;
         }
       }
-      // For non-XRPC routes, return standard 404
       return c.text("Not Found", 404);
     });
 
@@ -156,7 +152,6 @@ export class Server {
   }
 
   // handlers
-  // =
 
   /**
    * Registers a method handler for the specified NSID.
@@ -223,7 +218,6 @@ export class Server {
   }
 
   // lexicon
-  // =
 
   /**
    * Adds a lexicon document to the server's schema registry.
@@ -244,7 +238,6 @@ export class Server {
   }
 
   // routes
-  // =
 
   /**
    * Adds an HTTP route for the specified method.
@@ -270,7 +263,6 @@ export class Server {
 
   /**
    * Catchall handler that processes all XRPC routes and applies global rate limiting.
-   * Only applies to routes starting with "/xrpc/".
    */
   catchall: CatchallHandler = async (c, next) => {
     if (!c.req.url.includes("/xrpc/")) {
@@ -510,15 +502,6 @@ export class Server {
     });
   }
 
-  /**
-   * Creates a route-specific rate limiter based on the method configuration.
-   * @template A - The authentication type
-   * @template C - The handler context type
-   * @param nsid - The namespace identifier for the method
-   * @param config - The method configuration containing rate limit options
-   * @returns A route rate limiter or undefined if no rate limiting is configured
-   * @private
-   */
   private createRouteRateLimiter<A extends Auth, C extends HandlerContext>(
     nsid: string,
     config: MethodConfig<A>,
@@ -590,11 +573,6 @@ export class Server {
   }
 }
 
-/**
- * Creates an error handler function for the Hono application.
- * @param opts - Server options containing optional error parser
- * @returns An error handler function that converts errors to XRPC error responses
- */
 function createErrorHandler(
   opts: Options,
 ): (err: Error, c: Context) => Response {
@@ -612,12 +590,6 @@ function createErrorHandler(
   };
 }
 
-/**
- * Builds rate limiter options from a server rate limit description.
- * @template C - The handler context type
- * @param options - The server rate limit description
- * @returns Rate limiter options with defaults applied
- */
 function buildRateLimiterOptions<C extends HandlerContext = HandlerContext>({
   name,
   calcKey = defaultKey,
@@ -627,21 +599,8 @@ function buildRateLimiterOptions<C extends HandlerContext = HandlerContext>({
   return { ...desc, calcKey, calcPoints, keyPrefix: `rl-${name}` };
 }
 
-/**
- * Default function for calculating rate limit points consumed per request.
- * Always returns 1 point per request.
- */
 const defaultPoints: CalcPointsFn = (): number => 1;
 
-/**
- * Default function for calculating rate limit keys based on client IP address.
- * Extracts IP from X-Forwarded-For, X-Real-IP headers, or falls back to "unknown".
- *
- * @note When using a proxy, ensure headers are getting forwarded correctly:
- * `app.set('trust proxy', true)`
- *
- * @see {@link https://expressjs.com/en/guide/behind-proxies.html}
- */
 const defaultKey: CalcKeyFn<HandlerContext> = ({ req }) => {
   const forwarded = req.headers.get("x-forwarded-for");
   const ip = forwarded

@@ -121,6 +121,9 @@ export class StreamConnection {
 
   /**
    * Executes the streaming handler and processes yielded data.
+   * @param params - The request's parameters.
+   * @param auth - The request's authentication state.
+   * @param req - The raw request object.
    */
   private async executeHandler(
     params: Record<string, string>,

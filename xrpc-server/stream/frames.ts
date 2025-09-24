@@ -44,7 +44,6 @@ export abstract class Frame {
 
   /**
    * Type guard to check if this frame is a MessageFrame.
-   * @returns {boolean} True if this is a MessageFrame
    */
   isMessage(): this is MessageFrame<unknown> {
     return this.op === FrameType.Message;
@@ -52,7 +51,6 @@ export abstract class Frame {
 
   /**
    * Type guard to check if this frame is an ErrorFrame.
-   * @returns {boolean} True if this is an ErrorFrame
    */
   isError(): this is ErrorFrame {
     return this.op === FrameType.Error;
@@ -62,20 +60,18 @@ export abstract class Frame {
    * Deserializes a frame from its binary representation.
    * Validates the frame structure and creates the appropriate frame type.
    *
-   * @param {Uint8Array} bytes - The serialized frame bytes
-   * @returns {Frame} The deserialized frame (either MessageFrame or ErrorFrame)
-   * @throws {Error} If the frame format is invalid or unknown
+   * @param bytes - The serialized frame bytes
+   * @returns The deserialized frame (either MessageFrame or ErrorFrame)
+   * @throws If the frame format is invalid or unknown
    */
   static fromBytes(bytes: Uint8Array): Frame {
     let decoded: unknown[];
     try {
       decoded = cborDecodeMulti(bytes);
     } catch {
-      // Re-throw CBOR decode errors with a more generic message to match test expectations
       throw new Error("Unexpected end of CBOR data");
     }
 
-    // Check for empty or invalid decode results
     if (decoded.length === 0 || decoded[0] === undefined) {
       throw new Error("Unexpected end of CBOR data");
     }
@@ -119,10 +115,9 @@ export abstract class Frame {
  * Frame type for sending messages/data over an XRPC stream.
  * Can contain any type of payload data and an optional message type identifier.
  *
- * @template T - The type of the message body, defaults to Record<string, unknown>
- * @extends {Frame}
- * @property {MessageFrameHeader} header - Message frame header
- * @property {T} body - Message payload data
+ * @template T - The type of the message body
+ * @property header - Message frame header
+ * @property body - Message payload data
  */
 export class MessageFrame<T = Record<string, unknown>> extends Frame {
   header: MessageFrameHeader;
@@ -156,18 +151,13 @@ export class MessageFrame<T = Record<string, unknown>> extends Frame {
  * Contains an error code and optional error message.
  *
  * @template T - The type of error code string
- * @extends {Frame}
- * @property {ErrorFrameHeader} header - Error frame header
- * @property {ErrorFrameBody<T>} body - Error details including code and message
+ * @property header - Error frame header
+ * @property body - Error details including code and message
  */
 export class ErrorFrame<T extends string = string> extends Frame {
   header: ErrorFrameHeader;
   override body: ErrorFrameBody<T>;
 
-  /**
-   * Creates a new ErrorFrame.
-   * @param {ErrorFrameBody<T>} body - The error details
-   */
   constructor(body: ErrorFrameBody<T>) {
     super();
     this.header = { op: FrameType.Error };
@@ -176,7 +166,6 @@ export class ErrorFrame<T extends string = string> extends Frame {
 
   /**
    * Gets the error code.
-   * @returns {string} The error code
    */
   get code(): string {
     return this.body.error;
@@ -191,8 +180,4 @@ export class ErrorFrame<T extends string = string> extends Frame {
   }
 }
 
-/**
- * Symbol used internally to detect unset frame body.
- * @private
- */
 const kUnset = Symbol("unset");

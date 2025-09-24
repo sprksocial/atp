@@ -6,9 +6,9 @@ import type { MessageFrame } from "./frames.ts";
  * Converts a WebSocket connection into an async generator of Frame objects.
  * Handles both message and error frames, with proper error propagation.
  *
- * @param {WebSocket} ws - The WebSocket connection to read from
+ * @param ws - The WebSocket connection to read from
  * @yields {Frame} Each frame received from the WebSocket
- * @throws {Error} Any WebSocket error that occurs during communication
+ * @throws Any WebSocket error that occurs during communication
  *
  * @example
  * ```typescript
@@ -67,10 +67,6 @@ export async function* byFrame(
   }
 }
 
-/**
- * Waits for the next frame from a WebSocket connection.
- * Returns null if the connection closes normally.
- */
 function waitForNextFrame(ws: WebSocket): Promise<Frame | null> {
   return new Promise<Frame | null>((resolve, reject) => {
     const cleanup = () => {
@@ -135,9 +131,9 @@ function waitForNextFrame(ws: WebSocket): Promise<Frame | null> {
  * Automatically filters and validates frames to ensure they are valid messages.
  * Error frames are converted to exceptions.
  *
- * @param {WebSocket} ws - The WebSocket connection to read from
- * @yields {MessageFrame<unknown>} Each message frame received from the WebSocket
- * @throws {XRPCError} If an error frame is received or an invalid frame type is encountered
+ * @param ws - The WebSocket connection to read from
+ * @yields Each message frame received from the WebSocket
+ * @throws If an error frame is received or an invalid frame type is encountered
  *
  * @example
  * ```typescript
@@ -160,9 +156,9 @@ export async function* byMessage(
  * Validates that a frame is a MessageFrame and converts it to the appropriate type.
  * If the frame is an error frame, throws an XRPCError with the error details.
  *
- * @param {Frame} frame - The frame to validate
- * @returns {MessageFrame<unknown>} The frame as a MessageFrame if valid
- * @throws {XRPCError} If the frame is an error frame or an invalid type
+ * @param frame - The frame to validate
+ * @returns The frame as a MessageFrame if valid
+ * @throws If the frame is an error frame or an invalid type
  * @internal
  */
 export function ensureChunkIsMessage(frame: Frame): MessageFrame<unknown> {

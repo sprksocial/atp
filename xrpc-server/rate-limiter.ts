@@ -7,9 +7,6 @@ import {
 import { ResponseType, XRPCError } from "./errors.ts";
 import { logger } from "./logger.ts";
 
-// @NOTE Do not depend (directly or indirectly) on "./types" here, as it would
-// create a circular dependency.
-
 export interface RateLimiterContext {
   req: Request;
   res?: Response;

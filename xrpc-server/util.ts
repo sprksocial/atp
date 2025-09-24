@@ -209,13 +209,6 @@ export function normalizeMime(mime: string): string {
   return base.trim().toLowerCase();
 }
 
-/**
- * Checks if an actual encoding matches the expected encoding.
- * Supports wildcard matching and JSON aliases.
- * @param expected - The expected encoding from the lexicon
- * @param actual - The actual encoding from the request
- * @returns True if the encodings are compatible
- */
 function isValidEncoding(output: LexXrpcBody, encoding: string) {
   const normalized = normalizeMime(encoding);
   if (!normalized) return false;
@@ -226,13 +219,6 @@ function isValidEncoding(output: LexXrpcBody, encoding: string) {
 
 type BodyPresence = "missing" | "empty" | "present";
 
-/**
- * Determines if a request body is present or missing.
- * Considers empty strings and empty arrays as missing when no content type is provided.
- * @param body - The request body
- * @param contentType - The Content-Type header value
- * @returns "present" if body exists, "missing" otherwise
- */
 function getBodyPresence(req: Request): BodyPresence {
   if (req.headers.get("transfer-encoding") != null) return "present";
   if (req.headers.get("content-length") === "0") return "empty";

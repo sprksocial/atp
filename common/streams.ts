@@ -59,7 +59,6 @@ export const streamToBytes = async (
   return concat(chunks);
 };
 
-// streamToBuffer identifier name already taken by @atproto/common-web
 export const streamToBuffer = async (
   stream:
     | Iterable<Uint8Array>

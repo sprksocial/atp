@@ -7,23 +7,10 @@ import { CloseCode, DisconnectError, type WebSocketOptions } from "./types.ts";
  * @class
  */
 export class WebSocketKeepAlive {
-  /** Current WebSocket connection instance */
   public ws: WebSocket | null = null;
-  /** Whether this is the first connection attempt */
   public initialSetup = true;
-  /** Number of reconnection attempts made, or null if not reconnecting */
   public reconnects: number | null = null;
 
-  /**
-   * Creates a new WebSocket client with keep-alive functionality.
-   * @constructor
-   * @param {Object} opts - Client configuration options
-   * @param {Function} opts.getUrl - Function to get the WebSocket URL
-   * @param {number} [opts.maxReconnectSeconds] - Maximum backoff time between reconnection attempts
-   * @param {AbortSignal} [opts.signal] - Signal for aborting the connection
-   * @param {number} [opts.heartbeatIntervalMs] - Interval between heartbeat messages
-   * @param {Function} [opts.onReconnectError] - Callback for handling reconnection errors
-   */
   constructor(
     public opts: WebSocketOptions & {
       getUrl: () => Promise<string>;
@@ -38,11 +25,6 @@ export class WebSocketKeepAlive {
     },
   ) {}
 
-  /**
-   * Implements the AsyncIterator protocol for receiving WebSocket messages.
-   * Handles automatic reconnection and message buffering.
-   * @returns {AsyncGenerator<Uint8Array>} An async generator that yields received messages
-   */
   async *[Symbol.asyncIterator](): AsyncGenerator<Uint8Array> {
     const maxReconnectMs = 1000 * (this.opts.maxReconnectSeconds ?? 64);
     while (true) {
@@ -194,11 +176,6 @@ export class WebSocketKeepAlive {
     }
   }
 
-  /**
-   * Starts the heartbeat mechanism for a WebSocket connection.
-   * Sends periodic ping messages and monitors for pong responses.
-   * @param {WebSocket} ws - The WebSocket connection to monitor
-   */
   startHeartbeat(ws: WebSocket) {
     let isAlive = true;
     let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
@@ -247,11 +224,6 @@ export class WebSocketKeepAlive {
 
 export default WebSocketKeepAlive;
 
-/**
- * Error class for abnormal WebSocket closures.
- * @class
- * @extends Error
- */
 class AbnormalCloseError extends Error {
   code = "EWSABNORMALCLOSE";
 }
@@ -276,17 +248,7 @@ function isErrorWithCode(err: unknown): err is ErrorWithCode {
   return err !== null && typeof err === "object" && "code" in err;
 }
 
-/**
- * Checks if an error should trigger a reconnection attempt.
- * Network-related errors are typically reconnectable.
- * @param {unknown} err - The error to check
- * @returns {boolean} True if the error should trigger a reconnection
- */
 function isReconnectable(err: unknown): boolean {
-  // Network errors are reconnectable.
-  // AuthenticationRequired and InvalidRequest XRPCErrors are not reconnectable.
-  // @TODO method-specific XRPCErrors may be reconnectable, need to consider. Receiving
-  // an invalid message is not current reconnectable, but the user can decide to skip them.
   if (!isErrorWithCode(err)) return false;
   return typeof err.code === "string" && networkErrorCodes.includes(err.code);
 }
@@ -305,13 +267,6 @@ const networkErrorCodes = [
   "ECANCELED",
 ];
 
-/**
- * Calculates the backoff duration for reconnection attempts.
- * Uses exponential backoff with random jitter.
- * @param {number} n - The number of reconnection attempts so far
- * @param {number} maxMs - Maximum backoff duration in milliseconds
- * @returns {number} The backoff duration in milliseconds
- */
 function backoffMs(n: number, maxMs: number) {
   const baseSec = Math.pow(2, n); // 1, 2, 4, ...
   const randSec = Math.random() - 0.5; // Random jitter between -.5 and .5 seconds
@@ -319,11 +274,6 @@ function backoffMs(n: number, maxMs: number) {
   return Math.min(ms, maxMs);
 }
 
-/**
- * Forwards abort signals from one AbortController to another.
- * @param {AbortSignal} signal - The source abort signal
- * @param {AbortController} ac - The target abort controller
- */
 function forwardSignal(signal: AbortSignal, ac: AbortController) {
   if (signal.aborted) {
     return ac.abort(signal.reason);
