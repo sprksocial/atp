@@ -1,3 +1,12 @@
 {
-  "workspace": ["common", "syntax", "lexicon", "xrpc", "xrpc-server", "lex-cli"]
+  "workspace": [
+    "common",
+    "ui8",
+    "syntax",
+    "crypto",
+    "lexicon",
+    "xrpc",
+    "xrpc-server",
+    "lex-cli"
+  ]
 }

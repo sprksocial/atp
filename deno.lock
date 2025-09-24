@@ -12,6 +12,9 @@
     "jsr:@logtape/file@^1.0.4": "1.0.4",
     "jsr:@logtape/logtape@*": "1.0.4",
     "jsr:@logtape/logtape@^1.0.4": "1.0.4",
+    "jsr:@noble/curves@^2.0.1": "2.0.1",
+    "jsr:@noble/hashes@2": "2.0.1",
+    "jsr:@noble/hashes@^2.0.1": "2.0.1",
     "jsr:@std/assert@*": "1.0.14",
     "jsr:@std/assert@^1.0.14": "1.0.14",
     "jsr:@std/bytes@*": "1.0.6",
@@ -39,9 +42,9 @@
     "jsr:@std/text@~1.0.7": "1.0.16",
     "jsr:@ts-morph/common@0.27": "0.27.0",
     "jsr:@ts-morph/ts-morph@26": "26.0.0",
-    "jsr:@zod/zod@^4.0.17": "4.1.5",
+    "jsr:@zod/zod@^4.0.17": "4.1.11",
     "jsr:@zod/zod@^4.1.11": "4.1.11",
-    "jsr:@zod/zod@^4.1.5": "4.1.5",
+    "jsr:@zod/zod@^4.1.5": "4.1.11",
     "npm:@atproto/crypto@~0.4.4": "0.4.4",
     "npm:@ipld/dag-cbor@^9.2.5": "9.2.5",
     "npm:@types/node@*": "24.2.0",
@@ -108,6 +111,15 @@
     },
     "@logtape/logtape@1.0.4": {
       "integrity": "6ada87764d995b1033c352a17fd9e20b217f3672083bc2d8debe356eac03fe10"
+    },
+    "@noble/curves@2.0.1": {
+      "integrity": "21ef41d207a203f60ba37a4fdcbc4f4a545b10c5dab7f293889f18292f81ab23",
+      "dependencies": [
+        "jsr:@noble/hashes@2"
+      ]
+    },
+    "@noble/hashes@2.0.1": {
+      "integrity": "e0e908292a0bf91099cf8ba0720a1647cef82ab38b588815b5e9535b4ff4d7bb"
     },
     "@std/assert@1.0.14": {
       "integrity": "68d0d4a43b365abc927f45a9b85c639ea18a9fab96ad92281e493e4ed84abaa4",
@@ -460,6 +472,15 @@
           "npm:uint8arrays@^5.1.0"
         ]
       },
+      "crypto": {
+        "dependencies": [
+          "jsr:@noble/curves@^2.0.1",
+          "jsr:@noble/hashes@^2.0.1",
+          "jsr:@std/assert@^1.0.14",
+          "npm:multiformats@^13.4.1",
+          "npm:uint8arrays@^5.1.0"
+        ]
+      },
       "lex-cli": {
         "dependencies": [
           "jsr:@cliffy/ansi@^1.0.0-rc.8",
@@ -481,6 +502,12 @@
       "syntax": {
         "dependencies": [
           "jsr:@std/assert@^1.0.14"
+        ]
+      },
+      "ui8": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.14",
+          "npm:multiformats@^13.4.1"
         ]
       },
       "xrpc": {

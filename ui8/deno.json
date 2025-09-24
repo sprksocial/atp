@@ -1,0 +1,10 @@
+{
+  "name": "@atp/ui8",
+  "version": "0.1.0-alpha.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.14",
+    "multiformats": "npm:multiformats@^13.4.1"
+  }
+}
