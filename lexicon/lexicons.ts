@@ -146,7 +146,7 @@ export class Lexicons implements Iterable<LexiconDoc> {
   /**
    * Validate a record and throw on any error.
    */
-  assertValidRecord(lexUri: string, value: unknown) {
+  assertValidRecord(lexUri: string, value: unknown): unknown {
     if (!isObj(value)) {
       throw new ValidationError(`Record must be an object`);
     }
@@ -172,7 +172,10 @@ export class Lexicons implements Iterable<LexiconDoc> {
   /**
    * Validate xrpc query params and throw on any error.
    */
-  assertValidXrpcParams(lexUri: string, value: unknown) {
+  assertValidXrpcParams(
+    lexUri: string,
+    value: unknown,
+  ): Record<string, unknown> | undefined {
     lexUri = toLexUri(lexUri);
     const def = this.getDefOrThrow(lexUri, [
       "query",
@@ -185,7 +188,7 @@ export class Lexicons implements Iterable<LexiconDoc> {
   /**
    * Validate xrpc input body and throw on any error.
    */
-  assertValidXrpcInput(lexUri: string, value: unknown) {
+  assertValidXrpcInput(lexUri: string, value: unknown): unknown {
     lexUri = toLexUri(lexUri);
     const def = this.getDefOrThrow(lexUri, ["procedure"]);
     return assertValidXrpcInput(this, def, value);
@@ -194,7 +197,7 @@ export class Lexicons implements Iterable<LexiconDoc> {
   /**
    * Validate xrpc output body and throw on any error.
    */
-  assertValidXrpcOutput(lexUri: string, value: unknown) {
+  assertValidXrpcOutput(lexUri: string, value: unknown): unknown {
     lexUri = toLexUri(lexUri);
     const def = this.getDefOrThrow(lexUri, ["query", "procedure"]);
     return assertValidXrpcOutput(this, def, value);
@@ -212,7 +215,7 @@ export class Lexicons implements Iterable<LexiconDoc> {
   /**
    * Resolve a lex uri given a ref
    */
-  resolveLexUri(lexUri: string, ref: string) {
+  resolveLexUri(lexUri: string, ref: string): string {
     lexUri = toLexUri(lexUri);
     return toLexUri(ref, lexUri);
   }

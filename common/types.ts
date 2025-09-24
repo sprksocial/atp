@@ -7,7 +7,7 @@ const cidSchema = z.unknown().transform((obj, ctx): CID => {
 
   if (cid == null) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: "custom",
       message: "Not a valid CID",
     });
     return z.NEVER;

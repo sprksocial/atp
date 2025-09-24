@@ -3,26 +3,36 @@ import { validateLanguage } from "@atp/common";
 import { isValidNsid } from "@atp/syntax";
 import { requiredPropertiesRefinement } from "./util.ts";
 
-export const languageSchema = z
+export const languageSchema: z.ZodString = z
   .string()
   .refine(validateLanguage, "Invalid BCP47 language tag");
 
-export const lexLang = z.record(languageSchema, z.string().optional());
+export const lexLang: LexLangType = z.record(
+  languageSchema,
+  z.string().optional(),
+);
 
-export type LexLang = z.infer<typeof lexLang>;
+type LexLangType = z.ZodRecord<z.ZodString, z.ZodOptional<z.ZodString>>;
+export type LexLang = z.infer<LexLangType>;
 
 // primitives
 // =
 
-export const lexBoolean = z.object({
+export const lexBoolean: LexBooleanType = z.object({
   type: z.literal("boolean"),
   description: z.string().optional(),
   default: z.boolean().optional(),
   const: z.boolean().optional(),
 });
-export type LexBoolean = z.infer<typeof lexBoolean>;
+type LexBooleanType = z.ZodObject<{
+  type: z.ZodLiteral<"boolean">;
+  description: z.ZodOptional<z.ZodString>;
+  default: z.ZodOptional<z.ZodBoolean>;
+  const: z.ZodOptional<z.ZodBoolean>;
+}, z.core.$strip>;
+export type LexBoolean = z.infer<LexBooleanType>;
 
-export const lexInteger = z.object({
+export const lexInteger: LexIntegerType = z.object({
   type: z.literal("integer"),
   description: z.string().optional(),
   default: z.number().int().optional(),
@@ -31,9 +41,18 @@ export const lexInteger = z.object({
   enum: z.number().int().array().optional(),
   const: z.number().int().optional(),
 });
-export type LexInteger = z.infer<typeof lexInteger>;
+type LexIntegerType = z.ZodObject<{
+  type: z.ZodLiteral<"integer">;
+  description: z.ZodOptional<z.ZodString>;
+  default: z.ZodOptional<z.ZodNumber>;
+  minimum: z.ZodOptional<z.ZodNumber>;
+  maximum: z.ZodOptional<z.ZodNumber>;
+  enum: z.ZodOptional<z.ZodArray<z.ZodNumber>>;
+  const: z.ZodOptional<z.ZodNumber>;
+}, z.core.$strip>;
+export type LexInteger = z.infer<LexIntegerType>;
 
-export const lexStringFormat = z.enum([
+export const lexStringFormat: LexStringFormatType = z.enum([
   "datetime",
   "uri",
   "at-uri",
@@ -46,9 +65,22 @@ export const lexStringFormat = z.enum([
   "tid",
   "record-key",
 ]);
-export type LexStringFormat = z.infer<typeof lexStringFormat>;
+type LexStringFormatType = z.ZodEnum<{
+  datetime: "datetime";
+  uri: "uri";
+  "at-uri": "at-uri";
+  did: "did";
+  handle: "handle";
+  "at-identifier": "at-identifier";
+  nsid: "nsid";
+  cid: "cid";
+  language: "language";
+  tid: "tid";
+  "record-key": "record-key";
+}>;
+export type LexStringFormat = z.infer<LexStringFormatType>;
 
-export const lexString = z.object({
+export const lexString: LexStringType = z.object({
   type: z.literal("string"),
   format: lexStringFormat.optional(),
   description: z.string().optional(),
@@ -61,81 +93,154 @@ export const lexString = z.object({
   const: z.string().optional(),
   knownValues: z.string().array().optional(),
 });
-export type LexString = z.infer<typeof lexString>;
+type LexStringType = z.ZodObject<{
+  type: z.ZodLiteral<"string">;
+  format: z.ZodOptional<
+    z.ZodEnum<{
+      datetime: "datetime";
+      uri: "uri";
+      "at-uri": "at-uri";
+      did: "did";
+      handle: "handle";
+      "at-identifier": "at-identifier";
+      nsid: "nsid";
+      cid: "cid";
+      language: "language";
+      tid: "tid";
+      "record-key": "record-key";
+    }>
+  >;
+  description: z.ZodOptional<z.ZodString>;
+  default: z.ZodOptional<z.ZodString>;
+  minLength: z.ZodOptional<z.ZodNumber>;
+  maxLength: z.ZodOptional<z.ZodNumber>;
+  minGraphemes: z.ZodOptional<z.ZodNumber>;
+  maxGraphemes: z.ZodOptional<z.ZodNumber>;
+  enum: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  const: z.ZodOptional<z.ZodString>;
+  knownValues: z.ZodOptional<z.ZodArray<z.ZodString>>;
+}, z.core.$strip>;
+export type LexString = z.infer<LexStringType>;
 
-export const lexUnknown = z.object({
+export const lexUnknown: LexUnknownType = z.object({
   type: z.literal("unknown"),
   description: z.string().optional(),
 });
-export type LexUnknown = z.infer<typeof lexUnknown>;
+type LexUnknownType = z.ZodObject<{
+  type: z.ZodLiteral<"unknown">;
+  description: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+export type LexUnknown = z.infer<LexUnknownType>;
 
-export const lexPrimitive = z.discriminatedUnion("type", [
+export const lexPrimitive: LexPrimitiveType = z.discriminatedUnion("type", [
   lexBoolean,
   lexInteger,
   lexString,
   lexUnknown,
 ]);
-export type LexPrimitive = z.infer<typeof lexPrimitive>;
+type LexPrimitiveType = z.ZodDiscriminatedUnion<
+  [LexBooleanType, LexIntegerType, LexStringType, LexUnknownType],
+  "type"
+>;
+export type LexPrimitive = z.infer<LexPrimitiveType>;
 
 // ipld types
 // =
 
-export const lexBytes = z.object({
+export const lexBytes: LexBytesType = z.object({
   type: z.literal("bytes"),
   description: z.string().optional(),
   maxLength: z.number().optional(),
   minLength: z.number().optional(),
 });
-export type LexBytes = z.infer<typeof lexBytes>;
+type LexBytesType = z.ZodObject<{
+  type: z.ZodLiteral<"bytes">;
+  description: z.ZodOptional<z.ZodString>;
+  maxLength: z.ZodOptional<z.ZodNumber>;
+  minLength: z.ZodOptional<z.ZodNumber>;
+}, z.core.$strip>;
+export type LexBytes = z.infer<LexBytesType>;
 
-export const lexCidLink = z.object({
+export const lexCidLink: LexCidLinkType = z.object({
   type: z.literal("cid-link"),
   description: z.string().optional(),
 });
-export type LexCidLink = z.infer<typeof lexCidLink>;
+type LexCidLinkType = z.ZodObject<{
+  type: z.ZodLiteral<"cid-link">;
+  description: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+export type LexCidLink = z.infer<LexCidLinkType>;
 
-export const lexIpldType = z.discriminatedUnion("type", [lexBytes, lexCidLink]);
-export type LexIpldType = z.infer<typeof lexIpldType>;
+export const lexIpldType: LexIpldTypeType = z.discriminatedUnion("type", [
+  lexBytes,
+  lexCidLink,
+]);
+type LexIpldTypeType = z.ZodDiscriminatedUnion<
+  [LexBytesType, LexCidLinkType],
+  "type"
+>;
+export type LexIpldType = z.infer<LexIpldTypeType>;
 
 // references
 // =
 
-export const lexRef = z.object({
+export const lexRef: LexRefType = z.object({
   type: z.literal("ref"),
   description: z.string().optional(),
   ref: z.string(),
 });
-export type LexRef = z.infer<typeof lexRef>;
+type LexRefType = z.ZodObject<{
+  type: z.ZodLiteral<"ref">;
+  description: z.ZodOptional<z.ZodString>;
+  ref: z.ZodString;
+}, z.core.$strip>;
+export type LexRef = z.infer<LexRefType>;
 
-export const lexRefUnion = z.object({
+export const lexRefUnion: LexRefUnionType = z.object({
   type: z.literal("union"),
   description: z.string().optional(),
   refs: z.string().array(),
   closed: z.boolean().optional(),
 });
-export type LexRefUnion = z.infer<typeof lexRefUnion>;
+type LexRefUnionType = z.ZodObject<{
+  type: z.ZodLiteral<"union">;
+  description: z.ZodOptional<z.ZodString>;
+  refs: z.ZodArray<z.ZodString>;
+  closed: z.ZodOptional<z.ZodBoolean>;
+}, z.core.$strip>;
+export type LexRefUnion = z.infer<LexRefUnionType>;
 
-export const lexRefVariant = z.discriminatedUnion("type", [
+export const lexRefVariant: LexRefVariantType = z.discriminatedUnion("type", [
   lexRef,
   lexRefUnion,
 ]);
-export type LexRefVariant = z.infer<typeof lexRefVariant>;
+type LexRefVariantType = z.ZodDiscriminatedUnion<
+  [LexRefType, LexRefUnionType],
+  "type"
+>;
+export type LexRefVariant = z.infer<LexRefVariantType>;
 
 // blobs
 // =
 
-export const lexBlob = z.object({
+export const lexBlob: LexBlobType = z.object({
   type: z.literal("blob"),
   description: z.string().optional(),
   accept: z.string().array().optional(),
   maxSize: z.number().optional(),
 });
-export type LexBlob = z.infer<typeof lexBlob>;
+type LexBlobType = z.ZodObject<{
+  type: z.ZodLiteral<"blob">;
+  description: z.ZodOptional<z.ZodString>;
+  accept: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  maxSize: z.ZodOptional<z.ZodNumber>;
+}, z.core.$strip>;
+export type LexBlob = z.infer<LexBlobType>;
 
 // complex types
 // =
 
-export const lexArray = z.object({
+export const lexArray: LexArrayType = z.object({
   type: z.literal("array"),
   description: z.string().optional(),
   items: z.discriminatedUnion("type", [
@@ -156,22 +261,52 @@ export const lexArray = z.object({
   minLength: z.number().int().optional(),
   maxLength: z.number().int().optional(),
 });
-export type LexArray = z.infer<typeof lexArray>;
+type LexArrayType = z.ZodObject<{
+  type: z.ZodLiteral<"array">;
+  description: z.ZodOptional<z.ZodString>;
+  items: z.ZodDiscriminatedUnion<
+    [
+      LexBooleanType,
+      LexIntegerType,
+      LexStringType,
+      LexUnknownType,
+      LexBytesType,
+      LexCidLinkType,
+      LexRefType,
+      LexRefUnionType,
+      LexBlobType,
+    ],
+    "type"
+  >;
+  minLength: z.ZodOptional<z.ZodNumber>;
+  maxLength: z.ZodOptional<z.ZodNumber>;
+}, z.core.$strip>;
+export type LexArray = z.infer<LexArrayType>;
 
-export const lexPrimitiveArray = z.object({
+export const lexPrimitiveArray: LexPrimitiveArrayType = z.object({
   ...lexArray.shape,
   items: lexPrimitive,
 });
+type LexPrimitiveArrayType = z.ZodObject<{
+  items: LexPrimitiveType;
+  type: z.ZodLiteral<"array">;
+  description: z.ZodOptional<z.ZodString>;
+  minLength: z.ZodOptional<z.ZodNumber>;
+  maxLength: z.ZodOptional<z.ZodNumber>;
+}, z.core.$strip>;
+export type LexPrimitiveArray = z.infer<LexPrimitiveArrayType>;
 
-export type LexPrimitiveArray = z.infer<typeof lexPrimitiveArray>;
-
-export const lexToken = z.object({
+export const lexToken: LexTokenType = z.object({
   type: z.literal("token"),
   description: z.string().optional(),
 });
-export type LexToken = z.infer<typeof lexToken>;
+type LexTokenType = z.ZodObject<{
+  type: z.ZodLiteral<"token">;
+  description: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+export type LexToken = z.infer<LexTokenType>;
 
-export const lexObject = z
+export const lexObject: LexObjectType = z
   .object({
     type: z.literal("object"),
     description: z.string().optional(),
@@ -199,12 +334,36 @@ export const lexObject = z
     ),
   })
   .superRefine(requiredPropertiesRefinement);
-export type LexObject = z.infer<typeof lexObject>;
+type LexObjectType = z.ZodObject<{
+  type: z.ZodLiteral<"object">;
+  description: z.ZodOptional<z.ZodString>;
+  required: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  nullable: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  properties: z.ZodRecord<
+    z.ZodString,
+    z.ZodDiscriminatedUnion<
+      [
+        LexArrayType,
+        LexBooleanType,
+        LexIntegerType,
+        LexStringType,
+        LexUnknownType,
+        LexBytesType,
+        LexCidLinkType,
+        LexRefType,
+        LexRefUnionType,
+        LexBlobType,
+      ],
+      "type"
+    >
+  >;
+}, z.core.$strip>;
+export type LexObject = z.infer<LexObjectType>;
 
 // permissions
 // =
 
-const lexPermission = z.intersection(
+const lexPermission: LexPermissionType = z.intersection(
   z.object({
     type: z.literal("permission"),
     resource: z.string().min(1),
@@ -222,10 +381,30 @@ const lexPermission = z.intersection(
       .optional(),
   ),
 );
+type LexPermissionType = z.ZodIntersection<
+  z.ZodObject<{
+    type: z.ZodLiteral<"permission">;
+    resource: z.ZodString;
+  }, z.core.$strip>,
+  z.ZodRecord<
+    z.ZodString,
+    z.ZodOptional<
+      z.ZodUnion<
+        readonly [
+          z.ZodArray<
+            z.ZodUnion<readonly [z.ZodString, z.ZodNumber, z.ZodBoolean]>
+          >,
+          z.ZodBoolean,
+          z.ZodNumber,
+          z.ZodString,
+        ]
+      >
+    >
+  >
+>;
+export type LexPermission = z.infer<LexPermissionType>;
 
-export type LexPermission = z.infer<typeof lexPermission>;
-
-export const lexPermissionSet = z.object({
+export const lexPermissionSet: LexPermissionSetType = z.object({
   type: z.literal("permission-set"),
   description: z.string().optional(),
   title: z.string().optional(),
@@ -234,13 +413,21 @@ export const lexPermissionSet = z.object({
   "detail:lang": lexLang.optional(),
   permissions: z.array(lexPermission),
 });
-
-export type LexPermissionSet = z.infer<typeof lexPermissionSet>;
+type LexPermissionSetType = z.ZodObject<{
+  type: z.ZodLiteral<"permission-set">;
+  description: z.ZodOptional<z.ZodString>;
+  title: z.ZodOptional<z.ZodString>;
+  "title:lang": z.ZodOptional<LexLangType>;
+  detail: z.ZodOptional<z.ZodString>;
+  "detail:lang": z.ZodOptional<LexLangType>;
+  permissions: z.ZodArray<LexPermissionType>;
+}, z.core.$strip>;
+export type LexPermissionSet = z.infer<LexPermissionSetType>;
 
 // xrpc
 // =
 
-export const lexXrpcParameters = z
+export const lexXrpcParameters: LexXrpcParametersType = z
   .object({
     type: z.literal("params"),
     description: z.string().optional(),
@@ -259,41 +446,84 @@ export const lexXrpcParameters = z
     ),
   })
   .superRefine(requiredPropertiesRefinement);
-export type LexXrpcParameters = z.infer<typeof lexXrpcParameters>;
+type LexXrpcParametersType = z.ZodObject<{
+  type: z.ZodLiteral<"params">;
+  description: z.ZodOptional<z.ZodString>;
+  required: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  properties: z.ZodRecord<
+    z.ZodString,
+    z.ZodDiscriminatedUnion<
+      [
+        LexPrimitiveArrayType,
+        LexBooleanType,
+        LexIntegerType,
+        LexStringType,
+        LexUnknownType,
+      ],
+      "type"
+    >
+  >;
+}, z.core.$strip>;
+export type LexXrpcParameters = z.infer<LexXrpcParametersType>;
 
-export const lexXrpcBody = z.object({
+export const lexXrpcBody: LexXrpcBodyType = z.object({
   description: z.string().optional(),
   encoding: z.string(),
   // @NOTE using discriminatedUnion with a refined schema requires zod >= 4
   schema: z.union([lexRefVariant, lexObject]).optional(),
 });
-export type LexXrpcBody = z.infer<typeof lexXrpcBody>;
+type LexXrpcBodyType = z.ZodObject<{
+  description: z.ZodOptional<z.ZodString>;
+  encoding: z.ZodString;
+  schema: z.ZodOptional<
+    z.ZodUnion<readonly [LexRefVariantType, LexObjectType]>
+  >;
+}, z.core.$strip>;
+export type LexXrpcBody = z.infer<LexXrpcBodyType>;
 
-export const lexXrpcSubscriptionMessage = z.object({
-  description: z.string().optional(),
-  // @NOTE using discriminatedUnion with a refined schema requires zod >= 4
-  schema: z.union([lexRefVariant, lexObject]).optional(),
-});
+export const lexXrpcSubscriptionMessage: LexXrpcSubscriptionMessageType = z
+  .object({
+    description: z.string().optional(),
+    // @NOTE using discriminatedUnion with a refined schema requires zod >= 4
+    schema: z.union([lexRefVariant, lexObject]).optional(),
+  });
+type LexXrpcSubscriptionMessageType = z.ZodObject<{
+  description: z.ZodOptional<z.ZodString>;
+  schema: z.ZodOptional<
+    z.ZodUnion<readonly [LexRefVariantType, LexObjectType]>
+  >;
+}, z.core.$strip>;
 export type LexXrpcSubscriptionMessage = z.infer<
-  typeof lexXrpcSubscriptionMessage
+  LexXrpcSubscriptionMessageType
 >;
 
-export const lexXrpcError = z.object({
+export const lexXrpcError: LexXrpcErrorType = z.object({
   name: z.string(),
   description: z.string().optional(),
 });
-export type LexXrpcError = z.infer<typeof lexXrpcError>;
+type LexXrpcErrorType = z.ZodObject<{
+  name: z.ZodString;
+  description: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+export type LexXrpcError = z.infer<LexXrpcErrorType>;
 
-export const lexXrpcQuery = z.object({
+export const lexXrpcQuery: LexXrpcQueryType = z.object({
   type: z.literal("query"),
   description: z.string().optional(),
   parameters: lexXrpcParameters.optional(),
   output: lexXrpcBody.optional(),
   errors: lexXrpcError.array().optional(),
 });
-export type LexXrpcQuery = z.infer<typeof lexXrpcQuery>;
+type LexXrpcQueryType = z.ZodObject<{
+  type: z.ZodLiteral<"query">;
+  description: z.ZodOptional<z.ZodString>;
+  parameters: z.ZodOptional<LexXrpcParametersType>;
+  output: z.ZodOptional<LexXrpcBodyType>;
+  errors: z.ZodOptional<z.ZodArray<LexXrpcErrorType>>;
+}, z.core.$strip>;
+export type LexXrpcQuery = z.infer<LexXrpcQueryType>;
 
-export const lexXrpcProcedure = z.object({
+export const lexXrpcProcedure: LexXrpcProcedureType = z.object({
   type: z.literal("procedure"),
   description: z.string().optional(),
   parameters: lexXrpcParameters.optional(),
@@ -301,27 +531,48 @@ export const lexXrpcProcedure = z.object({
   output: lexXrpcBody.optional(),
   errors: lexXrpcError.array().optional(),
 });
-export type LexXrpcProcedure = z.infer<typeof lexXrpcProcedure>;
+type LexXrpcProcedureType = z.ZodObject<{
+  type: z.ZodLiteral<"procedure">;
+  description: z.ZodOptional<z.ZodString>;
+  parameters: z.ZodOptional<LexXrpcParametersType>;
+  input: z.ZodOptional<LexXrpcBodyType>;
+  output: z.ZodOptional<LexXrpcBodyType>;
+  errors: z.ZodOptional<z.ZodArray<LexXrpcErrorType>>;
+}, z.core.$strip>;
+export type LexXrpcProcedure = z.infer<LexXrpcProcedureType>;
 
-export const lexXrpcSubscription = z.object({
+export const lexXrpcSubscription: LexXrpcSubscriptionType = z.object({
   type: z.literal("subscription"),
   description: z.string().optional(),
   parameters: lexXrpcParameters.optional(),
   message: lexXrpcSubscriptionMessage.optional(),
   errors: lexXrpcError.array().optional(),
 });
-export type LexXrpcSubscription = z.infer<typeof lexXrpcSubscription>;
+type LexXrpcSubscriptionType = z.ZodObject<{
+  type: z.ZodLiteral<"subscription">;
+  description: z.ZodOptional<z.ZodString>;
+  parameters: z.ZodOptional<LexXrpcParametersType>;
+  message: z.ZodOptional<LexXrpcSubscriptionMessageType>;
+  errors: z.ZodOptional<z.ZodArray<LexXrpcErrorType>>;
+}, z.core.$strip>;
+export type LexXrpcSubscription = z.infer<LexXrpcSubscriptionType>;
 
 // database
 // =
 
-export const lexRecord = z.object({
+export const lexRecord: LexRecordType = z.object({
   type: z.literal("record"),
   description: z.string().optional(),
   key: z.string().optional(),
   record: lexObject,
 });
-export type LexRecord = z.infer<typeof lexRecord>;
+type LexRecordType = z.ZodObject<{
+  type: z.ZodLiteral<"record">;
+  description: z.ZodOptional<z.ZodString>;
+  key: z.ZodOptional<z.ZodString>;
+  record: LexObjectType;
+}, z.core.$strip>;
+export type LexRecord = z.infer<LexRecordType>;
 
 // core
 // =
@@ -330,7 +581,7 @@ export type LexRecord = z.infer<typeof lexRecord>;
 // lexXrpcProperty and lexObject are refined
 // `z.union` would work, but it's too slow
 // see #915 for details
-export const lexUserType = z.custom<
+export const lexUserType: LexUserTypeType = z.custom<
   | LexRecord
   | LexPermissionSet
   | LexXrpcQuery
@@ -438,9 +689,26 @@ export const lexUserType = z.custom<
     },
   },
 );
-export type LexUserType = z.infer<typeof lexUserType>;
+type LexUserTypeType = z.ZodCustom<
+  | LexRecord
+  | LexPermissionSet
+  | LexXrpcQuery
+  | LexXrpcProcedure
+  | LexXrpcSubscription
+  | LexBlob
+  | LexArray
+  | LexToken
+  | LexObject
+  | LexBoolean
+  | LexInteger
+  | LexString
+  | LexBytes
+  | LexCidLink
+  | LexUnknown
+>;
+export type LexUserType = z.infer<LexUserTypeType>;
 
-export const lexiconDoc = z
+export const lexiconDoc: LexiconDocType = z
   .object({
     lexicon: z.literal(1),
     id: z.string().refine(isValidNsid, {
@@ -471,7 +739,14 @@ export const lexiconDoc = z
         `Records, permission sets, procedures, queries, and subscriptions must be the main definition.`,
     },
   );
-export type LexiconDoc = z.infer<typeof lexiconDoc>;
+type LexiconDocType = z.ZodObject<{
+  lexicon: z.ZodLiteral<1>;
+  id: z.ZodString;
+  revision: z.ZodOptional<z.ZodNumber>;
+  description: z.ZodOptional<z.ZodString>;
+  defs: z.ZodRecord<z.ZodString, LexUserTypeType>;
+}, z.core.$strip>;
+export type LexiconDoc = z.infer<LexiconDocType>;
 
 // helpers
 // =

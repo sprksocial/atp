@@ -7,7 +7,7 @@ import { sha256 } from "multiformats/hashes/sha2";
 import { schema } from "./types.ts";
 import * as check from "./check.ts";
 import { crypto } from "@std/crypto";
-import { concat, equals } from "@std/bytes";
+import { concat, equals, fromString, toString } from "@atp/ui8";
 
 export const cborEncode = cborCodec.encode;
 export const cborDecode = cborCodec.decode;
@@ -105,7 +105,7 @@ export class VerifyCidTransform
         try {
           const data = concat(this.chunks);
           const hash = new Uint8Array(
-            await crypto.subtle.digest("SHA-256", data),
+            await crypto.subtle.digest("SHA-256", new Uint8Array(data)),
           );
           const actual = sha256RawToCid(hash);
           if (!actual.equals(cid)) {
@@ -163,15 +163,13 @@ export const jsonToIpld = (val: JsonValue): IpldValue => {
     if (typeof obj["$link"] === "string" && Object.keys(obj).length === 1) {
       return CID.parse(obj["$link"]);
     }
-    if (typeof obj["$bytes"] === "string" && Object.keys(obj).length === 1) {
-      return new Uint8Array(
-        atob(obj["$bytes"]).split("").map((c) => c.charCodeAt(0)),
-      );
+    if (typeof obj["$bytes"] === "string" && Object.keys(val).length === 1) {
+      return fromString(obj["$bytes"], "base64");
     }
     // walk plain objects
     const toReturn: Record<string, IpldValue> = {};
     for (const key of Object.keys(obj)) {
-      toReturn[key] = jsonToIpld(obj[key] as JsonValue);
+      toReturn[key] = jsonToIpld(obj[key]);
     }
     return toReturn;
   }
@@ -186,10 +184,11 @@ export const ipldToJson = (val: IpldValue): JsonValue => {
   }
   // objects
   if (val && typeof val === "object") {
+    const obj = val as Record<string, unknown>;
     // convert bytes
     if (val instanceof Uint8Array) {
       return {
-        $bytes: btoa(String.fromCharCode(...val)).replace(/=+$/, ""),
+        $bytes: toString(val, "base64"),
       };
     }
     // convert cids
@@ -200,8 +199,8 @@ export const ipldToJson = (val: IpldValue): JsonValue => {
     }
     // walk plain objects
     const toReturn: Record<string, JsonValue> = {};
-    for (const key of Object.keys(val as Record<string, unknown>)) {
-      toReturn[key] = ipldToJson((val as Record<string, IpldValue>)[key]);
+    for (const key of Object.keys(obj)) {
+      toReturn[key] = ipldToJson(obj[key]);
     }
     return toReturn;
   }
@@ -226,7 +225,7 @@ export const ipldEquals = (a: IpldValue, b: IpldValue): boolean => {
     }
     // check cids
     if (CID.asCID(a) && CID.asCID(b)) {
-      return CID.asCID(a)!.equals(CID.asCID(b)!);
+      return CID.asCID(a)!.equals(CID.asCID(b));
     }
     // walk plain objects
     const objA = a as Record<string, IpldValue>;
