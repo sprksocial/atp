@@ -1,6 +1,7 @@
 # XRPC Server for Deno
 
-A native Deno implementation of an XRPC server that can be used with `deno.serve()`.
+A native Deno implementation of an XRPC server that can be used with
+`deno.serve()`.
 
 ## Features
 
@@ -24,7 +25,7 @@ const server = createServer();
 server.method("com.example.getProfile", {
   handler: async (ctx: HandlerContext): Promise<HandlerSuccess> => {
     const { params } = ctx;
-    
+
     return {
       encoding: "application/json",
       body: {
@@ -40,12 +41,12 @@ server.method("com.example.getProfile", {
 server.method("com.example.createPost", {
   handler: async (ctx: HandlerContext): Promise<HandlerSuccess> => {
     const { input, auth } = ctx;
-    
+
     // Validate authentication
     if (!auth) {
       throw new Error("Authentication required");
     }
-    
+
     return {
       encoding: "application/json",
       body: {
@@ -70,15 +71,15 @@ Deno.serve({
 const server = createServer(lexicons, {
   // Custom error parser
   errorParser: (err) => {
-    console.error('Server error:', err);
+    console.error("Server error:", err);
     return XRPCError.fromError(err);
   },
-  
+
   // Custom catchall handler for unregistered routes
   catchall: async (req) => {
     return new Response("Custom 404", { status: 404 });
   },
-  
+
   // Rate limiting configuration
   rateLimits: {
     creator: (options) => new SomeRateLimiter(options),
@@ -87,14 +88,14 @@ const server = createServer(lexicons, {
         name: "global",
         durationMs: 60000, // 1 minute
         points: 100, // 100 requests per minute
-      }
+      },
     ],
     shared: [
       {
         name: "auth",
         durationMs: 300000, // 5 minutes
         points: 30, // 30 requests per 5 minutes
-      }
+      },
     ],
   },
 });
@@ -108,22 +109,22 @@ const server = createServer(lexicons, {
 server.method("com.example.searchPosts", {
   handler: async ({ params }) => {
     const { q, limit = 10 } = params;
-    
+
     // Search logic here
     const results = await searchPosts(q, limit);
-    
+
     return {
       encoding: "application/json",
       body: { posts: results },
     };
   },
-  
+
   // Optional authentication
   auth: async ({ req, params, input }) => {
     const token = req.headers.get("authorization");
     return await validateToken(token);
   },
-  
+
   // Optional rate limiting
   rateLimit: {
     durationMs: 60000,
@@ -140,15 +141,15 @@ server.method("com.example.updateProfile", {
     if (!auth?.user) {
       throw new Error("Authentication required");
     }
-    
+
     const updatedProfile = await updateUserProfile(auth.user.id, input.body);
-    
+
     return {
       encoding: "application/json",
       body: updatedProfile,
     };
   },
-  
+
   auth: async ({ req }) => {
     // Custom auth logic
     return await authenticateUser(req);
@@ -166,8 +167,8 @@ server.streamMethod("com.example.liveUpdates", {
         type: "update",
         data: await getLiveData(),
       };
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   },
 });
@@ -209,10 +210,10 @@ return {
 ## Error Handling
 
 ```typescript
-import { 
-  InvalidRequestError, 
+import {
+  InvalidRequestError,
   MethodNotImplementedError,
-  XRPCError 
+  XRPCError,
 } from "./errors.ts";
 
 server.method("com.example.riskyOperation", {
@@ -220,7 +221,7 @@ server.method("com.example.riskyOperation", {
     if (!ctx.params.id) {
       throw new InvalidRequestError("Missing required parameter: id");
     }
-    
+
     try {
       const result = await performRiskyOperation(ctx.params.id);
       return {
@@ -250,16 +251,18 @@ deno run --allow-net --allow-read --allow-env --no-check server.ts
 ## Key Differences from Hono Version
 
 1. **No external dependencies**: Uses native Deno server instead of Hono
-2. **Direct handler**: The server's `handler` property is a function compatible with `deno.serve()`
+2. **Direct handler**: The server's `handler` property is a function compatible
+   with `deno.serve()`
 3. **Simplified routing**: Routes are stored internally and matched directly
 4. **Native Request/Response**: Uses standard Web API Request/Response objects
-5. **Error handling**: Errors are converted to responses internally rather than thrown to middleware
+5. **Error handling**: Errors are converted to responses internally rather than
+   thrown to middleware
 
 ## Migration from Hono
 
 If you're migrating from a Hono-based XRPC server:
 
 1. Remove Hono dependency from your imports
-2. Replace `server.app` or `server.handler` with `server.handler` 
+2. Replace `server.app` or `server.handler` with `server.handler`
 3. Use `deno.serve()` instead of Hono's serve method
 4. Update any custom middleware to work with the native request handler

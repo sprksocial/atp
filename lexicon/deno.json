@@ -7,5 +7,10 @@
     "@std/assert": "jsr:@std/assert@^1.0.14",
     "multiformats": "npm:multiformats@^13.4.1",
     "zod": "npm:zod@^4.1.11"
+  },
+  "test": {
+    "permissions": {
+      "env": true
+    }
   }
 }

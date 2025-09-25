@@ -16,5 +16,10 @@
     "@std/streams": "jsr:@std/streams@^1.0.12",
     "multiformats": "npm:multiformats@^13.4.1",
     "zod": "jsr:@zod/zod@^4.1.11"
+  },
+  "test": {
+    "permissions": {
+      "env": true
+    }
   }
 }

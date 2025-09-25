@@ -1,7 +1,7 @@
-name: Publish
+name: Check
 
 on:
-  push:
+  pull_request:
     branches:
       - main
 
@@ -21,7 +21,6 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           cache: true
-
       - name: Lint
         run: deno lint
 
@@ -30,6 +29,3 @@ jobs:
 
       - name: Test
         run: deno test -P
-
-      - name: Publish to JSR
-        run: deno publish

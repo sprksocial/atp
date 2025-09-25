@@ -15,5 +15,11 @@
     "hono": "jsr:@hono/hono@^4.9.8",
     "rate-limiter-flexible": "npm:rate-limiter-flexible@^2.4.2",
     "ws": "npm:ws@^8.18.3"
+  },
+  "test": {
+    "permissions": {
+      "env": true,
+      "net": true
+    }
   }
 }
