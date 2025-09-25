@@ -43,6 +43,7 @@
  * res1.encoding // => 'application/json'
  * res1.body // => {message: 'hello world'}
  * ```
+ * @module
  */
 export * from "./client.ts";
 export * from "./fetch-handler.ts";

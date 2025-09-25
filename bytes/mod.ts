@@ -1,6 +1,4 @@
 /**
- * @module
- *
  * Simple `Uint8Array` utilities for AT Protocol.
  *
  * ## alloc(size)
@@ -157,6 +155,7 @@
  *
  * console.info(xorCompare(xor1, xor2)) // -1 or 0 or 1
  * ```
+ * @module
  */
 
 import { xor } from "./xor.ts";

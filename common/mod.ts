@@ -3,6 +3,8 @@
  *
  * Shared TypeScript code for other @atp/* packages.
  * This package is oriented towards writing servers.
+ *
+ * @module
  */
 export * as check from "./check.ts";
 export * as util from "./util.ts";
