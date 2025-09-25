@@ -1,7 +1,7 @@
 /**
  * # AT Protocol Common Utilities
  *
- * Shared TypeScript code for other @atproto/* packages.
+ * Shared TypeScript code for other @atp/* packages.
  * This package is oriented towards writing servers.
  */
 export * as check from "./check.ts";

@@ -6,8 +6,8 @@
  *
  * @example Fetching an XRPC endpoint
  * ```typescript
- * import { LexiconDoc } from '@atproto/lexicon'
- * import { XrpcClient } from '@atproto/xrpc'
+ * import { LexiconDoc } from '@atp/lexicon'
+ * import { XrpcClient } from '@atp/xrpc'
  *
  * const pingLexicon = {
  *  lexicon: 1,
