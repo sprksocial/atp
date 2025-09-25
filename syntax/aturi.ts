@@ -6,6 +6,21 @@ export const ATP_URI_REGEX =
 //                       --path-----   --query--  --hash--
 const RELATIVE_REGEX = /^(\/[^?#\s]*)?(\?[^#\s]+)?(#[^\s]+)?$/i;
 
+/**
+ * AT URI Validation and parsing class
+ *
+ * @example AT URIs
+ * ```typescript
+ *   import { AtUri } from '@atp/syntax'
+ *
+ *   const uri = new AtUri('at://bob.com/com.example.post/1234')
+ *   uri.protocol // => 'at:'
+ *   uri.origin // => 'at://bob.com'
+ *   uri.hostname // => 'bob.com'
+ *   uri.collection // => 'com.example.post'
+ *   uri.rkey // => '1234'
+ * ```
+ */
 export class AtUri {
   hash: string;
   host: string;

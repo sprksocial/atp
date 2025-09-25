@@ -18,25 +18,30 @@ export const DISALLOWED_TLDS = [
   // "should" "never" actually resolve and get registered in production
 ];
 
-// Handle constraints, in English:
-//  - must be a possible domain name
-//    - RFC-1035 is commonly referenced, but has been updated. eg, RFC-3696,
-//      section 2. and RFC-3986, section 3. can now have leading numbers (eg,
-//      4chan.org)
-//    - "labels" (sub-names) are made of ASCII letters, digits, hyphens
-//    - can not start or end with a hyphen
-//    - TLD (last component) should not start with a digit
-//    - can't end with a hyphen (can end with digit)
-//    - each segment must be between 1 and 63 characters (not including any periods)
-//    - overall length can't be more than 253 characters
-//    - separated by (ASCII) periods; does not start or end with period
-//    - case insensitive
-//    - domains (handles) are equal if they are the same lower-case
-//    - punycode allowed for internationalization
-//  - no whitespace, null bytes, joining chars, etc
-//  - does not validate whether domain or TLD exists, or is a reserved or
-//    special TLD (eg, .onion or .local)
-//  - does not validate punycode
+/**
+ * Ensure a handle is valid
+ * @throws If handle is invalid
+ *
+ *  Handle constraints, in English:
+ *   - must be a possible domain name
+ *     - RFC-1035 is commonly referenced, but has been updated. eg, RFC-3696,
+ *       section 2. and RFC-3986, section 3. can now have leading numbers (eg,
+ *       4chan.org)
+ *    - "labels" (sub-names) are made of ASCII letters, digits, hyphens
+ *    - can not start or end with a hyphen
+ *    - TLD (last component) should not start with a digit
+ *    - can't end with a hyphen (can end with digit)
+ *    - each segment must be between 1 and 63 characters (not including any periods)
+ *    - overall length can't be more than 253 characters
+ *    - separated by (ASCII) periods; does not start or end with period
+ *    - case insensitive
+ *    - domains (handles) are equal if they are the same lower-case
+ *    - punycode allowed for internationalization
+ *    - no whitespace, null bytes, joining chars, etc
+ *    - does not validate whether domain or TLD exists, or is a reserved or
+ *    special TLD (eg, .onion or .local)
+ *  - does not validate punycode
+ */
 export const ensureValidHandle = (handle: string): void => {
   // check that all chars are boring ASCII
   if (!/^[a-zA-Z0-9.-]*$/.test(handle)) {
@@ -73,7 +78,10 @@ export const ensureValidHandle = (handle: string): void => {
   }
 };
 
-// simple regex translation of above constraints
+/**
+ * Ensure a handle is valid using a regex pattern.
+ * @throws If handle is invalid
+ */
 export const ensureValidHandleRegex = (handle: string): void => {
   if (
     !/^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$/
@@ -88,16 +96,29 @@ export const ensureValidHandleRegex = (handle: string): void => {
   }
 };
 
+/**
+ * Converts a handle to lowercase.
+ */
 export const normalizeHandle = (handle: string): string => {
   return handle.toLowerCase();
 };
 
+/**
+ * Converts a handle to lowercase and ensures it is valid.
+ * @returns The normalized handle if it is valid
+ * @throws If handle is invalid
+ */
 export const normalizeAndEnsureValidHandle = (handle: string): string => {
   const normalized = normalizeHandle(handle);
   ensureValidHandle(normalized);
   return normalized;
 };
 
+/**
+ * Checks if a handle is valid and returns a boolean.
+ *
+ * @returns True if handle is valid
+ */
 export const isValidHandle = (handle: string): boolean => {
   try {
     ensureValidHandle(handle);
@@ -111,10 +132,18 @@ export const isValidHandle = (handle: string): boolean => {
   return true;
 };
 
+/**
+ * Check if a TLD is valid.
+ *
+ * Disallowed TLDs: {@linkcode DISALLOWED_TLDS}
+ */
 export const isValidTld = (handle: string): boolean => {
   return !DISALLOWED_TLDS.some((domain) => handle.endsWith(domain));
 };
 
+/**
+ * Thrown when a handle is invalid.
+ */
 export class InvalidHandleError extends Error {}
 /** @deprecated Never used */
 export class ReservedHandleError extends Error {}

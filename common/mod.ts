@@ -1,3 +1,9 @@
+/**
+ * # AT Protocol Common Utilities
+ *
+ * Shared TypeScript code for other @atproto/* packages.
+ * This package is oriented towards writing servers.
+ */
 export * as check from "./check.ts";
 export * as util from "./util.ts";
 

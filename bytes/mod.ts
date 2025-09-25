@@ -1,8 +1,7 @@
 /**
  * @module
  *
- * `Uint8Array`s bring memory-efficient(ish) byte handling to browsers - they are similar to Node.js `Buffer`s but lack a lot of the utility methods present on that class.
- * This module exports a number of function that let you do common operations - joining Uint8Arrays together, seeing if they have the same contents etc.
+ * Simple `Uint8Array` utilities for AT Protocol.
  *
  * ## alloc(size)
  *

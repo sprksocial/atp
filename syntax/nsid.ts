@@ -1,16 +1,29 @@
-/*
-Grammar:
-
-alpha     = "a" / "b" / "c" / "d" / "e" / "f" / "g" / "h" / "i" / "j" / "k" / "l" / "m" / "n" / "o" / "p" / "q" / "r" / "s" / "t" / "u" / "v" / "w" / "x" / "y" / "z" / "A" / "B" / "C" / "D" / "E" / "F" / "G" / "H" / "I" / "J" / "K" / "L" / "M" / "N" / "O" / "P" / "Q" / "R" / "S" / "T" / "U" / "V" / "W" / "X" / "Y" / "Z"
-number    = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9" / "0"
-delim     = "."
-segment   = alpha *( alpha / number / "-" )
-authority = segment *( delim segment )
-name      = alpha *( alpha / number )
-nsid      = authority delim name
-
-*/
-
+/**
+ * NameSpaced Identifier class
+ *
+ * Validation and parsing based on the NSID specification:
+ * https://atproto.com/specs/nsid
+ *
+ * @example NSIDs
+ * ```typescript
+ *  import { NSID } from '@atp/syntax'
+ *
+ *  const id1 = NSID.parse('com.example.foo')
+ *  id1.authority // => 'example.com'
+ *  id1.name // => 'foo'
+ *  id1.toString() // => 'com.example.foo'
+ *
+ *  const id2 = NSID.create('example.com', 'foo')
+ *  id2.authority // => 'example.com'
+ *  id2.name // => 'foo'
+ *  id2.toString() // => 'com.example.foo'
+ *
+ *  NSID.isValid('com.example.foo') // => true
+ *  NSID.isValid('com.example.someThing') // => true
+ *  NSID.isValid('example.com/foo') // => false
+ *  NSID.isValid('foo') // => false
+ * ```
+ */
 export class NSID {
   readonly segments: readonly string[];
 
