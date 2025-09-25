@@ -1,5 +1,5 @@
 import * as noble from "@noble/hashes/utils.js";
-import { type SupportedEncodings, toString } from "@atp/ui8";
+import { type SupportedEncodings, toString } from "@atp/bytes";
 import { sha256 } from "./sha.ts";
 
 export const randomBytes = noble.randomBytes;

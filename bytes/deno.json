@@ -1,5 +1,5 @@
 {
-  "name": "@atp/ui8",
+  "name": "@atp/bytes",
   "version": "0.1.0-alpha.1",
   "exports": "./mod.ts",
   "license": "MIT",

@@ -4,7 +4,7 @@ import {
   fromString as ui8FromString,
   type SupportedEncodings,
   toString as ui8ToString,
-} from "@atp/ui8";
+} from "@atp/bytes";
 import { SECP256K1_JWT_ALG } from "../const.ts";
 import * as did from "../did.ts";
 import type { Keypair } from "../types.ts";

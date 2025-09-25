@@ -1,4 +1,4 @@
-import { fromString, type SupportedEncodings, toString } from "@atp/ui8";
+import { fromString, type SupportedEncodings, toString } from "@atp/bytes";
 
 export const multibaseToBytes = (mb: string): Uint8Array => {
   const base = mb[0];

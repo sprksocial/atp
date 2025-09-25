@@ -1,4 +1,4 @@
-import { equals, fromString } from "@atp/ui8";
+import { equals, fromString } from "@atp/bytes";
 import { BASE58_MULTIBASE_PREFIX, DID_KEY_PREFIX } from "./const.ts";
 
 export const extractMultikey = (did: string): string => {

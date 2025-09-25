@@ -1,7 +1,7 @@
 {
   "workspace": [
     "common",
-    "ui8",
+    "bytes",
     "syntax",
     "crypto",
     "lexicon",

@@ -1,5 +1,5 @@
 import { MINUTE } from "@atp/common";
-import { Secp256k1Keypair } from "@atproto/crypto";
+import { Secp256k1Keypair } from "@atp/crypto";
 import type { LexiconDoc } from "@atp/lexicon";
 import { XrpcClient, XRPCError } from "@atp/xrpc";
 import * as xrpcServer from "../mod.ts";

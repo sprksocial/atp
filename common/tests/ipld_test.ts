@@ -1,4 +1,4 @@
-import * as ui8 from "uint8arrays";
+import * as ui8 from "@atp/bytes";
 import {
   cborDecode,
   cborEncode,

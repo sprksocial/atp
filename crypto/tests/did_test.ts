@@ -1,4 +1,4 @@
-import { equals, fromString } from "@atp/ui8";
+import { equals, fromString } from "@atp/bytes";
 import { P256Keypair, Secp256k1Keypair } from "../mod.ts";
 import * as did from "../did.ts";
 import { assert, assertEquals } from "@std/assert";

@@ -1,4 +1,4 @@
-import { fromString } from "@atp/ui8";
+import { fromString } from "@atp/bytes";
 import { parseDidKey } from "./did.ts";
 import { plugins } from "./plugins.ts";
 import type { VerifyOptions } from "./types.ts";

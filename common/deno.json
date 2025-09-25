@@ -5,18 +5,16 @@
   "license": "MIT",
   "imports": {
     "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.2.5",
-    "@logtape/file": "jsr:@logtape/file@^1.0.4",
-    "@logtape/logtape": "jsr:@logtape/logtape@^1.0.4",
+    "@logtape/file": "jsr:@logtape/file@^1.2.0-dev.344+834f24a9",
+    "@logtape/logtape": "jsr:@logtape/logtape@^1.2.0-dev.344+834f24a9",
     "@std/assert": "jsr:@std/assert@^1.0.14",
-    "@std/bytes": "jsr:@std/bytes@^1.0.6",
     "@std/cbor": "jsr:@std/cbor@^0.1.8",
     "@std/crypto": "jsr:@std/crypto@^1.0.5",
     "@std/encoding": "jsr:@std/encoding@^1.0.10",
     "@std/fs": "jsr:@std/fs@^1.0.19",
     "@std/io": "jsr:@std/io@^0.225.2",
     "@std/streams": "jsr:@std/streams@^1.0.12",
-    "multiformats": "npm:multiformats@^13.4.0",
-    "uint8arrays": "npm:uint8arrays@^5.1.0",
-    "zod": "jsr:@zod/zod@^4.1.5"
+    "multiformats": "npm:multiformats@^13.4.1",
+    "zod": "jsr:@zod/zod@^4.1.11"
   }
 }

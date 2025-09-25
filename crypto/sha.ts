@@ -1,5 +1,5 @@
 import * as noble from "@noble/hashes/sha2.js";
-import * as uint8arrays from "@atp/ui8";
+import * as uint8arrays from "@atp/bytes";
 
 // takes either bytes of utf8 input
 // @TODO this can be sync

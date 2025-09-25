@@ -1,7 +1,10 @@
 import { p256 } from "@noble/curves/nist.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { fromString as ui8FromString, toString as ui8ToString } from "@atp/ui8";
-import type { SupportedEncodings } from "uint8arrays/to-string";
+import {
+  fromString as ui8FromString,
+  type SupportedEncodings,
+  toString as ui8ToString,
+} from "@atp/bytes";
 import { P256_JWT_ALG } from "../const.ts";
 import * as did from "../did.ts";
 import type { Keypair } from "../types.ts";

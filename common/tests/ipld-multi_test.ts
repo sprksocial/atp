@@ -1,5 +1,5 @@
 import { CID } from "multiformats/cid";
-import * as ui8 from "uint8arrays";
+import * as ui8 from "@atp/bytes";
 import { cborDecodeMulti, cborEncode, type CborObject } from "../mod.ts";
 import { assert, assertEquals } from "@std/assert";
 

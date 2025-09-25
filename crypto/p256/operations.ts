@@ -1,6 +1,6 @@
 import { p256 } from "@noble/curves/nist.js";
 import { sha256 } from "@noble/hashes/sha2.js";
-import { equals as ui8equals } from "@atp/ui8";
+import { equals as ui8equals } from "@atp/bytes";
 import { P256_DID_PREFIX } from "../const.ts";
 import type { VerifyOptions } from "../types.ts";
 import { extractMultikey, extractPrefixedBytes, hasPrefix } from "../utils.ts";

@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import * as uint8arrays from "@atp/ui8";
+import * as uint8arrays from "@atp/bytes";
 import {
   multibaseToBytes,
   P256_JWT_ALG,

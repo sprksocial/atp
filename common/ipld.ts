@@ -7,7 +7,7 @@ import { sha256 } from "multiformats/hashes/sha2";
 import { schema } from "./types.ts";
 import * as check from "./check.ts";
 import { crypto } from "@std/crypto";
-import { concat, equals, fromString, toString } from "@atp/ui8";
+import { concat, equals, fromString, toString } from "@atp/bytes";
 
 export const cborEncode = cborCodec.encode;
 export const cborDecode = cborCodec.decode;

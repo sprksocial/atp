@@ -7,18 +7,14 @@
     "jsr:@cliffy/internal@1.0.0-rc.8": "1.0.0-rc.8",
     "jsr:@cliffy/table@1.0.0-rc.8": "1.0.0-rc.8",
     "jsr:@david/code-block-writer@13": "13.0.3",
-    "jsr:@hono/hono@^4.7.10": "4.9.6",
-    "jsr:@logtape/file@*": "1.0.4",
-    "jsr:@logtape/file@^1.0.4": "1.0.4",
-    "jsr:@logtape/logtape@*": "1.0.4",
-    "jsr:@logtape/logtape@^1.0.4": "1.0.4",
+    "jsr:@hono/hono@^4.9.8": "4.9.8",
+    "jsr:@logtape/file@^1.2.0-dev.344+834f24a9": "1.2.0-dev.344+834f24a9",
+    "jsr:@logtape/logtape@^1.2.0-dev.344+834f24a9": "1.2.0-dev.344+834f24a9",
     "jsr:@noble/curves@^2.0.1": "2.0.1",
     "jsr:@noble/hashes@2": "2.0.1",
     "jsr:@noble/hashes@^2.0.1": "2.0.1",
     "jsr:@std/assert@*": "1.0.14",
     "jsr:@std/assert@^1.0.14": "1.0.14",
-    "jsr:@std/bytes@*": "1.0.6",
-    "jsr:@std/bytes@^1.0.2": "1.0.6",
     "jsr:@std/bytes@^1.0.5": "1.0.6",
     "jsr:@std/bytes@^1.0.6": "1.0.6",
     "jsr:@std/cbor@~0.1.8": "0.1.8",
@@ -31,7 +27,6 @@
     "jsr:@std/fs@^1.0.19": "1.0.19",
     "jsr:@std/internal@^1.0.10": "1.0.10",
     "jsr:@std/internal@^1.0.9": "1.0.10",
-    "jsr:@std/io@*": "0.224.9",
     "jsr:@std/io@~0.224.9": "0.224.9",
     "jsr:@std/io@~0.225.2": "0.225.2",
     "jsr:@std/path@1": "1.1.2",
@@ -42,24 +37,17 @@
     "jsr:@std/text@~1.0.7": "1.0.16",
     "jsr:@ts-morph/common@0.27": "0.27.0",
     "jsr:@ts-morph/ts-morph@26": "26.0.0",
-    "jsr:@zod/zod@^4.0.17": "4.1.11",
     "jsr:@zod/zod@^4.1.11": "4.1.11",
-    "jsr:@zod/zod@^4.1.5": "4.1.11",
-    "npm:@atproto/crypto@~0.4.4": "0.4.4",
     "npm:@ipld/dag-cbor@^9.2.5": "9.2.5",
     "npm:@types/node@*": "24.2.0",
     "npm:cbor-x@*": "1.6.0",
     "npm:get-port@^7.1.0": "7.1.0",
     "npm:http-errors@2": "2.0.0",
     "npm:key-encoder@^2.0.3": "2.0.3",
-    "npm:multiformats@*": "13.4.0",
-    "npm:multiformats@^13.4.0": "13.4.0",
     "npm:multiformats@^13.4.1": "13.4.1",
     "npm:prettier@^3.6.2": "3.6.2",
-    "npm:rate-limiter-flexible@^2.4.1": "2.4.2",
-    "npm:uint8arrays@3.0.0": "3.0.0",
-    "npm:uint8arrays@^5.1.0": "5.1.0",
-    "npm:ws@^8.12.0": "8.18.3",
+    "npm:rate-limiter-flexible@^2.4.2": "2.4.2",
+    "npm:ws@^8.18.3": "8.18.3",
     "npm:zod@^4.1.11": "4.1.11"
   },
   "jsr": {
@@ -100,17 +88,17 @@
     "@david/code-block-writer@13.0.3": {
       "integrity": "f98c77d320f5957899a61bfb7a9bead7c6d83ad1515daee92dbacc861e13bb7f"
     },
-    "@hono/hono@4.9.6": {
-      "integrity": "b85abb0013d167a290b1808d1d4d542dee269df31d4f47122023259fdd7e184b"
+    "@hono/hono@4.9.8": {
+      "integrity": "908150f13e90181a051a3af3bf15203aff00190682afedfd38824d0cb9299a95"
     },
-    "@logtape/file@1.0.4": {
-      "integrity": "80f49feb4826fa748ae3ebd1eaf2fa7f23f1820c84d5402a1f7de76f529464e4",
+    "@logtape/file@1.2.0-dev.344+834f24a9": {
+      "integrity": "4d674c368f8130dc1403c5c93a316726a65d6b17e36b094780f1b2ed301f5e1b",
       "dependencies": [
-        "jsr:@logtape/logtape@^1.0.4"
+        "jsr:@logtape/logtape"
       ]
     },
-    "@logtape/logtape@1.0.4": {
-      "integrity": "6ada87764d995b1033c352a17fd9e20b217f3672083bc2d8debe356eac03fe10"
+    "@logtape/logtape@1.2.0-dev.344+834f24a9": {
+      "integrity": "204222be0f94cd1b64a500e2dcdea22a1618a086fc531b054351e3cfa079c435"
     },
     "@noble/curves@2.0.1": {
       "integrity": "21ef41d207a203f60ba37a4fdcbc4f4a545b10c5dab7f293889f18292f81ab23",
@@ -157,10 +145,7 @@
       "integrity": "e3be62ce42cab0e177c27698e5d9800122f67b766a0bea6ca4867886cbde8cf7"
     },
     "@std/io@0.224.9": {
-      "integrity": "4414664b6926f665102e73c969cfda06d2c4c59bd5d0c603fd4f1b1c840d6ee3",
-      "dependencies": [
-        "jsr:@std/bytes@^1.0.2"
-      ]
+      "integrity": "4414664b6926f665102e73c969cfda06d2c4c59bd5d0c603fd4f1b1c840d6ee3"
     },
     "@std/io@0.225.2": {
       "integrity": "3c740cd4ee4c082e6cfc86458f47e2ab7cb353dc6234d5e9b1f91a2de5f4d6c7",
@@ -208,14 +193,6 @@
     }
   },
   "npm": {
-    "@atproto/crypto@0.4.4": {
-      "integrity": "sha512-Yq9+crJ7WQl7sxStVpHgie5Z51R05etaK9DLWYG/7bR5T4bhdcIgF6IfklLShtZwLYdVVj+K15s0BqW9a8PSDA==",
-      "dependencies": [
-        "@noble/curves",
-        "@noble/hashes",
-        "uint8arrays@3.0.0"
-      ]
-    },
     "@cbor-extract/cbor-extract-darwin-arm64@2.2.0": {
       "integrity": "sha512-P7swiOAdF7aSi0H+tHtHtr6zrpF3aAq/W9FXx5HektRvLTM2O89xCyXF3pk7pLc7QpaY7AoaE8UowVf9QBdh3w==",
       "os": ["darwin"],
@@ -250,17 +227,8 @@
       "integrity": "sha512-84wSr4jv30biui7endhobYhXBQzQE4c/wdoWlFrKcfiwH+ofaPg8fwsM8okX9cOzkkrsAsNdDyH3ou+kiLquwQ==",
       "dependencies": [
         "cborg",
-        "multiformats@13.4.0"
+        "multiformats"
       ]
-    },
-    "@noble/curves@1.9.7": {
-      "integrity": "sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==",
-      "dependencies": [
-        "@noble/hashes"
-      ]
-    },
-    "@noble/hashes@1.8.0": {
-      "integrity": "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="
     },
     "@types/bn.js@5.2.0": {
       "integrity": "sha512-DLbJ1BPqxvQhIGbeu8VbUC1DiAiahHtAYvA0ZEAa4P31F7IaArc8z3C3BRQdWX4mtLQuABG4yzp76ZrS02Ui1Q==",
@@ -385,14 +353,8 @@
     "minimalistic-crypto-utils@1.0.1": {
       "integrity": "sha512-JIYlbt6g8i5jKfJ3xz7rF0LXmv2TkDxBLUkiBeZ7bAx4GnnNMr8xFpGnOxn6GhTEHx3SjRrZEoU+j04prX1ktg=="
     },
-    "multiformats@13.4.0": {
-      "integrity": "sha512-Mkb/QcclrJxKC+vrcIFl297h52QcKh2Az/9A5vbWytbQt4225UWWWmIuSsKksdww9NkIeYcA7DkfftyLuC/JSg=="
-    },
     "multiformats@13.4.1": {
       "integrity": "sha512-VqO6OSvLrFVAYYjgsr8tyv62/rCQhPgsZUXLTqoFLSgdkgiUYKYeArbt1uWLlEpkjxQe+P0+sHlbPEte1Bi06Q=="
-    },
-    "multiformats@9.9.0": {
-      "integrity": "sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg=="
     },
     "node-gyp-build-optional-packages@5.1.1": {
       "integrity": "sha512-+P72GAjVAbTxjjwUmwjVrqrdZROD4nf8KgpBoDxqXXTiYZZt/ud60dE5yvCSr9lRO8e8yv6kgJIC0K0PfZFVQw==",
@@ -420,18 +382,6 @@
     "toidentifier@1.0.1": {
       "integrity": "sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA=="
     },
-    "uint8arrays@3.0.0": {
-      "integrity": "sha512-HRCx0q6O9Bfbp+HHSfQQKD7wU70+lydKVt4EghkdOvlK/NlrF90z+eXV34mUd48rNvVJXwkrMSPpCATkct8fJA==",
-      "dependencies": [
-        "multiformats@9.9.0"
-      ]
-    },
-    "uint8arrays@5.1.0": {
-      "integrity": "sha512-vA6nFepEmlSKkMBnLBaUMVvAC4G3CTmO58C12y4sq6WPDOR7mOFYOi7GlrQ4djeSbP6JG9Pv9tJDM97PedRSww==",
-      "dependencies": [
-        "multiformats@13.4.0"
-      ]
-    },
     "undici-types@7.10.0": {
       "integrity": "sha512-t5Fy/nfn+14LuOc2KNYg75vZqClpAiqscVvMygNnlsHBFpSXdJaYtXMcdNLpl/Qvc3P2cB3s6lOV51nqsFq4ag=="
     },
@@ -454,22 +404,26 @@
   },
   "workspace": {
     "members": {
+      "bytes": {
+        "dependencies": [
+          "jsr:@std/assert@^1.0.14",
+          "npm:multiformats@^13.4.1"
+        ]
+      },
       "common": {
         "dependencies": [
-          "jsr:@logtape/file@^1.0.4",
-          "jsr:@logtape/logtape@^1.0.4",
+          "jsr:@logtape/file@^1.2.0-dev.344+834f24a9",
+          "jsr:@logtape/logtape@^1.2.0-dev.344+834f24a9",
           "jsr:@std/assert@^1.0.14",
-          "jsr:@std/bytes@^1.0.6",
           "jsr:@std/cbor@~0.1.8",
           "jsr:@std/crypto@^1.0.5",
           "jsr:@std/encoding@^1.0.10",
           "jsr:@std/fs@^1.0.19",
           "jsr:@std/io@~0.225.2",
           "jsr:@std/streams@^1.0.12",
-          "jsr:@zod/zod@^4.1.5",
+          "jsr:@zod/zod@^4.1.11",
           "npm:@ipld/dag-cbor@^9.2.5",
-          "npm:multiformats@^13.4.0",
-          "npm:uint8arrays@^5.1.0"
+          "npm:multiformats@^13.4.1"
         ]
       },
       "crypto": {
@@ -477,8 +431,7 @@
           "jsr:@noble/curves@^2.0.1",
           "jsr:@noble/hashes@^2.0.1",
           "jsr:@std/assert@^1.0.14",
-          "npm:multiformats@^13.4.1",
-          "npm:uint8arrays@^5.1.0"
+          "npm:multiformats@^13.4.1"
         ]
       },
       "lex-cli": {
@@ -488,7 +441,7 @@
           "jsr:@std/fs@^1.0.19",
           "jsr:@std/path@^1.1.2",
           "jsr:@ts-morph/ts-morph@26",
-          "jsr:@zod/zod@^4.1.5",
+          "jsr:@zod/zod@^4.1.11",
           "npm:prettier@^3.6.2"
         ]
       },
@@ -504,12 +457,6 @@
           "jsr:@std/assert@^1.0.14"
         ]
       },
-      "ui8": {
-        "dependencies": [
-          "jsr:@std/assert@^1.0.14",
-          "npm:multiformats@^13.4.1"
-        ]
-      },
       "xrpc": {
         "dependencies": [
           "jsr:@zod/zod@^4.1.11"
@@ -517,19 +464,17 @@
       },
       "xrpc-server": {
         "dependencies": [
-          "jsr:@hono/hono@^4.7.10",
+          "jsr:@hono/hono@^4.9.8",
           "jsr:@std/assert@^1.0.14",
           "jsr:@std/cbor@~0.1.8",
           "jsr:@std/encoding@^1.0.10",
-          "jsr:@zod/zod@^4.0.17",
-          "npm:@atproto/crypto@~0.4.4",
+          "jsr:@zod/zod@^4.1.11",
           "npm:get-port@^7.1.0",
           "npm:http-errors@2",
           "npm:key-encoder@^2.0.3",
           "npm:multiformats@^13.4.1",
-          "npm:rate-limiter-flexible@^2.4.1",
-          "npm:uint8arrays@3.0.0",
-          "npm:ws@^8.12.0"
+          "npm:rate-limiter-flexible@^2.4.2",
+          "npm:ws@^8.18.3"
         ]
       }
     }

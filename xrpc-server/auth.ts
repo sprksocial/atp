@@ -1,7 +1,7 @@
-import * as ui8 from "uint8arrays";
+import * as ui8 from "@atp/bytes";
 import * as common from "@atp/common";
 import { MINUTE } from "@atp/common";
-import * as crypto from "@atproto/crypto";
+import * as crypto from "@atp/crypto";
 import { AuthRequiredError } from "./errors.ts";
 
 type ServiceJwtParams = {
@@ -86,7 +86,7 @@ export type VerifySignatureWithKeyFn = (
   msgBytes: Uint8Array,
   sigBytes: Uint8Array,
   alg: string,
-) => Promise<boolean>;
+) => boolean;
 
 export const verifyJwt = async (
   jwtStr: string,
@@ -112,7 +112,7 @@ export const verifyJwt = async (
     // service tokens are not OAuth 2.0 access tokens
     // https://datatracker.ietf.org/doc/html/rfc9068
     header["typ"] === "at+jwt" ||
-    // "refresh+jwt" is a non-standard type used by the @atproto packages
+    // "refresh+jwt" is a non-standard type used by atproto packages
     header["typ"] === "refresh+jwt" ||
     // "DPoP" proofs are not meant to be used as service tokens
     // https://datatracker.ietf.org/doc/html/rfc9449

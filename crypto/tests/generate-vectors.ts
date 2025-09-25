@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { equals, fromString, toString } from "@atp/ui8";
+import { equals, fromString, toString } from "@atp/bytes";
 import { cborEncode } from "@atp/common";
 import {
   bytesToMultibase,

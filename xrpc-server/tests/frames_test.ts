@@ -1,5 +1,5 @@
 import { encodeCbor } from "@std/cbor";
-import * as uint8arrays from "uint8arrays";
+import * as uint8arrays from "@atp/bytes";
 import { ErrorFrame, Frame, FrameType, MessageFrame } from "../mod.ts";
 import { assertEquals, assertThrows } from "@std/assert";
 

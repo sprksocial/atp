@@ -1,5 +1,5 @@
 import { p256 } from "@noble/curves/nist.js";
-import { toString } from "@atp/ui8";
+import { toString } from "@atp/bytes";
 
 export const compressPubkey = (pubkeyBytes: Uint8Array): Uint8Array => {
   // Check if key is already compressed (33 bytes starting with 0x02 or 0x03)

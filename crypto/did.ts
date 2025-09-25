@@ -1,4 +1,4 @@
-import * as uint8arrays from "@atp/ui8";
+import * as uint8arrays from "@atp/bytes";
 import { BASE58_MULTIBASE_PREFIX, DID_KEY_PREFIX } from "./const.ts";
 import { plugins } from "./plugins.ts";
 import { extractMultikey, extractPrefixedBytes, hasPrefix } from "./utils.ts";
