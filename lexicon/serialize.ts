@@ -26,6 +26,7 @@ export const lexToIpld = (val: LexValue): IpldValue => {
   }
   // objects
   if (val && typeof val === "object") {
+    const obj = val as Record<string, LexValue>;
     // convert blobs, leaving the original encoding so that we don't change CIDs on re-encode
     if (val instanceof BlobRef) {
       return val.original;
@@ -37,7 +38,7 @@ export const lexToIpld = (val: LexValue): IpldValue => {
     // walk plain objects
     const toReturn: Record<string, IpldValue> = {};
     for (const key of Object.keys(val)) {
-      toReturn[key] = lexToIpld((val as Record<string, LexValue>)[key]);
+      toReturn[key] = lexToIpld(obj[key]);
     }
     return toReturn;
   }
@@ -69,7 +70,7 @@ export const ipldToLex = (val: IpldValue): LexValue => {
     // map plain objects
     const toReturn: Record<string, LexValue> = {};
     for (const key of Object.keys(val)) {
-      toReturn[key] = ipldToLex((val as Record<string, IpldValue>)[key]);
+      toReturn[key] = ipldToLex(obj[key]);
     }
     return toReturn;
   }

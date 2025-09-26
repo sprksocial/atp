@@ -63,7 +63,7 @@ export class BlobRef {
     if (check.is(json, typedJsonBlobRef)) {
       return new BlobRef(json.ref as CID, json.mimeType, json.size, json);
     } else {
-      return new BlobRef(CID.parse(json.cid), json.mimeType, -1);
+      return new BlobRef(CID.parse(json.cid), json.mimeType, -1, json);
     }
   }
 

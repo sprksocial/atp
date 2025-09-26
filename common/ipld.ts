@@ -160,7 +160,7 @@ export const jsonToIpld = (val: JsonValue): IpldValue => {
   if (val && typeof val === "object") {
     const obj = val as Record<string, unknown>;
     // check for dag json values
-    if (typeof obj["$link"] === "string" && Object.keys(obj).length === 1) {
+    if (typeof obj["$link"] === "string" && Object.keys(val).length === 1) {
       return CID.parse(obj["$link"]);
     }
     if (typeof obj["$bytes"] === "string" && Object.keys(val).length === 1) {
@@ -168,7 +168,7 @@ export const jsonToIpld = (val: JsonValue): IpldValue => {
     }
     // walk plain objects
     const toReturn: Record<string, IpldValue> = {};
-    for (const key of Object.keys(obj)) {
+    for (const key of Object.keys(val)) {
       toReturn[key] = jsonToIpld(obj[key]);
     }
     return toReturn;
@@ -199,7 +199,7 @@ export const ipldToJson = (val: IpldValue): JsonValue => {
     }
     // walk plain objects
     const toReturn: Record<string, JsonValue> = {};
-    for (const key of Object.keys(obj)) {
+    for (const key of Object.keys(val)) {
       toReturn[key] = ipldToJson(obj[key]);
     }
     return toReturn;
@@ -225,7 +225,7 @@ export const ipldEquals = (a: IpldValue, b: IpldValue): boolean => {
     }
     // check cids
     if (CID.asCID(a) && CID.asCID(b)) {
-      return CID.asCID(a)!.equals(CID.asCID(b));
+      return (CID.asCID(a)?.equals(CID.asCID(b))) ? true : false;
     }
     // walk plain objects
     const objA = a as Record<string, IpldValue>;
