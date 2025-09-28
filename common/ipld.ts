@@ -225,7 +225,7 @@ export const ipldEquals = (a: IpldValue, b: IpldValue): boolean => {
     }
     // check cids
     if (CID.asCID(a) && CID.asCID(b)) {
-      return (CID.asCID(a)?.equals(CID.asCID(b))) ? true : false;
+      return CID.asCID(a)?.equals(CID.asCID(b)) ?? false;
     }
     // walk plain objects
     const objA = a as Record<string, IpldValue>;

@@ -5,8 +5,12 @@
     "syntax",
     "crypto",
     "lexicon",
+    "repo",
     "xrpc",
     "xrpc-server",
     "lex-cli"
-  ]
+  ],
+  "imports": {
+    "@std/assert": "jsr:@std/assert@^1.0.14"
+  }
 }

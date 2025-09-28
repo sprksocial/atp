@@ -1,5 +1,5 @@
 import { concat } from "@atp/bytes";
-import { Buffer } from "@std/io";
+import { flattenUint8Arrays } from "./util.ts";
 
 export const forwardStreamErrors = (..._streams: ReadableStream[]) => {
   // Web Streams don't have the same error forwarding mechanism as streams
@@ -60,15 +60,13 @@ export const streamToBytes = async (
 };
 
 export const streamToBuffer = async (
-  stream:
-    | Iterable<Uint8Array>
-    | AsyncIterable<Uint8Array>
-    | ReadableStream<Uint8Array>,
-): Promise<Buffer> => {
-  const bytes = await streamToBytes(stream as AsyncIterable<Uint8Array>);
-  const buffer = new Buffer();
-  await buffer.write(bytes);
-  return buffer;
+  stream: AsyncIterable<Uint8Array>,
+): Promise<Uint8Array> => {
+  const arrays: Uint8Array[] = [];
+  for await (const chunk of stream) {
+    arrays.push(chunk);
+  }
+  return flattenUint8Arrays(arrays);
 };
 
 export const byteIterableToStream = (

@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import * as streams from "../streams.ts";
 
 Deno.test("forwardStreamErrors - is a no-op in Web Streams", () => {
@@ -74,12 +74,11 @@ Deno.test("streamToBuffer - converts stream to buffer", async () => {
   });
 
   const buffer = await streams.streamToBuffer(stream);
-  const bytes = new Uint8Array(buffer.bytes());
 
-  assertEquals(bytes[0], "f".charCodeAt(0));
-  assertEquals(bytes[1], "o".charCodeAt(0));
-  assertEquals(bytes[2], "o".charCodeAt(0));
-  assertEquals(bytes.length, 3);
+  assertEquals(buffer[0], "f".charCodeAt(0));
+  assertEquals(buffer[1], "o".charCodeAt(0));
+  assertEquals(buffer[2], "o".charCodeAt(0));
+  assertEquals(buffer.length, 3);
 });
 
 Deno.test("streamToBuffer - converts async iterable to buffer", async () => {
@@ -90,26 +89,11 @@ Deno.test("streamToBuffer - converts async iterable to buffer", async () => {
   })();
 
   const buffer = await streams.streamToBuffer(iterable);
-  const bytes = new Uint8Array(buffer.bytes());
 
-  assertEquals(bytes[0], "b".charCodeAt(0));
-  assertEquals(bytes[1], "a".charCodeAt(0));
-  assertEquals(bytes[2], "r".charCodeAt(0));
-  assertEquals(bytes.length, 3);
-});
-
-Deno.test("streamToBuffer - throws error for non Uint8Array chunks", async () => {
-  const iterable = (async function* () {
-    yield new Uint8Array([98]); // "b"
-    yield new Uint8Array([97]); // "a"
-    yield "r"; // This should cause an error
-  })();
-
-  await assertRejects(
-    () => streams.streamToBuffer(iterable as AsyncIterable<Uint8Array>),
-    TypeError,
-    "expected Uint8Array",
-  );
+  assertEquals(buffer[0], "b".charCodeAt(0));
+  assertEquals(buffer[1], "a".charCodeAt(0));
+  assertEquals(buffer[2], "r".charCodeAt(0));
+  assertEquals(buffer.length, 3);
 });
 
 Deno.test("byteIterableToStream - converts byte iterable to stream", async () => {

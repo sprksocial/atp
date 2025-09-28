@@ -28,7 +28,6 @@
     "jsr:@std/internal@^1.0.10": "1.0.10",
     "jsr:@std/internal@^1.0.9": "1.0.10",
     "jsr:@std/io@~0.224.9": "0.224.9",
-    "jsr:@std/io@~0.225.2": "0.225.2",
     "jsr:@std/path@1": "1.1.2",
     "jsr:@std/path@^1.1.1": "1.1.2",
     "jsr:@std/path@^1.1.2": "1.1.2",
@@ -57,7 +56,7 @@
         "jsr:@cliffy/internal",
         "jsr:@std/encoding@~1.0.5",
         "jsr:@std/fmt",
-        "jsr:@std/io@~0.224.9"
+        "jsr:@std/io"
       ]
     },
     "@cliffy/command@1.0.0-rc.8": {
@@ -146,12 +145,6 @@
     },
     "@std/io@0.224.9": {
       "integrity": "4414664b6926f665102e73c969cfda06d2c4c59bd5d0c603fd4f1b1c840d6ee3"
-    },
-    "@std/io@0.225.2": {
-      "integrity": "3c740cd4ee4c082e6cfc86458f47e2ab7cb353dc6234d5e9b1f91a2de5f4d6c7",
-      "dependencies": [
-        "jsr:@std/bytes@^1.0.5"
-      ]
     },
     "@std/path@1.1.2": {
       "integrity": "c0b13b97dfe06546d5e16bf3966b1cadf92e1cc83e56ba5476ad8b498d9e3038",
@@ -403,10 +396,12 @@
     "https://deno.land/x/deno_fmt@0.1.5/src/sha256.ts": "eea8272cd53072763ad5fa8e632a572676cde41e027485116a8f84a49a669bf8"
   },
   "workspace": {
+    "dependencies": [
+      "jsr:@std/assert@^1.0.14"
+    ],
     "members": {
       "bytes": {
         "dependencies": [
-          "jsr:@std/assert@^1.0.14",
           "npm:multiformats@^13.4.1"
         ]
       },
@@ -414,12 +409,10 @@
         "dependencies": [
           "jsr:@logtape/file@^1.2.0-dev.344+834f24a9",
           "jsr:@logtape/logtape@^1.2.0-dev.344+834f24a9",
-          "jsr:@std/assert@^1.0.14",
           "jsr:@std/cbor@~0.1.8",
           "jsr:@std/crypto@^1.0.5",
           "jsr:@std/encoding@^1.0.10",
           "jsr:@std/fs@^1.0.19",
-          "jsr:@std/io@~0.225.2",
           "jsr:@std/streams@^1.0.12",
           "jsr:@zod/zod@^4.1.11",
           "npm:@ipld/dag-cbor@^9.2.5",
@@ -430,7 +423,6 @@
         "dependencies": [
           "jsr:@noble/curves@^2.0.1",
           "jsr:@noble/hashes@^2.0.1",
-          "jsr:@std/assert@^1.0.14",
           "npm:multiformats@^13.4.1"
         ]
       },
@@ -447,14 +439,16 @@
       },
       "lexicon": {
         "dependencies": [
-          "jsr:@std/assert@^1.0.14",
           "npm:multiformats@^13.4.1",
           "npm:zod@^4.1.11"
         ]
       },
-      "syntax": {
+      "repo": {
         "dependencies": [
-          "jsr:@std/assert@^1.0.14"
+          "jsr:@std/encoding@^1.0.10",
+          "npm:@ipld/dag-cbor@^9.2.5",
+          "npm:multiformats@^13.4.1",
+          "npm:zod@^4.1.11"
         ]
       },
       "xrpc": {
@@ -465,7 +459,6 @@
       "xrpc-server": {
         "dependencies": [
           "jsr:@hono/hono@^4.9.8",
-          "jsr:@std/assert@^1.0.14",
           "jsr:@std/cbor@~0.1.8",
           "jsr:@std/encoding@^1.0.10",
           "jsr:@zod/zod@^4.1.11",
