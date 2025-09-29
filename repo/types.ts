@@ -1,10 +1,10 @@
-import { CID } from "multiformats";
+import type { CID } from "multiformats";
 import { z } from "zod";
 import { schema as common } from "@atp/common";
 import { def as commonDef } from "@atp/common";
-import { RepoRecord } from "@atp/lexicon";
-import { BlockMap } from "./block-map.ts";
-import { CidSet } from "./cid-set.ts";
+import type { RepoRecord } from "@atp/lexicon";
+import type { BlockMap } from "./block-map.ts";
+import type { CidSet } from "./cid-set.ts";
 
 // Repo nodes
 // ---------------

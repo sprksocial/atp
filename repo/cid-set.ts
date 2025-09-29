@@ -23,7 +23,7 @@ export class CidSet {
     return this;
   }
 
-  delete(cid: CID) {
+  delete(cid: CID): CidSet {
     this.set.delete(cid.toString());
     return this;
   }

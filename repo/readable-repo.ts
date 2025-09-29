@@ -1,11 +1,11 @@
-import { CID } from "multiformats/cid";
-import { RepoRecord } from "@atp/lexicon";
+import type { CID } from "multiformats/cid";
+import type { RepoRecord } from "@atp/lexicon";
 import { MissingBlocksError } from "./error.ts";
 import log from "./logger.ts";
 import { MST } from "./mst/index.ts";
 import * as parse from "./parse.ts";
-import { ReadableBlockstore } from "./storage/index.ts";
-import { Commit, def, RepoContents } from "./types.ts";
+import type { ReadableBlockstore } from "./storage/index.ts";
+import { type Commit, def, type RepoContents } from "./types.ts";
 import * as util from "./util.ts";
 
 type Params = {
@@ -28,7 +28,7 @@ export class ReadableRepo {
     this.cid = params.cid;
   }
 
-  static load(storage: ReadableBlockstore, commitCid: CID) {
+  static load(storage: ReadableBlockstore, commitCid: CID): ReadableRepo {
     const commit = storage.readObj(commitCid, def.versionedCommit);
     const data = MST.load(storage, (commit as { data: CID }).data);
     log.info("loaded repo for", { did: commit.did });

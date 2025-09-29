@@ -1,7 +1,7 @@
-import { CID } from "multiformats/cid";
-import { cborDecode, check } from "@atp/common";
-import { RepoRecord } from "@atp/lexicon";
-import { BlockMap } from "./block-map.ts";
+import type { CID } from "multiformats/cid";
+import { cborDecode, type check } from "@atp/common";
+import type { RepoRecord } from "@atp/lexicon";
+import type { BlockMap } from "./block-map.ts";
 import { MissingBlockError, UnexpectedObjectError } from "./error.ts";
 import { cborToLexRecord } from "./util.ts";
 

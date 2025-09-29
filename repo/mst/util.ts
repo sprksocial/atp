@@ -11,7 +11,7 @@ import {
   type NodeEntry,
 } from "./mst.ts";
 
-export const leadingZerosOnHash = (key: string | Uint8Array) => {
+export const leadingZerosOnHash = (key: string | Uint8Array): number => {
   const hash = sha256(key);
   let leadingZeros = 0;
   for (let i = 0; i < hash.length; i++) {
@@ -138,7 +138,7 @@ export const isValidChars = (str: string): boolean => {
   return str.match(validCharsRegex) !== null;
 };
 
-export const ensureValidMstKey = (str: string) => {
+export const ensureValidMstKey = (str: string): void => {
   if (!isValidMstKey(str)) {
     throw new InvalidMstKeyError(str);
   }

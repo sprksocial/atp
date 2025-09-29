@@ -1,20 +1,26 @@
 import * as cbor from "@ipld/dag-cbor";
 import { cborDecode, check, cidForCbor, schema, TID } from "@atp/common";
 import * as crypto from "@atp/crypto";
-import { Keypair } from "@atp/crypto";
-import { ipldToLex, lexToIpld, LexValue, RepoRecord } from "@atp/lexicon";
-import { DataDiff } from "./data-diff.ts";
+import type { Keypair } from "@atp/crypto";
 import {
-  Commit,
-  LegacyV2Commit,
-  RecordCreateDescript,
-  RecordDeleteDescript,
-  RecordPath,
-  RecordUpdateDescript,
-  RecordWriteDescript,
-  UnsignedCommit,
+  ipldToLex,
+  lexToIpld,
+  type LexValue,
+  type RepoRecord,
+} from "@atp/lexicon";
+import type { DataDiff } from "./data-diff.ts";
+import {
+  type Commit,
+  type LegacyV2Commit,
+  type RecordCreateDescript,
+  type RecordDeleteDescript,
+  type RecordPath,
+  type RecordUpdateDescript,
+  type RecordWriteDescript,
+  type UnsignedCommit,
   WriteOpAction,
 } from "./types.ts";
+import type { CID } from "multiformats/basics";
 
 export const diffToWriteDescripts = (
   diff: DataDiff,
@@ -79,12 +85,12 @@ export const metaEqual = (a: Commit, b: Commit): boolean => {
   return a.did === b.did && a.version === b.version;
 };
 
-export const signCommit = async (
+export const signCommit = (
   unsigned: UnsignedCommit,
   keypair: Keypair,
-): Promise<Commit> => {
+): Commit => {
   const encoded = cbor.encode(unsigned);
-  const sig = await keypair.sign(encoded);
+  const sig = keypair.sign(encoded);
   return {
     ...unsigned,
     sig,
@@ -112,8 +118,8 @@ export const cborToLexRecord = (val: Uint8Array): RepoRecord => {
   return parsed as RepoRecord;
 };
 
-export const cidForRecord = (val: LexValue) => {
-  return cidForCbor(lexToIpld(val));
+export const cidForRecord = async (val: LexValue): Promise<CID> => {
+  return await cidForCbor(lexToIpld(val));
 };
 
 export const ensureV3Commit = (commit: LegacyV2Commit | Commit): Commit => {

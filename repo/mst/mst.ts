@@ -42,18 +42,29 @@ import * as util from "./util.ts";
  * Then the first will be described as `prefix: 0, key: 'bsky/posts/abcdefg'`,
  * and the second will be described as `prefix: 16, key: 'hi'.`
  */
-const subTreePointer = z.nullable(common.cid);
-const treeEntry = z.object({
+const subTreePointer: SubTreePointerType = z.nullable(common.cid);
+type SubTreePointerType = z.ZodNullable<typeof common.cid>;
+const treeEntry: TreeEntryType = z.object({
   p: z.number(), // prefix count of ascii chars that this key shares with the prev key
   k: common.bytes, // the rest of the key outside the shared prefix
   v: common.cid, // value
   t: subTreePointer, // next subtree (to the right of leaf)
 });
-const nodeData = z.object({
+type TreeEntryType = z.ZodObject<{
+  p: z.ZodNumber;
+  k: typeof common.bytes;
+  v: typeof common.cid;
+  t: SubTreePointerType;
+}, z.core.$strip>;
+const nodeData: NodeDataType = z.object({
   l: subTreePointer, // left-most subtree
   e: z.array(treeEntry), //entries
 });
-export type NodeData = z.infer<typeof nodeData>;
+type NodeDataType = z.ZodObject<{
+  l: SubTreePointerType;
+  e: z.ZodArray<TreeEntryType>;
+}, z.core.$strip>;
+export type NodeData = z.infer<NodeDataType>;
 
 export const nodeDataDef = {
   name: "mst node",
@@ -675,7 +686,7 @@ export class MST {
   }
 
   // Walks tree & returns all leaves
-  async leaves() {
+  async leaves(): Promise<Leaf[]> {
     const leaves: Leaf[] = [];
     for await (const entry of this.walk()) {
       if (entry.isLeaf()) leaves.push(entry);

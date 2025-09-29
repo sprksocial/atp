@@ -207,10 +207,9 @@ export const addBadCommit = async (
   const commitCid = await newBlocks.add(commit);
 
   // @ts-expect-error FIXME remove this comment (and fix the TS error)
-  await repo.storage.applyCommit({
+  repo.storage.applyCommit({
     cid: commitCid,
     rev,
-    prev: repo.cid,
     newBlocks,
     removedCids: diff.removedCids,
   });
@@ -227,7 +226,7 @@ export const writeMstLog = async (filename: string, tree: MST) => {
     const layer = await entry.getLayer();
     log += `Layer ${layer}: ${entry.pointer}\n`;
     log += "--------------\n";
-    const entries = await entry.getEntries();
+    const entries = entry.getEntries();
     for (const e of entries) {
       if (e.isLeaf()) {
         log += `Key: ${e.key} (${e.value})\n`;

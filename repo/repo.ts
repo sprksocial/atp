@@ -1,6 +1,6 @@
-import { CID } from "multiformats/cid";
+import type { CID } from "multiformats/cid";
 import { dataToCborBlock, TID } from "@atp/common";
-import * as crypto from "@atp/crypto";
+import type * as crypto from "@atp/crypto";
 import { lexToIpld } from "@atp/lexicon";
 import { BlockMap } from "./block-map.ts";
 import { CidSet } from "./cid-set.ts";
@@ -8,16 +8,17 @@ import { DataDiff } from "./data-diff.ts";
 import log from "./logger.ts";
 import { MST } from "./mst/index.ts";
 import { ReadableRepo } from "./readable-repo.ts";
-import { RepoStorage } from "./storage/index.ts";
+import type { RepoStorage } from "./storage/index.ts";
 import {
-  Commit,
-  CommitData,
+  type Commit,
+  type CommitData,
   def,
-  RecordCreateOp,
-  RecordWriteOp,
+  type RecordCreateOp,
+  type RecordWriteOp,
   WriteOpAction,
 } from "./types.ts";
 import * as util from "./util.ts";
+import type { Version } from "multiformats/link/interface";
 
 type Params = {
   storage: RepoStorage;
@@ -54,7 +55,7 @@ export class Repo extends ReadableRepo {
     newBlocks.addMap(diff.newMstBlocks);
 
     const rev = revOverride ?? TID.nextStr();
-    const commit = await util.signCommit(
+    const commit = util.signCommit(
       {
         did,
         version: 3,
@@ -76,11 +77,11 @@ export class Repo extends ReadableRepo {
     };
   }
 
-  static async createFromCommit(
+  static createFromCommit(
     storage: RepoStorage,
     commit: CommitData,
-  ): Promise<Repo> {
-    await storage.applyCommit(commit);
+  ): Repo {
+    storage.applyCommit(commit);
     return Repo.load(storage, commit.cid);
   }
 
@@ -99,7 +100,7 @@ export class Repo extends ReadableRepo {
     return Repo.createFromCommit(storage, commit);
   }
 
-  static override load(storage: RepoStorage, cid?: CID) {
+  static override load(storage: RepoStorage, cid?: CID): Repo {
     const commitCid = cid || (storage.getRoot());
     if (!commitCid) {
       throw new Error("No cid provided and none in storage");
@@ -159,7 +160,7 @@ export class Repo extends ReadableRepo {
     relevantBlocks.addMap(addedLeaves.blocks);
 
     const rev = TID.nextStr(this.commit.rev);
-    const commit = await util.signCommit(
+    const commit = util.signCommit(
       {
         did: this.did,
         version: 3,
@@ -187,8 +188,8 @@ export class Repo extends ReadableRepo {
     };
   }
 
-  async applyCommit(commitData: CommitData): Promise<Repo> {
-    await this.storage.applyCommit(commitData);
+  applyCommit(commitData: CommitData): Repo {
+    this.storage.applyCommit(commitData);
     return Repo.load(this.storage, commitData.cid);
   }
 
@@ -200,8 +201,16 @@ export class Repo extends ReadableRepo {
     return this.applyCommit(commit);
   }
 
-  async formatResignCommit(rev: string, keypair: crypto.Keypair) {
-    const commit = await util.signCommit(
+  async formatResignCommit(rev: string, keypair: crypto.Keypair): Promise<{
+    cid: CID<unknown, number, number, Version>;
+    rev: string;
+    since: null;
+    prev: null;
+    newBlocks: BlockMap;
+    relevantBlocks: BlockMap;
+    removedCids: CidSet;
+  }> {
+    const commit = util.signCommit(
       {
         did: this.did,
         version: 3,
@@ -224,7 +233,7 @@ export class Repo extends ReadableRepo {
     };
   }
 
-  async resignCommit(rev: string, keypair: crypto.Keypair) {
+  async resignCommit(rev: string, keypair: crypto.Keypair): Promise<Repo> {
     const formatted = await this.formatResignCommit(rev, keypair);
     return this.applyCommit(formatted);
   }
