@@ -9,41 +9,60 @@ import type { CidSet } from "./cid-set.ts";
 // Repo nodes
 // ---------------
 
-const unsignedCommit = z.object({
-  did: z.string(),
-  version: z.literal(3),
-  data: common.cid,
-  rev: z.string(),
-  // `prev` added for backwards compatibility with v2, no requirement of keeping around history
-  prev: common.cid.nullable(),
-});
-export type UnsignedCommit = z.infer<typeof unsignedCommit> & { sig?: never };
+type UnsignedCommitType = z.ZodObject<{
+  did: z.ZodString;
+  version: z.ZodLiteral<3>;
+  data: typeof common.cid;
+  rev: z.ZodString;
+  prev: z.ZodNullable<typeof common.cid>;
+}, z.core.$strip>;
+export type UnsignedCommit = z.infer<UnsignedCommitType> & { sig?: never };
 
-const commit = z.object({
+const commit: CommitType = z.object({
   did: z.string(),
   version: z.literal(3),
   data: common.cid,
   rev: z.string(),
-  prev: common.cid.nullable(),
+  prev: z.nullable(common.cid),
   sig: common.bytes,
 });
-export type Commit = z.infer<typeof commit>;
+type CommitType = z.ZodObject<{
+  did: z.ZodString;
+  version: z.ZodLiteral<3>;
+  data: typeof common.cid;
+  rev: z.ZodString;
+  prev: z.ZodNullable<typeof common.cid>;
+  sig: typeof common.bytes;
+}, z.core.$strip>;
+export type Commit = z.infer<CommitType>;
 
-const legacyV2Commit = z.object({
+const legacyV2Commit: LegacyV2CommitType = z.object({
   did: z.string(),
   version: z.literal(2),
   data: common.cid,
   rev: z.string().optional(),
-  prev: common.cid.nullable(),
+  prev: z.nullable(common.cid),
   sig: common.bytes,
 });
-export type LegacyV2Commit = z.infer<typeof legacyV2Commit>;
+type LegacyV2CommitType = z.ZodObject<{
+  did: z.ZodString;
+  version: z.ZodLiteral<2>;
+  data: typeof common.cid;
+  rev: z.ZodOptional<z.ZodString>;
+  prev: z.ZodNullable<typeof common.cid>;
+  sig: typeof common.bytes;
+}, z.core.$strip>;
+export type LegacyV2Commit = z.infer<LegacyV2CommitType>;
 
-const versionedCommit = z.discriminatedUnion("version", [
+const versionedCommit: VersionedCommitType = z.discriminatedUnion("version", [
   commit,
   legacyV2Commit,
 ]);
-export type VersionedCommit = z.infer<typeof versionedCommit>;
+type VersionedCommitType = z.ZodDiscriminatedUnion<
+  [CommitType, LegacyV2CommitType],
+  "version"
+>;
+export type VersionedCommit = z.infer<VersionedCommitType>;
 
 export const schema = {
   ...common,
