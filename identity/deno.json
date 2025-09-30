@@ -1,0 +1,19 @@
+{
+  "name": "@atp/identity",
+  "version": "0.1.0-alpha.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "@did-plc/lib": "npm:@did-plc/lib@^0.0.4",
+    "@did-plc/server": "npm:@did-plc/server@^0.0.1",
+    "@std/testing": "jsr:@std/testing@^1.0.15",
+    "get-port": "npm:get-port@^7.1.0"
+  },
+  "test": {
+    "permissions": {
+      "env": true,
+      "sys": true,
+      "net": true
+    }
+  }
+}

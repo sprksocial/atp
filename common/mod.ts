@@ -23,3 +23,4 @@ export * from "./logger.ts";
 export * from "./dates.ts";
 export * from "./util.ts";
 export * from "./retry.ts";
+export * from "./did-doc.ts";

@@ -5,6 +5,7 @@
     "syntax",
     "crypto",
     "lexicon",
+    "identity",
     "repo",
     "xrpc",
     "xrpc-server",
