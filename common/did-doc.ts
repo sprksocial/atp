@@ -87,7 +87,7 @@ export const getNotifEndpoint = (doc: DidDocument): string | undefined => {
 export const getServiceEndpoint = (
   doc: DidDocument,
   opts: { id: string; type?: string },
-) => {
+): string | undefined => {
   // /!\ Hot path
 
   const service = findItemById(doc, "service", opts.id);
@@ -166,24 +166,45 @@ const canParseUrl = URL.canParse ??
 // Types
 // --------
 
-const verificationMethod = z.object({
+const verificationMethod: VerificationMethod = z.object({
   id: z.string(),
   type: z.string(),
   controller: z.string(),
   publicKeyMultibase: z.string().optional(),
 });
 
-const service = z.object({
+type VerificationMethod = z.ZodObject<{
+  id: z.ZodString;
+  type: z.ZodString;
+  controller: z.ZodString;
+  publicKeyMultibase: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+
+const service: Service = z.object({
   id: z.string(),
   type: z.string(),
   serviceEndpoint: z.union([z.string(), z.record(z.string(), z.unknown())]),
 });
 
-export const didDocument = z.object({
+type Service = z.ZodObject<{
+  id: z.ZodString;
+  type: z.ZodString;
+  serviceEndpoint: z.ZodUnion<
+    readonly [z.ZodString, z.ZodRecord<z.ZodString, z.ZodUnknown>]
+  >;
+}, z.core.$strip>;
+
+export const didDocument: DidDocumentType = z.object({
   id: z.string(),
   alsoKnownAs: z.array(z.string()).optional(),
   verificationMethod: z.array(verificationMethod).optional(),
   service: z.array(service).optional(),
 });
+type DidDocumentType = z.ZodObject<{
+  id: z.ZodString;
+  alsoKnownAs: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  verificationMethod: z.ZodOptional<z.ZodArray<VerificationMethod>>;
+  service: z.ZodOptional<z.ZodArray<Service>>;
+}, z.core.$strip>;
 
-export type DidDocument = z.infer<typeof didDocument>;
+export type DidDocument = z.infer<DidDocumentType>;
