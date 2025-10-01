@@ -6,6 +6,7 @@ export type MemoryRunnerOptions = {
   setCursor?: (cursor: number) => Promise<void>;
   concurrency?: number;
   startCursor?: number;
+  setCursorInterval?: number; // milliseconds between cursor saves, 0 for immediate saves
 };
 
 // A queue with arbitrarily many partitions, each processing work sequentially.
@@ -15,10 +16,19 @@ export class MemoryRunner implements EventRunner {
   mainQueue: PQueue;
   partitions: Map<string, PQueue> = new Map<string, PQueue>();
   cursor: number | undefined;
+  private lastSavedCursor: number | undefined;
+  private saveCursorTimer: number | undefined;
+  private readonly useInterval: boolean;
+  private readonly intervalMs: number;
+  private readonly setCursor: ((cursor: number) => Promise<void>) | undefined;
+  private pendingSaveCursor: number | undefined;
 
   constructor(public opts: MemoryRunnerOptions = {}) {
     this.mainQueue = new PQueue({ concurrency: opts.concurrency ?? Infinity });
     this.cursor = opts.startCursor;
+    this.setCursor = opts.setCursor;
+    this.intervalMs = opts.setCursorInterval ?? 0;
+    this.useInterval = this.intervalMs > 0;
   }
 
   getCursor(): number | undefined {
@@ -50,11 +60,41 @@ export class MemoryRunner implements EventRunner {
       const latest = item.complete().at(-1);
       if (latest !== undefined) {
         this.cursor = latest;
-        if (this.opts.setCursor) {
-          await this.opts.setCursor(this.cursor);
+        if (this.setCursor) {
+          if (this.useInterval) {
+            this.scheduleIntervalSave();
+          } else {
+            this.setCursor(this.cursor).catch(console.error);
+            this.lastSavedCursor = this.cursor;
+          }
         }
       }
     });
+  }
+
+  private scheduleIntervalSave(): void {
+    // Fast path: if cursor hasn't changed or timer already scheduled for this cursor
+    if (
+      this.cursor === this.lastSavedCursor ||
+      this.cursor === this.pendingSaveCursor
+    ) return;
+
+    this.pendingSaveCursor = this.cursor;
+
+    if (this.saveCursorTimer) {
+      clearTimeout(this.saveCursorTimer);
+    }
+
+    this.saveCursorTimer = setTimeout(() => {
+      const cursorToSave = this.pendingSaveCursor!;
+      this.setCursor!(cursorToSave)
+        .then(() => {
+          this.lastSavedCursor = cursorToSave;
+        })
+        .catch(console.error);
+      this.saveCursorTimer = undefined;
+      this.pendingSaveCursor = undefined;
+    }, this.intervalMs);
   }
 
   async processAll() {
@@ -65,6 +105,26 @@ export class MemoryRunner implements EventRunner {
     this.mainQueue.pause();
     this.mainQueue.clear();
     this.partitions.forEach((p) => p.clear());
+
+    // Clear any pending cursor save timer and perform final save
+    if (this.saveCursorTimer) {
+      clearTimeout(this.saveCursorTimer);
+      this.saveCursorTimer = undefined;
+    }
+
+    // Perform final cursor save if needed
+    if (
+      this.setCursor && this.cursor !== undefined &&
+      this.cursor !== this.lastSavedCursor
+    ) {
+      try {
+        await this.setCursor(this.cursor);
+        this.lastSavedCursor = this.cursor;
+      } catch (error) {
+        console.error("Failed to save cursor during destroy:", error);
+      }
+    }
+
     await this.mainQueue.onIdle();
   }
 }
