@@ -9,6 +9,7 @@
     "repo",
     "xrpc",
     "xrpc-server",
+    "sync",
     "lex-cli"
   ],
   "imports": {

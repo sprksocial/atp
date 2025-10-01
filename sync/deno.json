@@ -1,0 +1,15 @@
+{
+  "name": "@atp/sync",
+  "version": "0.1.0-alpha.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "multiformats": "npm:multiformats@^13.4.1",
+    "p-queue": "npm:p-queue@^8.1.1"
+  },
+  "test": {
+    "permissions": {
+      "env": true
+    }
+  }
+}
