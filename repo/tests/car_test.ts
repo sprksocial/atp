@@ -44,7 +44,7 @@ for (const fixture of fixtures) {
 Deno.test("writeCar propagates errors", async () => {
   const iterate = async () => {
     async function* blockIterator() {
-      await wait(1);
+      await wait(0);
       const block = await dataToCborBlock({ test: 1 });
       yield block;
       throw new Error("Oops!");

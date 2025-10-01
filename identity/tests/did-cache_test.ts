@@ -83,7 +83,7 @@ Deno.test({
 
     // let's mess with the cached doc so we get something different
     didCache.cacheDid(did, { ...doc, id: "did:example:alice" });
-    await wait(5);
+    await wait(1);
 
     // first check the cache & see that we have the stale value
     const cached = shortCacheResolver.cache?.checkCache(did);
@@ -112,7 +112,7 @@ Deno.test({
 
     // again, we mess with the cached doc so we get something different
     didCache.cacheDid(did, { ...doc, id: "did:example:alice" });
-    await wait(5);
+    await wait(1);
 
     // see that the resolver does not return expired value & instead force refreshes
     const staleGet = await shortExpireResolver.resolve(did);

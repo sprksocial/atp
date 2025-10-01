@@ -29,21 +29,21 @@ Deno.test("MemoryRunner performs work in parallel across partitions, serial with
   const complete: number[] = [];
   // partition 1 items start slow but get faster: slow should still complete first.
   runner.addTask("1", async () => {
-    await wait(30);
+    await wait(8);
     complete.push(11);
   });
   runner.addTask("1", async () => {
-    await wait(20);
+    await wait(4);
     complete.push(12);
   });
   runner.addTask("1", async () => {
-    await wait(1);
+    await wait(0);
     complete.push(13);
   });
   assertEquals(runner.partitions.size, 1);
   // partition 2 items complete quickly except the last, which is slowest of all events.
   runner.addTask("2", async () => {
-    await wait(1);
+    await wait(0);
     complete.push(21);
   });
   runner.addTask("2", async () => {
@@ -55,7 +55,7 @@ Deno.test("MemoryRunner performs work in parallel across partitions, serial with
     complete.push(23);
   });
   runner.addTask("2", async () => {
-    await wait(60);
+    await wait(10);
     complete.push(24);
   });
   assertEquals(runner.partitions.size, 2);
@@ -70,11 +70,11 @@ Deno.test("MemoryRunner limits overall concurrency.", async () => {
   // if concurrency were not constrained, partition 1 would complete all items
   // before any items from partition 2. since it is constrained, the work is complete in the order added.
   runner.addTask("1", async () => {
-    await wait(1);
+    await wait(0);
     complete.push(11);
   });
   runner.addTask("2", async () => {
-    await wait(10);
+    await wait(2);
     complete.push(21);
   });
   runner.addTask("1", async () => {
@@ -82,7 +82,7 @@ Deno.test("MemoryRunner limits overall concurrency.", async () => {
     complete.push(12);
   });
   runner.addTask("2", async () => {
-    await wait(10);
+    await wait(5);
     complete.push(22);
   });
   // only partition 1 exists so far due to the concurrency
