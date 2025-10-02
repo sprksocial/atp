@@ -29,4 +29,5 @@ export type DidKeyPlugin = {
 
 export type VerifyOptions = {
   allowMalleableSig?: boolean;
+  allowDerSig?: boolean;
 };

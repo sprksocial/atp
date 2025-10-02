@@ -1,28 +1,10 @@
+import type { ClientOptions } from "ws";
 import { ensureChunkIsMessage } from "./stream.ts";
 import { WebSocketKeepAlive } from "./websocket-keepalive.ts";
-import { Frame } from "./frames.ts";
-import type { WebSocketOptions } from "./types.ts";
 
-/**
- * Represents a message body in a subscription stream.
- * @interface
- * @property $type - Optional type identifier for the message
- * @property [key] - Additional message properties
- */
-interface MessageBody {
-  $type?: string;
-  [key: string]: unknown;
-}
-
-/**
- * Represents a subscription to an XRPC streaming endpoint.
- * Handles WebSocket connection management, reconnection, and message parsing.
- * @class
- * @template T - The type of messages yielded by the subscription
- */
 export class Subscription<T = unknown> {
   constructor(
-    public opts: WebSocketOptions & {
+    public opts: ClientOptions & {
       service: string;
       method: string;
       maxReconnectSeconds?: number;
@@ -51,14 +33,18 @@ export class Subscription<T = unknown> {
       },
     });
     for await (const chunk of ws) {
-      const frame = Frame.fromBytes(chunk);
-      const message = ensureChunkIsMessage(frame);
+      const message = ensureChunkIsMessage(chunk);
       const t = message.header.t;
       const clone = message.body !== undefined
-        ? { ...message.body } as MessageBody
+        ? { ...message.body }
         : undefined;
-      if (clone !== undefined && t !== undefined) {
-        clone.$type = t.startsWith("#") ? this.opts.method + t : t;
+      if (
+        clone !== undefined && t !== undefined &&
+        clone as Record<string, unknown>["$type"] !== undefined
+      ) {
+        (clone as Record<string, string>)["$type"] = t.startsWith("#")
+          ? this.opts.method + t
+          : t;
       }
       const result = this.opts.validate(clone);
       if (result !== undefined) {
@@ -83,6 +69,7 @@ function encodeQueryParams(obj: Record<string, unknown>): string {
   return params.toString();
 }
 
+// Adapted from xrpc, but without any lex-specific knowledge
 function encodeQueryParam(value: unknown): string | string[] {
   if (typeof value === "string") {
     return value;
