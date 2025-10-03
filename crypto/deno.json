@@ -4,7 +4,6 @@
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
-    "@atp/bytes": "../bytes/mod.ts",
     "@noble/curves": "jsr:@noble/curves@^2.0.1",
     "@noble/hashes": "jsr:@noble/hashes@^2.0.1",
     "multiformats": "npm:multiformats@^13.4.1"

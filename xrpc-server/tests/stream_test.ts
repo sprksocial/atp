@@ -7,6 +7,7 @@ import {
   MessageFrame,
   XrpcStreamServer,
 } from "../mod.ts";
+import { WebSocket } from "ws";
 import { assertEquals, assertInstanceOf } from "@std/assert";
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -187,6 +188,12 @@ Deno.test("kills handler and closes client disconnect on error frame", async () 
       error = err;
     }
 
+    // Wait for the close event in case the socket is still in CLOSING (2) state
+    if (ws.readyState !== ws.CLOSED) {
+      await new Promise<void>((resolve) => {
+        ws.onclose = () => resolve();
+      });
+    }
     assertEquals(ws.readyState, ws.CLOSED);
     assertEquals(frames.length, 2);
     assertEquals(frames, [new MessageFrame(1), new MessageFrame(2)]);

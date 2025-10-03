@@ -6,6 +6,7 @@
   "imports": {
     "@std/cbor": "jsr:@std/cbor@^0.1.8",
     "@std/encoding": "jsr:@std/encoding@^1.0.10",
+    "crossws": "npm:crossws@^0.4.1",
     "get-port": "npm:get-port@^7.1.0",
     "http-errors": "npm:http-errors@^2.0.0",
     "key-encoder": "npm:key-encoder@^2.0.3",

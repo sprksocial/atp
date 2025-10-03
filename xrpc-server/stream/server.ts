@@ -1,4 +1,4 @@
-import { type ServerOptions, WebSocketServer } from "ws";
+import { type ServerOptions, type WebSocket, WebSocketServer } from "ws";
 import { ErrorFrame, type Frame } from "./frames.ts";
 import { logger } from "../logger.ts";
 import { CloseCode, DisconnectError } from "./types.ts";
