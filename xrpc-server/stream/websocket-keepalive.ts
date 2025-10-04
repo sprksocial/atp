@@ -1,29 +1,42 @@
-import { type ClientOptions, WebSocket } from "ws";
+// websocket-keepalive.ts
+// Runtime-agnostic (Deno / Workers / Bun / Browser)
+
 import { SECOND, wait } from "@atp/common";
-import { streamByteChunks } from "./stream.ts";
 import { CloseCode, DisconnectError } from "./types.ts";
+import { iterateBinary } from "./stream.ts";
+
+// Public options are web-standard and protocol-safe.
+export type KeepAliveOptions = {
+  getUrl: () => Promise<string>;
+  maxReconnectSeconds?: number;
+  signal?: AbortSignal;
+
+  // Heartbeat (optional, protocol-safe):
+  // - If provided, we'll send this payload periodically.
+  // - If `isPong` is provided, we mark alive only when it returns true for a message.
+  // - If omitted, we consider *any* incoming message as proof of life.
+  heartbeatIntervalMs?: number; // default 10 * SECOND
+  heartbeatPayload?: () => string | ArrayBuffer | Uint8Array | Blob;
+  isPong?: (data: unknown) => boolean;
+
+  // Reconnect hook
+  onReconnectError?: (error: unknown, n: number, initialSetup: boolean) => void;
+
+  // Socket factory override (lets you use custom client if needed)
+  createSocket?: (url: string, protocols?: string | string[]) => WebSocket;
+  protocols?: string | string[];
+};
 
 export class WebSocketKeepAlive {
   public ws: WebSocket | null = null;
   public initialSetup = true;
   public reconnects: number | null = null;
 
-  constructor(
-    public opts: ClientOptions & {
-      getUrl: () => Promise<string>;
-      maxReconnectSeconds?: number;
-      signal?: AbortSignal;
-      heartbeatIntervalMs?: number;
-      onReconnectError?: (
-        error: unknown,
-        n: number,
-        initialSetup: boolean,
-      ) => void;
-    },
-  ) {}
+  constructor(public opts: KeepAliveOptions) {}
 
   async *[Symbol.asyncIterator](): AsyncGenerator<Uint8Array> {
     const maxReconnectMs = 1000 * (this.opts.maxReconnectSeconds ?? 64);
+
     while (true) {
       if (this.reconnects !== null) {
         const duration = this.initialSetup
@@ -31,82 +44,141 @@ export class WebSocketKeepAlive {
           : backoffMs(this.reconnects++, maxReconnectMs);
         await wait(duration);
       }
+
       const url = await this.opts.getUrl();
-      this.ws = new WebSocket(url, this.opts);
+
+      // Create a web-standard WebSocket (or a custom one if provided).
+      const ws = this.opts.createSocket?.(url, this.opts.protocols) ??
+        new WebSocket(url, this.opts.protocols);
+      this.ws = ws;
+
       const ac = new AbortController();
       if (this.opts.signal) {
         forwardSignal(this.opts.signal, ac);
       }
-      this.ws.once("open", () => {
-        this.initialSetup = false;
-        this.reconnects = 0;
-        if (this.ws) {
-          this.startHeartbeat(this.ws);
-        }
-      });
-      this.ws.once("close", (code: number, reason: Uint8Array) => {
-        if (code === CloseCode.Abnormal) {
-          // Forward into an error to distinguish from a clean close
-          ac.abort(
-            new AbnormalCloseError(`Abnormal ws close: ${reason.toString()}`),
-          );
-        }
-      });
+
+      // Track liveness (application-level heartbeat)
+      this.startHeartbeat(ws, ac);
+
+      // When the socket opens, reset backoff.
+      ws.addEventListener(
+        "open",
+        () => {
+          this.initialSetup = false;
+          this.reconnects = 0;
+        },
+        { once: true },
+      );
+
+      // Distinguish abnormal close → treat as reconnectable error
+      ws.addEventListener(
+        "close",
+        (ev) => {
+          if (ev.code === CloseCode.Abnormal) {
+            ac.abort(
+              new AbnormalCloseError(
+                `Abnormal ws close: ${String(ev.reason || "")}`,
+              ),
+            );
+          }
+        },
+        { once: true },
+      );
 
       try {
-        const wsStream = streamByteChunks(this.ws, { signal: ac.signal });
-        for await (const chunk of wsStream) {
+        // Iterate incoming binary chunks
+        for await (const chunk of iterateBinary(ws)) {
           yield chunk;
         }
       } catch (error) {
-        const err = (error as Record<string, unknown>)?.["code"] === "ABORT_ERR"
-          ? (error as Record<string, unknown>)["cause"]
+        // Normalize Abort into same shape your old code expected.
+        const err = (error as Error)?.name === "AbortError"
+          ? (error as Error).cause ?? error
           : error;
+
         if (err instanceof DisconnectError) {
           // We cleanly end the connection
-          this.ws?.close(err.wsCode);
+          ws?.close(err.wsCode);
           break;
         }
-        this.ws?.close(); // No-ops if already closed or closing
+
+        // Close if not already closing
+        ws.close();
+
         if (isReconnectable(err)) {
-          this.reconnects ??= 0; // Never reconnect with a null
+          this.reconnects ??= 0; // Never reconnect when null
           this.opts.onReconnectError?.(err, this.reconnects, this.initialSetup);
-          continue;
+          continue; // loop to reconnect
         } else {
           throw err;
         }
       }
-      break; // Other side cleanly ended stream and disconnected
+
+      // Other side ended stream cleanly; stop iterating.
+      break;
     }
   }
 
-  startHeartbeat(ws: WebSocket) {
-    let isAlive = true;
-    let heartbeatInterval: number | null = null;
+  /** Application-level heartbeat (web standard).
+   *
+   * In Node's `ws` you used `ping`/`pong`. Those do not exist in web sockets.
+   * Here we:
+   *  - periodically send `heartbeatPayload()` if provided
+   *  - consider the connection "alive" when:
+   *      * `isPong(ev.data)` returns true (if provided), OR
+   *      * *any* message is received (fallback)
+   *  - if no proof of life for one interval, we close the socket (which triggers reconnect)
+   */
+  private startHeartbeat(ws: WebSocket, ac: AbortController) {
+    const intervalMs = this.opts.heartbeatIntervalMs ?? 10 * SECOND;
 
-    const checkAlive = () => {
-      if (!isAlive) {
-        return ws.terminate();
+    let isAlive = true;
+    let timer: number | null = null;
+
+    const onMessage = (ev: MessageEvent) => {
+      // If a custom pong detector exists, use it; otherwise any message counts.
+      if (!this.opts.isPong || this.opts.isPong(ev.data)) {
+        isAlive = true;
       }
-      isAlive = false; // expect websocket to no longer be alive unless we receive a "pong" within the interval
-      ws.ping();
     };
 
-    checkAlive();
-    heartbeatInterval = setInterval(
-      checkAlive,
-      this.opts.heartbeatIntervalMs ?? 10 * SECOND,
-    );
-
-    ws.on("pong", () => {
-      isAlive = true;
-    });
-    ws.once("close", () => {
-      if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-        heartbeatInterval = null;
+    const tick = () => {
+      if (!isAlive) {
+        // No pong/traffic since last tick → consider dead and close.
+        ws.close(1000);
+        // Abort the iterator with a recognizable shape like before.
+        const domErr = new DOMException("Aborted", "AbortError");
+        domErr.cause = new DisconnectError(
+          CloseCode.Abnormal,
+          "HeartbeatTimeout",
+        );
+        ac.abort(domErr);
+        return;
       }
-    });
+      isAlive = false;
+
+      const payload = this.opts.heartbeatPayload?.();
+      if (payload !== undefined) {
+        ws.send(payload);
+      }
+    };
+
+    // Prime one cycle and schedule subsequent ones
+    tick();
+    timer = setInterval(tick, intervalMs) as unknown as number;
+
+    ws.addEventListener("message", onMessage);
+    ws.addEventListener(
+      "close",
+      () => {
+        if (timer !== null) {
+          clearInterval(timer);
+          timer = null;
+        }
+        ws.removeEventListener("message", onMessage);
+      },
+      { once: true },
+    );
   }
 }
 
@@ -117,14 +189,11 @@ class AbnormalCloseError extends Error {
 }
 
 function isReconnectable(err: unknown): boolean {
-  // Network errors are reconnectable.
-  // AuthenticationRequired and InvalidRequest XRPCErrors are not reconnectable.
-  // @TODO method-specific XRPCErrors may be reconnectable, need to consider. Receiving
-  // an invalid message is not current reconnectable, but the user can decide to skip them.
-  if (!err || typeof err as Record<string, unknown>["code"] !== "string") {
-    return false;
-  }
-  return networkErrorCodes.includes((err as Record<string, string>)["code"]);
+  // Network-ish errors are reconnectable. Keep your previous codes.
+  if (!err || typeof err !== "object") return false;
+  const e = err as { name?: unknown; code?: unknown };
+  if (typeof e.name !== "string") return false;
+  return typeof e.code === "string" && networkErrorCodes.includes(e.code);
 }
 
 const networkErrorCodes = [
@@ -135,11 +204,12 @@ const networkErrorCodes = [
   "EPIPE",
   "ETIMEDOUT",
   "ECANCELED",
+  "ABORT_ERR", // surface our aborts as reconnectable if you want
 ];
 
 function backoffMs(n: number, maxMs: number) {
   const baseSec = Math.pow(2, n); // 1, 2, 4, ...
-  const randSec = Math.random() - 0.5; // Random jitter between -.5 and .5 seconds
+  const randSec = Math.random() - 0.5; // jitter [-0.5, +0.5]
   const ms = 1000 * (baseSec + randSec);
   return Math.min(ms, maxMs);
 }
@@ -147,10 +217,8 @@ function backoffMs(n: number, maxMs: number) {
 function forwardSignal(signal: AbortSignal, ac: AbortController) {
   if (signal.aborted) {
     return ac.abort(signal.reason);
-  } else {
-    signal.addEventListener("abort", () => ac.abort(signal.reason), {
-      // @ts-ignore https://github.com/DefinitelyTyped/DefinitelyTyped/pull/68625
-      signal: ac.signal,
-    });
   }
+  const onAbort = () => ac.abort(signal.reason);
+  // Use AbortSignal.any? Not universally available; just add/remove.
+  signal.addEventListener("abort", onAbort, { signal: ac.signal });
 }

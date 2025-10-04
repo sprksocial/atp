@@ -1,10 +1,9 @@
-import type { ClientOptions } from "ws";
 import { ensureChunkIsMessage } from "./stream.ts";
 import { WebSocketKeepAlive } from "./websocket-keepalive.ts";
 
 export class Subscription<T = unknown> {
   constructor(
-    public opts: ClientOptions & {
+    public opts: {
       service: string;
       method: string;
       maxReconnectSeconds?: number;
@@ -24,31 +23,59 @@ export class Subscription<T = unknown> {
   ) {}
 
   async *[Symbol.asyncIterator](): AsyncGenerator<T> {
+    // Internal controller so we can always terminate the underlying keep-alive loop
+    // when the consumer stops iterating (preventing leaked timers / sockets).
+    const internalAc = new AbortController();
+
+    // Bridge external signal (if provided) into our internal controller.
+    if (this.opts.signal) {
+      if (this.opts.signal.aborted) {
+        internalAc.abort(this.opts.signal.reason);
+      } else {
+        const onAbort = () => internalAc.abort(this.opts.signal!.reason);
+        this.opts.signal.addEventListener("abort", onAbort, { once: true });
+      }
+    }
+
     const ws = new WebSocketKeepAlive({
       ...this.opts,
+      // Override signal with the internal one we control for cleanup.
+      signal: internalAc.signal,
       getUrl: async () => {
         const params = (await this.opts.getParams?.()) ?? {};
         const query = encodeQueryParams(params);
         return `${this.opts.service}/xrpc/${this.opts.method}?${query}`;
       },
     });
-    for await (const chunk of ws) {
-      const message = ensureChunkIsMessage(chunk);
-      const t = message.header.t;
-      const clone = message.body !== undefined
-        ? { ...message.body }
-        : undefined;
-      if (
-        clone !== undefined && t !== undefined &&
-        clone as Record<string, unknown>["$type"] !== undefined
-      ) {
-        (clone as Record<string, string>)["$type"] = t.startsWith("#")
-          ? this.opts.method + t
-          : t;
+
+    try {
+      for await (const chunk of ws) {
+        const message = ensureChunkIsMessage(chunk);
+        const t = message.header.t;
+        const clone = message.body !== undefined
+          ? { ...message.body }
+          : undefined;
+
+        // Reconstruct $type on the message body if a header type is present.
+        // Original server stripped $type into the frame header; client restores it.
+        if (clone !== undefined && t !== undefined) {
+          (clone as Record<string, unknown>)["$type"] = t.startsWith("#")
+            ? this.opts.method + t
+            : t;
+        }
+
+        const result = this.opts.validate(clone);
+        if (result !== undefined) {
+          yield result;
+        }
       }
-      const result = this.opts.validate(clone);
-      if (result !== undefined) {
-        yield result;
+    } finally {
+      // Ensure we stop heartbeats & close socket to avoid leaking intervals / timers.
+      internalAc.abort();
+      try {
+        ws.ws?.close(1000);
+      } catch {
+        /* ignore */
       }
     }
   }
