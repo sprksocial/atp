@@ -114,14 +114,16 @@ export function iterateBinary(ws: WebSocket): AsyncIterable<Uint8Array> {
 }
 
 /** Iterate by low-level Frame (binary in → Frame out) */
-export async function* byFrame(ws: WebSocket) {
+export async function* byFrame(ws: WebSocket): AsyncGenerator<Frame> {
   for await (const chunk of iterateBinary(ws)) {
     yield Frame.fromBytes(chunk);
   }
 }
 
 /** Iterate by validated MessageFrame (errors throw XRPCError) */
-export async function* byMessage(ws: WebSocket) {
+export async function* byMessage(
+  ws: WebSocket,
+): AsyncGenerator<MessageFrame<unknown>> {
   for await (const chunk of iterateBinary(ws)) {
     yield ensureChunkIsMessage(chunk);
   }

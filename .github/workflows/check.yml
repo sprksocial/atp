@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  publish:
+  ok:
     runs-on: ubuntu-latest
 
     permissions:
