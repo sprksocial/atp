@@ -3,7 +3,12 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { equals } from "@atp/bytes";
 import { SECP256K1_DID_PREFIX } from "../const.ts";
 import type { VerifyOptions } from "../types.ts";
-import { detectSigFormat, extractMultikey, extractPrefixedBytes, hasPrefix } from "../utils.ts";
+import {
+  detectSigFormat,
+  extractMultikey,
+  extractPrefixedBytes,
+  hasPrefix,
+} from "../utils.ts";
 
 export const verifyDidSig = (
   did: string,
