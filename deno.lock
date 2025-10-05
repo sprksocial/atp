@@ -51,7 +51,6 @@
     "npm:p-queue@^8.1.1": "8.1.1",
     "npm:prettier@^3.6.2": "3.6.2",
     "npm:rate-limiter-flexible@^2.4.2": "2.4.2",
-    "npm:ws@^8.18.3": "8.18.3",
     "npm:zod@^4.1.11": "4.1.11"
   },
   "jsr": {
@@ -1043,9 +1042,6 @@
     "vary@1.1.2": {
       "integrity": "sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg=="
     },
-    "ws@8.18.3": {
-      "integrity": "sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg=="
-    },
     "xtend@4.0.2": {
       "integrity": "sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ=="
     },
@@ -1148,11 +1144,9 @@
           "jsr:@std/encoding@^1.0.10",
           "jsr:@zod/zod@^4.1.11",
           "npm:get-port@^7.1.0",
-          "npm:http-errors@2",
           "npm:key-encoder@^2.0.3",
           "npm:multiformats@^13.4.1",
-          "npm:rate-limiter-flexible@^2.4.2",
-          "npm:ws@^8.18.3"
+          "npm:rate-limiter-flexible@^2.4.2"
         ]
       }
     }

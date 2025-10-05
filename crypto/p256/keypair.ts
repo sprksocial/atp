@@ -21,7 +21,7 @@ export class P256Keypair implements Keypair {
     private privateKey: Uint8Array,
     private exportable: boolean,
   ) {
-    this.publicKey = p256.getPublicKey(privateKey, false); // false = uncompressed
+    this.publicKey = p256.getPublicKey(privateKey, false);
   }
 
   static create(
@@ -58,8 +58,7 @@ export class P256Keypair implements Keypair {
   sign(msg: Uint8Array): Uint8Array {
     const msgHash = sha256(msg);
     // return raw 64 byte sig not DER-encoded
-    const sig = p256.sign(msgHash, this.privateKey, { lowS: true });
-    return sig;
+    return p256.sign(msgHash, this.privateKey, { lowS: true, prehash: false });
   }
 
   export(): Uint8Array {

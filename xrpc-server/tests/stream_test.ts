@@ -7,6 +7,7 @@ import {
   MessageFrame,
   XrpcStreamServer,
 } from "../mod.ts";
+// Using global WebSocket (Deno runtime)
 import { assertEquals, assertInstanceOf } from "@std/assert";
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -16,14 +17,13 @@ function createTestServer(
   handlerFn: () => AsyncGenerator<Frame, void, unknown>,
 ) {
   const server = new XrpcStreamServer({
-    noServer: true,
     handler: handlerFn,
   });
 
   const httpServer = Deno.serve({ port: 0 }, (req) => {
     if (req.headers.get("upgrade")?.toLowerCase() === "websocket") {
       const { socket, response } = Deno.upgradeWebSocket(req);
-      server.wss.emit("connection", socket, req);
+      server.handle(req, socket);
       return response;
     }
     return new Response("Not Found", { status: 404 });
@@ -34,7 +34,6 @@ function createTestServer(
     server,
     url: `ws://localhost:${addr.port}`,
     close: async () => {
-      server.wss.close();
       await httpServer.shutdown();
     },
   };
@@ -155,27 +154,23 @@ Deno.test("kills handler and closes client disconnect", async () => {
 });
 
 Deno.test("kills handler and closes client disconnect on error frame", async () => {
-  const server = new XrpcStreamServer({
-    port: 5006,
-    handler: async function* () {
-      await wait(1);
-      yield new MessageFrame(1);
-      await wait(1);
-      yield new MessageFrame(2);
-      await wait(1);
-      yield new ErrorFrame({
-        error: "BadOops",
-        message: "That was a bad one",
-      });
-      await wait(1);
-      yield new MessageFrame(3);
-      return;
-    },
+  const { url, close } = createTestServer(async function* () {
+    await wait(1);
+    yield new MessageFrame(1);
+    await wait(1);
+    yield new MessageFrame(2);
+    await wait(1);
+    yield new ErrorFrame({
+      error: "BadOops",
+      message: "That was a bad one",
+    });
+    await wait(1);
+    yield new MessageFrame(3);
+    return;
   });
-  const { port } = server.wss.address();
 
   try {
-    const ws = new WebSocket(`ws://localhost:${port}`);
+    const ws = new WebSocket(url);
     const frames: Frame[] = [];
 
     let error;
@@ -187,6 +182,11 @@ Deno.test("kills handler and closes client disconnect on error frame", async () 
       error = err;
     }
 
+    if (ws.readyState !== ws.CLOSED) {
+      await new Promise<void>((resolve) => {
+        ws.onclose = () => resolve();
+      });
+    }
     assertEquals(ws.readyState, ws.CLOSED);
     assertEquals(frames.length, 2);
     assertEquals(frames, [new MessageFrame(1), new MessageFrame(2)]);
@@ -196,6 +196,6 @@ Deno.test("kills handler and closes client disconnect on error frame", async () 
       assertEquals(error.message, "That was a bad one");
     }
   } finally {
-    server.wss.close();
+    await close();
   }
 });

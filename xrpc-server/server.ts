@@ -16,8 +16,12 @@ import {
   XRPCError,
 } from "./errors.ts";
 import { type RateLimiterI, RouteRateLimiter } from "./rate-limiter.ts";
-import { ErrorFrame, XrpcStreamServer } from "./stream/index.ts";
-import { StreamConnection } from "./stream/connection.ts";
+import {
+  ErrorFrame,
+  Frame,
+  MessageFrame,
+  XrpcStreamServer,
+} from "./stream/index.ts";
 import {
   type Auth,
   type AuthResult,
@@ -46,7 +50,7 @@ import {
   setHeaders,
   validateOutput,
 } from "./util.ts";
-import { ipldToJson } from "@atp/common";
+import { check, ipldToJson, schema } from "@atp/common";
 import {
   type CalcKeyFn,
   type CalcPointsFn,
@@ -56,6 +60,11 @@ import {
 } from "./rate-limiter.ts";
 import { assert } from "@std/assert";
 import type { CatchallHandler, RouteOptions } from "./types.ts";
+import {
+  mountStreamingRoutesDeno,
+  mountStreamingRoutesWorkers,
+  type XrpcMux,
+} from "./stream/adapters.ts";
 
 /**
  * Creates a new XRPC server instance
@@ -147,6 +156,32 @@ export class Server {
             creator(buildRateLimiterOptions(options)),
           ]),
         );
+      }
+    }
+
+    // Mount streaming (subscription) routes using runtime-specific Hono adapters.
+    {
+      const mux: XrpcMux = {
+        resolveForRequest: (req: Request) => {
+          const nsid = parseUrlNsid(req.url);
+          if (!nsid) return;
+          const sub = this.subscriptions.get(nsid);
+          if (!sub) return;
+          return {
+            handle: (req: Request, socket: WebSocket) => {
+              sub.handle(req, socket);
+            },
+          };
+        },
+      };
+
+      // Deno
+      if (globalThis.Deno?.version?.deno) {
+        mountStreamingRoutesDeno(this.app, mux);
+      } else if ("WebSocketPair" in globalThis) {
+        mountStreamingRoutesWorkers(this.app, mux);
+      } else {
+        // Node not supported for streaming subscriptions.
       }
     }
   }
@@ -477,29 +512,60 @@ export class Server {
    * @param config - The stream configuration
    * @protected
    */
-  protected addSubscription(
+  protected addSubscription<A extends Auth = Auth>(
     nsid: string,
     def: LexXrpcSubscription,
-    config: StreamConfig,
-  ): void {
-    const server = new XrpcStreamServer({
-      noServer: true,
-      handler: config.handler ||
-        (async function* (_req: Request, _signal: AbortSignal) {
-          yield new ErrorFrame({
-            error: "NotImplemented",
-            message: "Streaming not implemented",
-          });
-        }),
-    });
+    cfg: StreamConfig<A>,
+  ) {
+    const paramsVerifier = this.createParamsVerifier(nsid, def);
+    const authVerifier = this.createAuthVerifier(cfg);
 
-    this.subscriptions.set(nsid, server);
-
-    // Register WebSocket upgrade route for this subscription
-    this.app.get(`/xrpc/${nsid}`, (c): Response => {
-      const paramVerifier = this.createParamsVerifier(nsid, def);
-      return StreamConnection.upgrade(c.req.raw, nsid, config, paramVerifier);
-    });
+    const { handler } = cfg;
+    this.subscriptions.set(
+      nsid,
+      new XrpcStreamServer({
+        handler: async function* (req, signal) {
+          try {
+            // validate request
+            const params = paramsVerifier(req);
+            // authenticate request
+            const auth = authVerifier
+              ? await authVerifier({ req, params })
+              : (undefined as A);
+            // stream
+            for await (const item of handler({ req, params, auth, signal })) {
+              if (item instanceof Frame) {
+                yield item;
+                continue;
+              }
+              const type = (item as Record<string, unknown>)?.["$type"];
+              if (!check.is(item, schema.map) || typeof type !== "string") {
+                yield new MessageFrame(item);
+                continue;
+              }
+              const split = type.split("#");
+              let t: string;
+              if (
+                split.length === 2 && (split[0] === "" || split[0] === nsid)
+              ) {
+                t = `#${split[1]}`;
+              } else {
+                t = type;
+              }
+              const clone = { ...(item as Record<string, unknown>) };
+              delete clone["$type"];
+              yield new MessageFrame(clone, { type: t });
+            }
+          } catch (err) {
+            const xrpcError = XRPCError.fromError(err);
+            yield new ErrorFrame({
+              error: xrpcError.payload.error ?? "Unknown",
+              message: xrpcError.payload.message,
+            });
+          }
+        },
+      }),
+    );
   }
 
   private createRouteRateLimiter<A extends Auth, C extends HandlerContext>(

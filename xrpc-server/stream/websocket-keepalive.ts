@@ -1,32 +1,46 @@
-import { SECOND, wait } from "@atp/common";
-import { CloseCode, DisconnectError, type WebSocketOptions } from "./types.ts";
+// websocket-keepalive.ts
+// Runtime-agnostic (Deno / Workers / Bun / Browser)
 
-/**
- * WebSocket client with automatic reconnection and heartbeat functionality.
- * Handles connection management, reconnection backoff, and keep-alive messages.
- * @class
- */
+import { SECOND, wait } from "@atp/common";
+import { CloseCode, DisconnectError } from "./types.ts";
+import { iterateBinary } from "./stream.ts";
+
+// Public options are web-standard and protocol-safe.
+export type KeepAliveOptions = {
+  getUrl: () => Promise<string>;
+  maxReconnectSeconds?: number;
+  signal?: AbortSignal;
+
+  // Heartbeat (optional, protocol-safe):
+  // - If provided, we'll send this payload periodically.
+  // - If `isPong` is provided, we mark alive only when it returns true for a message.
+  // - If omitted, we consider *any* incoming message as proof of life.
+  heartbeatIntervalMs?: number; // default 10 * SECOND
+  heartbeatPayload?: () => string | ArrayBuffer | Uint8Array | Blob;
+  isPong?: (data: unknown) => boolean;
+
+  // Reconnect hook
+  onReconnectError?: (error: unknown, n: number, initialSetup: boolean) => void;
+
+  // Socket factory override (lets you use custom client if needed)
+  createSocket?: (url: string, protocols?: string | string[]) => WebSocket;
+  protocols?: string | string[];
+};
+
 export class WebSocketKeepAlive {
   public ws: WebSocket | null = null;
   public initialSetup = true;
   public reconnects: number | null = null;
 
-  constructor(
-    public opts: WebSocketOptions & {
-      getUrl: () => Promise<string>;
-      maxReconnectSeconds?: number;
-      signal?: AbortSignal;
-      heartbeatIntervalMs?: number;
-      onReconnectError?: (
-        error: unknown,
-        n: number,
-        initialSetup: boolean,
-      ) => void;
-    },
-  ) {}
+  /**
+   * Creates a new WebSocketKeepAlive instance.
+   * @param opts Configuration options for keepalive, heartbeat, reconnect, and socket creation.
+   */
+  constructor(public opts: KeepAliveOptions) {}
 
   async *[Symbol.asyncIterator](): AsyncGenerator<Uint8Array> {
     const maxReconnectMs = 1000 * (this.opts.maxReconnectSeconds ?? 64);
+
     while (true) {
       if (this.reconnects !== null) {
         const duration = this.initialSetup
@@ -34,191 +48,141 @@ export class WebSocketKeepAlive {
           : backoffMs(this.reconnects++, maxReconnectMs);
         await wait(duration);
       }
+
       const url = await this.opts.getUrl();
-      this.ws = new WebSocket(url, this.opts.protocols);
+
+      // Create a web-standard WebSocket (or a custom one if provided).
+      const ws = this.opts.createSocket?.(url, this.opts.protocols) ??
+        new WebSocket(url, this.opts.protocols);
+      this.ws = ws;
+
       const ac = new AbortController();
       if (this.opts.signal) {
         forwardSignal(this.opts.signal, ac);
       }
-      this.ws.onopen = () => {
-        this.initialSetup = false;
-        this.reconnects = 0;
-        if (this.ws) {
-          this.startHeartbeat(this.ws);
-        }
-      };
-      this.ws.onclose = (ev: CloseEvent) => {
-        if (ev.code === CloseCode.Abnormal) {
-          // Forward into an error to distinguish from a clean close
-          ac.abort(
-            new AbnormalCloseError(`Abnormal ws close: ${ev.reason}`),
-          );
-        }
-      };
+
+      // Track liveness (application-level heartbeat)
+      this.startHeartbeat(ws, ac);
+
+      // When the socket opens, reset backoff.
+      ws.addEventListener(
+        "open",
+        () => {
+          this.initialSetup = false;
+          this.reconnects = 0;
+        },
+        { once: true },
+      );
+
+      // Distinguish abnormal close → treat as reconnectable error
+      ws.addEventListener(
+        "close",
+        (ev) => {
+          if (ev.code === CloseCode.Abnormal) {
+            ac.abort(
+              new AbnormalCloseError(
+                `Abnormal ws close: ${String(ev.reason || "")}`,
+              ),
+            );
+          }
+        },
+        { once: true },
+      );
 
       try {
-        const messageQueue: Uint8Array[] = [];
-        let error: Error | null = null;
-        let finished = false;
-        let resolveNext: (() => void) | null = null;
-
-        const processMessage = (ev: MessageEvent) => {
-          if (ev.data === "pong") {
-            // Handle heartbeat pong responses separately
-            return;
-          }
-          if (ev.data instanceof Uint8Array) {
-            messageQueue.push(ev.data);
-            if (resolveNext) {
-              resolveNext();
-              resolveNext = null;
-            }
-          }
-        };
-
-        const handleError = (ev: Event | ErrorEvent) => {
-          error = ev instanceof ErrorEvent && ev.error
-            ? ev.error
-            : new Error("WebSocket error");
-          if (resolveNext) {
-            resolveNext();
-            resolveNext = null;
-          }
-        };
-
-        const handleClose = () => {
-          finished = true;
-          if (resolveNext) {
-            resolveNext();
-            resolveNext = null;
-          }
-        };
-
-        this.ws.onmessage = processMessage;
-        this.ws.onerror = handleError;
-        this.ws.onclose = handleClose;
-
-        // Wait for connection if still connecting
-        if (this.ws.readyState === WebSocket.CONNECTING) {
-          await new Promise<void>((resolve, reject) => {
-            const onOpen = () => {
-              this.ws!.removeEventListener("open", onOpen);
-              this.ws!.removeEventListener("error", onInitialError);
-              resolve();
-            };
-
-            const onInitialError = (ev: Event | ErrorEvent) => {
-              this.ws!.removeEventListener("open", onOpen);
-              this.ws!.removeEventListener("error", onInitialError);
-              const errorMsg = ev instanceof ErrorEvent && ev.error
-                ? ev.error
-                : new Error("Failed to connect to WebSocket");
-              reject(errorMsg);
-            };
-
-            this.ws!.addEventListener("open", onOpen, { once: true });
-            this.ws!.addEventListener("error", onInitialError, { once: true });
-          });
+        // Iterate incoming binary chunks
+        for await (const chunk of iterateBinary(ws)) {
+          yield chunk;
         }
+      } catch (error) {
+        // Normalize Abort into same shape your old code expected.
+        const err = (error as Error)?.name === "AbortError"
+          ? (error as Error).cause ?? error
+          : error;
 
-        // Main message processing loop
-        while (!finished && !error && !ac.signal.aborted) {
-          // Process any queued messages first
-          while (messageQueue.length > 0) {
-            yield messageQueue.shift()!;
-          }
-
-          // If no messages and not finished, wait for next event
-          if (
-            !finished && !error && !ac.signal.aborted &&
-            messageQueue.length === 0
-          ) {
-            await new Promise<void>((resolve) => {
-              resolveNext = resolve;
-              // Also resolve if abort signal is triggered
-              if (ac.signal.aborted) {
-                resolve();
-              } else {
-                ac.signal.addEventListener("abort", () => resolve(), {
-                  once: true,
-                });
-              }
-            });
-          }
-        }
-
-        // Process any remaining messages
-        while (messageQueue.length > 0) {
-          yield messageQueue.shift()!;
-        }
-
-        if (error) throw error;
-        if (ac.signal.aborted) throw ac.signal.reason;
-      } catch (_err) {
-        const err = isErrorWithCode(_err) && _err.code === "ABORT_ERR"
-          ? _err.cause
-          : _err;
         if (err instanceof DisconnectError) {
           // We cleanly end the connection
-          this.ws?.close(err.wsCode);
+          ws?.close(err.wsCode);
           break;
         }
-        this.ws?.close(); // No-ops if already closed or closing
+
+        // Close if not already closing
+        ws.close();
+
         if (isReconnectable(err)) {
-          this.reconnects ??= 0; // Never reconnect with a null
+          this.reconnects ??= 0; // Never reconnect when null
           this.opts.onReconnectError?.(err, this.reconnects, this.initialSetup);
-          continue;
+          continue; // loop to reconnect
         } else {
           throw err;
         }
       }
-      break; // Other side cleanly ended stream and disconnected
+
+      // Other side ended stream cleanly; stop iterating.
+      break;
     }
   }
 
-  startHeartbeat(ws: WebSocket) {
+  /** Application-level heartbeat (web standard).
+   *
+   * In Node's `ws` you used `ping`/`pong`. Those do not exist in web sockets.
+   * Here we:
+   *  - periodically send `heartbeatPayload()` if provided
+   *  - consider the connection "alive" when:
+   *      * `isPong(ev.data)` returns true (if provided), OR
+   *      * *any* message is received (fallback)
+   *  - if no proof of life for one interval, we close the socket (which triggers reconnect)
+   */
+  private startHeartbeat(ws: WebSocket, ac: AbortController) {
+    const intervalMs = this.opts.heartbeatIntervalMs ?? 10 * SECOND;
+
     let isAlive = true;
-    let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+    let timer: number | null = null;
 
-    const checkAlive = () => {
-      if (!isAlive) {
-        return ws.close();
-      }
-      isAlive = false; // expect websocket to no longer be alive unless we receive a "pong" within the interval
-      ws.send("ping");
-    };
-
-    // Store original handlers to chain them properly
-    const originalOnMessage = ws.onmessage;
-    const originalOnClose = ws.onclose;
-
-    checkAlive();
-    heartbeatInterval = setInterval(
-      checkAlive,
-      this.opts.heartbeatIntervalMs ?? 10 * SECOND,
-    );
-
-    // Chain message handler to handle pong responses
-    ws.onmessage = (ev: MessageEvent) => {
-      if (ev.data === "pong") {
+    const onMessage = (ev: MessageEvent) => {
+      // If a custom pong detector exists, use it; otherwise any message counts.
+      if (!this.opts.isPong || this.opts.isPong(ev.data)) {
         isAlive = true;
       }
-      // Always call the original handler for all messages
-      if (originalOnMessage) {
-        originalOnMessage.call(ws, ev);
+    };
+
+    const tick = () => {
+      if (!isAlive) {
+        // No pong/traffic since last tick → consider dead and close.
+        ws.close(1000);
+        // Abort the iterator with a recognizable shape like before.
+        const domErr = new DOMException("Aborted", "AbortError");
+        domErr.cause = new DisconnectError(
+          CloseCode.Abnormal,
+          "HeartbeatTimeout",
+        );
+        ac.abort(domErr);
+        return;
+      }
+      isAlive = false;
+
+      const payload = this.opts.heartbeatPayload?.();
+      if (payload !== undefined) {
+        ws.send(payload);
       }
     };
 
-    // Chain close handler to clean up heartbeat
-    ws.onclose = (ev: CloseEvent) => {
-      if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-        heartbeatInterval = null;
-      }
-      if (originalOnClose) {
-        originalOnClose.call(ws, ev);
-      }
-    };
+    // Prime one cycle and schedule subsequent ones
+    tick();
+    timer = setInterval(tick, intervalMs) as unknown as number;
+
+    ws.addEventListener("message", onMessage);
+    ws.addEventListener(
+      "close",
+      () => {
+        if (timer !== null) {
+          clearInterval(timer);
+          timer = null;
+        }
+        ws.removeEventListener("message", onMessage);
+      },
+      { once: true },
+    );
   }
 }
 
@@ -228,35 +192,14 @@ class AbnormalCloseError extends Error {
   code = "EWSABNORMALCLOSE";
 }
 
-/**
- * Interface for errors with error codes.
- * @interface
- * @property {string} [code] - Error code identifier
- * @property {unknown} [cause] - Underlying cause of the error
- */
-interface ErrorWithCode {
-  code?: string;
-  cause?: unknown;
-}
-
-/**
- * Type guard to check if an error has an error code.
- * @param {unknown} err - The error to check
- * @returns {boolean} True if the error has a code property
- */
-function isErrorWithCode(err: unknown): err is ErrorWithCode {
-  return err !== null && typeof err === "object" && "code" in err;
-}
-
 function isReconnectable(err: unknown): boolean {
-  if (!isErrorWithCode(err)) return false;
-  return typeof err.code === "string" && networkErrorCodes.includes(err.code);
+  // Network-ish errors are reconnectable. Keep your previous codes.
+  if (!err || typeof err !== "object") return false;
+  const e = err as { name?: unknown; code?: unknown };
+  if (typeof e.name !== "string") return false;
+  return typeof e.code === "string" && networkErrorCodes.includes(e.code);
 }
 
-/**
- * List of error codes that indicate network-related issues.
- * These errors typically warrant a reconnection attempt.
- */
 const networkErrorCodes = [
   "EWSABNORMALCLOSE",
   "ECONNRESET",
@@ -265,11 +208,12 @@ const networkErrorCodes = [
   "EPIPE",
   "ETIMEDOUT",
   "ECANCELED",
+  "ABORT_ERR", // surface our aborts as reconnectable if you want
 ];
 
 function backoffMs(n: number, maxMs: number) {
   const baseSec = Math.pow(2, n); // 1, 2, 4, ...
-  const randSec = Math.random() - 0.5; // Random jitter between -.5 and .5 seconds
+  const randSec = Math.random() - 0.5; // jitter [-0.5, +0.5]
   const ms = 1000 * (baseSec + randSec);
   return Math.min(ms, maxMs);
 }
@@ -277,10 +221,8 @@ function backoffMs(n: number, maxMs: number) {
 function forwardSignal(signal: AbortSignal, ac: AbortController) {
   if (signal.aborted) {
     return ac.abort(signal.reason);
-  } else {
-    signal.addEventListener("abort", () => ac.abort(signal.reason), {
-      // @ts-ignore https://github.com/DefinitelyTyped/DefinitelyTyped/pull/68625
-      signal: ac.signal,
-    });
   }
+  const onAbort = () => ac.abort(signal.reason);
+  // Use AbortSignal.any? Not universally available; just add/remove.
+  signal.addEventListener("abort", onAbort, { signal: ac.signal });
 }
