@@ -19,6 +19,11 @@
  * Works with Deno, Node.js, Bun, Cloudflare Workers, and other JavaScript runtimes
  * supported by Hono.
  *
+ * Note: Subscription (WebSocket) endpoints are currently supported only in Deno
+ * and Cloudflare Workers. On Node.js and Bun, query/procedure routes function
+ * normally, but subscription endpoints are not yet available (WebSocket upgrades
+ * will be rejected or unmounted).
+ *
  * @example Basic server setup with a simple endpoint
  * ```ts
  * import { createServer } from "jsr:@atp/xrpc-server";

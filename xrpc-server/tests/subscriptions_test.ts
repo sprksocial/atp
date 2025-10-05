@@ -460,6 +460,10 @@ Deno.test("subscription consumer reconnects w/ param update", async () => {
       }
     }
 
+    // Allow internal subscription cleanup (heartbeat interval & socket close) to settle
+    // so Deno's leak detector doesn't flag the pending timer from the generator's wait(0).
+    await new Promise((r) => setTimeout(r, 0));
+
     // Ensure we actually received the expected early messages
     assertEquals(messagesReceived >= 2, true);
   } finally {
