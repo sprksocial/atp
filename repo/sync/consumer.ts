@@ -148,7 +148,7 @@ export const verifyProofs = async (
   const verified: RecordCidClaim[] = [];
   const unverified: RecordCidClaim[] = [];
   for (const claim of claims) {
-    const found = await mst.get(
+    const found = mst.get(
       util.formatDataKey(claim.collection, claim.rkey),
     );
     const record = found ? blockstore.readObj(found, def.map) : null;
