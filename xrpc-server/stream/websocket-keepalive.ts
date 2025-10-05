@@ -32,6 +32,10 @@ export class WebSocketKeepAlive {
   public initialSetup = true;
   public reconnects: number | null = null;
 
+  /**
+   * Creates a new WebSocketKeepAlive instance.
+   * @param opts Configuration options for keepalive, heartbeat, reconnect, and socket creation.
+   */
   constructor(public opts: KeepAliveOptions) {}
 
   async *[Symbol.asyncIterator](): AsyncGenerator<Uint8Array> {
