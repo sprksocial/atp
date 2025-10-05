@@ -2,10 +2,10 @@ import { ResponseType, XRPCError } from "@atp/xrpc";
 import { Frame, type MessageFrame } from "./frames.ts";
 
 /** Convert any WebSocket .data variant into a Uint8Array */
-function toUint8Array(data: unknown): Uint8Array {
+async function toUint8Array(data: unknown): Promise<Uint8Array> {
   if (data instanceof Uint8Array) return data;
   if (data instanceof ArrayBuffer) return new Uint8Array(data);
-  if (data instanceof Blob) return new Uint8Array(data.size ? [] : []); // we'll handle Blob async below
+  if (data instanceof Blob) return new Uint8Array(await data.arrayBuffer()); // we'll handle Blob async below
   if (typeof data === "string") {
     // If your protocol *only* sends binary, you could throw here.
     return new TextEncoder().encode(data);
@@ -51,7 +51,7 @@ export function iterateBinary(ws: WebSocket): AsyncIterable<Uint8Array> {
         const buf = await ev.data.arrayBuffer();
         bytes = new Uint8Array(buf);
       } else {
-        bytes = toUint8Array(ev.data);
+        bytes = await toUint8Array(ev.data);
       }
       queue.push(bytes);
       pump();
