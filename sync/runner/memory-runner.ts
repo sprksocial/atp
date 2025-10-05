@@ -12,9 +12,9 @@ export type MemoryRunnerOptions = {
 // A queue with arbitrarily many partitions, each processing work sequentially.
 // Partitions are created lazily and taken out of memory when they go idle.
 export class MemoryRunner implements EventRunner {
-  consecutive = new ConsecutiveList<number>();
+  consecutive: ConsecutiveList<number> = new ConsecutiveList<number>();
   mainQueue: PQueue;
-  partitions = new Map<string, PQueue>();
+  partitions: Map<string, PQueue> = new Map<string, PQueue>();
   cursor: number | undefined;
   private lastCursorSave = 0;
   private savingCursor = false;
@@ -24,13 +24,16 @@ export class MemoryRunner implements EventRunner {
     this.cursor = opts.startCursor;
   }
 
-  getCursor() {
+  getCursor(): number | undefined {
     return this.cursor;
   }
 
-  addTask(partitionId: string, task: () => Promise<void>) {
+  async addTask(
+    partitionId: string,
+    task: () => Promise<void>,
+  ): Promise<void> {
     if (this.mainQueue.isPaused) return;
-    return this.mainQueue.add(() => {
+    return await this.mainQueue.add(() => {
       return this.getPartition(partitionId).add(task);
     });
   }
