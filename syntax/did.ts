@@ -1,16 +1,19 @@
-// Human-readable constraints:
-//   - valid W3C DID (https://www.w3.org/TR/did-core/#did-syntax)
-//      - entire URI is ASCII: [a-zA-Z0-9._:%-]
-//      - always starts "did:" (lower-case)
-//      - method name is one or more lower-case letters, followed by ":"
-//      - remaining identifier can have any of the above chars, but can not end in ":"
-//      - it seems that a bunch of ":" can be included, and don't need spaces between
-//      - "%" is used only for "percent encoding" and must be followed by two hex characters (and thus can't end in "%")
-//      - query ("?") and fragment ("#") stuff is defined for "DID URIs", but not as part of identifier itself
-//      - "The current specification does not take a position on the maximum length of a DID"
-//   - in current atproto, only allowing did:plc and did:web. But not *forcing* this at lexicon layer
-//   - hard length limit of 8KBytes
-//   - not going to validate "percent encoding" here
+/**  Human-readable constraints:
+ *   - valid W3C DID (https://www.w3.org/TR/did-core/#did-syntax)
+ *      - entire URI is ASCII: [a-zA-Z0-9._:%-]
+ *      - always starts "did:" (lower-case)
+ *      - method name is one or more lower-case letters, followed by ":"
+ *      - remaining identifier can have any of the above chars, but can not end in ":"
+ *      - it seems that a bunch of ":" can be included, and don't need spaces between
+ *      - "%" is used only for "percent encoding" and must be followed by two hex characters (and thus can't end in "%")
+ *      - query ("?") and fragment ("#") stuff is defined for "DID URIs", but not as part of identifier itself
+ *      - "The current specification does not take a position on the maximum length of a DID"
+ *   - in current atproto, only allowing did:plc and did:web. But not *forcing* this at lexicon layer
+ *   - hard length limit of 8KBytes
+ *   - not going to validate "percent encoding" here
+ * @param did - DID to validate
+ * @throws {InvalidDidError} if the DID is invalid
+ */
 export const ensureValidDid = (did: string): void => {
   if (!did.startsWith("did:")) {
     throw new InvalidDidError("DID requires 'did:' prefix");
@@ -43,9 +46,12 @@ export const ensureValidDid = (did: string): void => {
   }
 };
 
+/**
+ * Simple regex version of {@linkcode ensureValidDid} constraints
+ * @param did - DID to validate
+ * @throws {InvalidDidError} - if the DID is invalid
+ */
 export const ensureValidDidRegex = (did: string): void => {
-  // simple regex to enforce most constraints via just regex and length.
-  // hand wrote this regex based on above constraints
   if (!/^did:[a-z]+:[a-zA-Z0-9._:%-]*[a-zA-Z0-9._-]$/.test(did)) {
     throw new InvalidDidError("DID didn't validate via regex");
   }

@@ -159,6 +159,7 @@ export interface RepoOp {
   [k: string]: unknown;
 }
 
+/** Determines if an event is a RepoOp */
 export function isRepoOp(v: unknown): v is RepoOp {
   return (
     isObj(v) &&
@@ -167,6 +168,7 @@ export function isRepoOp(v: unknown): v is RepoOp {
   );
 }
 
+/** Lexicon type for com.atproto.sync.subscribeRepos */
 export const ComAtprotoSyncSubscribeRepos: LexiconDoc = {
   lexicon: 1,
   id: "com.atproto.sync.subscribeRepos",
@@ -438,6 +440,7 @@ export const ComAtprotoSyncSubscribeRepos: LexiconDoc = {
 
 const lexicons = new Lexicons([ComAtprotoSyncSubscribeRepos]);
 
+/** Validates a repo event */
 export const isValidRepoEvent = (evt: unknown) => {
   return lexicons.assertValidXrpcMessage<RepoEvent>(
     "com.atproto.sync.subscribeRepos",

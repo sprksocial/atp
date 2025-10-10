@@ -2,8 +2,10 @@ import * as noble from "@noble/hashes/utils.js";
 import { type SupportedEncodings, toString } from "@atp/bytes";
 import { sha256 } from "./sha.ts";
 
+/** Generate random bytes using noble hashes' randomBytes function. */
 export const randomBytes = noble.randomBytes;
 
+/** Generate random string from {@linkcode randomBytes}. */
 export const randomStr = (
   byteLength: number,
   encoding: SupportedEncodings,

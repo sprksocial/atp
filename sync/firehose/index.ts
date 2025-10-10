@@ -42,6 +42,23 @@ import {
   type Sync,
 } from "./lexicons.ts";
 
+/**
+ * The options for the firehose.
+ * @property idResolver - used to resolve dids.
+ * @property handleEvent - Handles indexing logic for each event after it is parsed and authenticated.
+ * @property onError - Handles logic for non-fatal errors that are encountered. In most cases, these can just be logged.
+ * @property getCursor - Logic for retrieving the start cursor. Not allowed if runner is provided.
+ * @property runner -  In-memory partitioned queue for processing events from different repos concurrently.
+ * @property service - Relay service URL. Defaults to Bluesky's `wss://bsky.network`
+ * @property subscriptionReconnectDelay - Delay in milliseconds before reconnecting to the firehose after a disconnection. Defaults to 3000ms.
+ * @property unauthenticatedCommits - Whether to allow unauthenticated commits. Defaults to false, only recommended for testing.
+ * @property unauthenticatedHandles - Whether to allow unauthenticated handles. Defaults to false, only recommended for testing.
+ * @property filterCollections - Client-side filtering of lexicon record collections to include in event handling. Filtering happens client-side. Defaults to an empty array.
+ * @property excludeIdentity - Excludes identity events from handling. Defaults to false.
+ * @property excludeAccount - Excludes account events from handling. Defaults to false.
+ * @property excludeCommit - Excludes commit events from handling. Defaults to false.
+ * @property excludeSync - Excludes repo sync events from handling. Defaults to false.
+ */
 export type FirehoseOptions = WebSocketOptions & {
   idResolver: IdResolver;
 
@@ -64,6 +81,112 @@ export type FirehoseOptions = WebSocketOptions & {
   excludeSync?: boolean;
 };
 
+/**
+ * The firehose class will spin up a websocket connection to
+ * com.atproto.sync.subscribeRepos on a given repo host
+ * (by default the Relay run by Bluesky).
+ * Each event will be parsed, authenticated, and then passed on to the
+ * supplied handleEvent which can handle indexing logic.
+ * On Commit events, the firehose will verify signatures and repo proofs
+ * to ensure that the event is authentic. This can be disabled with the
+ * unauthenticatedCommits flag. Similarly on Identity events, the firehose
+ * will fetch the latest DID document for the repo and do bidirectional
+ * verification on the associated handle. This can be disabled with the
+ * unauthenticatedHandles flag.
+ *
+ * Events of a certain type can be excluded using the
+ * excludeIdentity/excludeAccount/excludeCommit flags.
+ *
+ * And repo writes can be filtered down to specific collections using
+ * filterCollections. By default, all events are parsed and passed
+ * through to the handler. Note that this filtered currently happens
+ * client-side, though it is likely we will introduce server-side
+ * methods for doing so in the future.
+ *
+ * When using the firehose class, events are processed serially.
+ * Each event must be finished being handled before the next one is parsed
+ * and authenticated.
+ *
+ * @example Simple indexing service
+ * ```typescript
+ * import { Firehose } from '@atproto/sync'
+ * import { IdResolver } from '@atproto/identity'
+ *
+ * const idResolver = new IdResolver()
+ * const firehose = new Firehose({
+ *   idResolver,
+ *   service: 'wss://bsky.network',
+ *   handleEvt: async (evt) => {
+ *     if (evt.event === 'identity') {
+ *       // ...
+ *     } else if (evt.event === 'account') {
+ *       // ...
+ *     } else if (evt.event === 'create') {
+ *       // ...
+ *     } else if (evt.event === 'update') {
+ *       // ...
+ *     } else if (evt.event === 'delete') {
+ *       // ...
+ *     }
+ *   },
+ *   onError: (err) => {
+ *     console.error(err)
+ *   },
+ *   filterCollections: ['com.myexample.app'],
+ * })
+ * firehose.start()
+ *
+ * // on service shutdown
+ * await firehose.destroy()
+ * ```
+ *
+ * For more robust indexing pipelines, it's recommended to use the
+ * supplied MemoryRunner class. This provides an in-memory partitioned
+ * queue. As events from a given repo must be processed in order, this
+ * allows events to be processed concurrently while still processing
+ * events from any given repo serially.
+ *
+ * The MemoryRunner also tracks an internal cursor based on the last
+ * finished consecutive work. This ensures that no events are dropped,
+ * although it does mean that some events may occassionally be replayed
+ * (if the websocket drops and reconnects) and therefore it's recommended
+ * that any indexing logic is idempotent. An optional setCursor parameter
+ * may be supplied to the MemoryRunner which can be used to persistently
+ * store the most recently processed cursor.
+ *
+ * @example Indexing with MemoryRunner
+ * ```typescript
+ * import { Firehose, MemoryRunner } from '@atproto/sync'
+ * import { IdResolver } from '@atproto/identity'
+ *
+ * const idResolver = new IdResolver()
+ * const runner = new MemoryRunner({
+ *   setCursor: (cursor) => {
+ *     // persist cursor
+ *   },
+ * })
+ * const firehose = new Firehose({
+ *   idResolver,
+ *   runner,
+ *   service: 'wss://bsky.network',
+ *   handleEvt: async (evt) => {
+ *     // ...
+ *   },
+ *   onError: (err) => {
+ *     console.error(err)
+ *   },
+ * })
+ * firehose.start()
+ *
+ * // on service shutdown
+ * await firehose.destroy()
+ * await runner.destroy()
+ * ```
+ * @property service - The service URL for the firehose.
+ * @property runner - The runner for the firehose.
+ * @property idResolver - The ID resolver for the firehose.
+ * @property opts - The options for the firehose.
+ */
 export class Firehose {
   private sub: Subscription<RepoEvent>;
   private abortController: AbortController;
@@ -379,6 +502,9 @@ const isValidStatus = (str: string): str is AccountStatus => {
   return ["takendown", "suspended", "deleted", "deactivated"].includes(str);
 };
 
+/**
+ * An error in validating/authenticating an event from the firehose.
+ */
 export class FirehoseValidationError extends Error {
   constructor(
     err: unknown,
@@ -388,6 +514,9 @@ export class FirehoseValidationError extends Error {
   }
 }
 
+/**
+ * An error in parsing an event from the firehose.
+ */
 export class FirehoseParseError extends Error {
   constructor(
     err: unknown,
@@ -397,12 +526,18 @@ export class FirehoseParseError extends Error {
   }
 }
 
+/**
+ * An error in the subscription to the firehose.
+ */
 export class FirehoseSubscriptionError extends Error {
   constructor(err: unknown) {
     super("error on firehose subscription", { cause: err });
   }
 }
 
+/**
+ * An error in your firehose event handler logic.
+ */
 export class FirehoseHandlerError extends Error {
   constructor(
     err: unknown,

@@ -29,21 +29,21 @@ Deno.test("MemoryRunner performs work in parallel across partitions, serial with
   const complete: number[] = [];
   // partition 1 items start slow but get faster: slow should still complete first.
   runner.addTask("1", async () => {
-    await wait(8);
+    await wait(30);
     complete.push(11);
   });
   runner.addTask("1", async () => {
-    await wait(4);
+    await wait(20);
     complete.push(12);
   });
   runner.addTask("1", async () => {
-    await wait(0);
+    await wait(1);
     complete.push(13);
   });
   assertEquals(runner.partitions.size, 1);
   // partition 2 items complete quickly except the last, which is slowest of all events.
   runner.addTask("2", async () => {
-    await wait(0);
+    await wait(1);
     complete.push(21);
   });
   runner.addTask("2", async () => {
@@ -55,7 +55,7 @@ Deno.test("MemoryRunner performs work in parallel across partitions, serial with
     complete.push(23);
   });
   runner.addTask("2", async () => {
-    await wait(10);
+    await wait(60);
     complete.push(24);
   });
   assertEquals(runner.partitions.size, 2);

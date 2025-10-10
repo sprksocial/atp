@@ -5,7 +5,10 @@ export type QueryParams = Record<string, unknown>;
 export type HeadersMap = Record<string, string | undefined>;
 
 export type {
-  /** @deprecated not to be confused with the WHATWG Headers constructor */
+  /**
+   * @deprecated not to be confused with the WHATWG Headers constructor.
+   * Use {@linkcode HeadersMap} instead.
+   */
   HeadersMap as Headers,
 };
 
@@ -71,6 +74,9 @@ export function httpResponseCodeToName(status: number): string {
   return ResponseType[httpResponseCodeToEnum(status)];
 }
 
+/**
+ * Error messages corresponding to XRPC error codes.
+ */
 export const ResponseTypeStrings: Record<ResponseType, string> = {
   [ResponseType.Unknown]: "Unknown",
   [ResponseType.InvalidResponse]: "Invalid Response",
@@ -94,6 +100,9 @@ export function httpResponseCodeToString(status: number): string {
   return ResponseTypeStrings[httpResponseCodeToEnum(status)];
 }
 
+/**
+ * Response type of a successful XRPC request.
+ */
 export class XRPCResponse {
   success = true;
 
@@ -103,6 +112,9 @@ export class XRPCResponse {
   ) {}
 }
 
+/**
+ * Response type of a failed XRPC request with details of the error.
+ */
 export class XRPCError extends Error {
   success = false;
 
@@ -166,6 +178,11 @@ export class XRPCError extends Error {
   }
 }
 
+/**
+ * Error for an invalid response from an XRPC request.
+ * Caused by a validation error with the lexicon schema
+ * matching the NSID of the endpoint.
+ */
 export class XRPCInvalidResponseError extends XRPCError {
   constructor(
     public lexiconNsid: string,

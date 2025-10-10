@@ -33,14 +33,12 @@
  * } satisfies LexiconDoc
  *
  * const xrpc = new XrpcClient('https://ping.example.com', [
- *   // Any number of lexicon here
  *   pingLexicon,
  * ])
  *
  * const res1 = await xrpc.call('io.example.ping', {
  *   message: 'hello world',
  * })
- * res1.encoding // => 'application/json'
  * res1.body // => {message: 'hello world'}
  * ```
  * @module

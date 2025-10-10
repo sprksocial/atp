@@ -6,6 +6,7 @@ import type { DidCache } from "../types.ts";
 import { BaseResolver } from "./base-resolver.ts";
 import { timed } from "./util.ts";
 
+/** Path to the DID document on a `did:web` DID. */
 export const DOC_PATH = "/.well-known/did.json";
 
 export class DidWebResolver extends BaseResolver {

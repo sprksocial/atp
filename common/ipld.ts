@@ -6,7 +6,6 @@ import * as rawCodec from "multiformats/codecs/raw";
 import { sha256 } from "multiformats/hashes/sha2";
 import { schema } from "./types.ts";
 import * as check from "./check.ts";
-import { crypto } from "@std/crypto";
 import { concat, equals, fromString, toString } from "@atp/bytes";
 
 export const cborEncode = cborCodec.encode;

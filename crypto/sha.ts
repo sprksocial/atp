@@ -1,8 +1,11 @@
 import * as noble from "@noble/hashes/sha2.js";
 import { fromString, toString } from "@atp/bytes";
 
-// takes either bytes of utf8 input
-// @TODO this can be sync
+/**
+ * Creates a SHA-256 hash of the input.
+ * Takes either bytes of utf8 input
+ * @param input - Bytes to hash.
+ */
 export const sha256 = (
   input: Uint8Array | string,
 ): Uint8Array => {
@@ -10,7 +13,10 @@ export const sha256 = (
   return noble.sha256(bytes);
 };
 
-// @TODO this can be sync
+/**
+ * Hashes the input using SHA-256 and returns the result as a hexadecimal string.
+ * @param input - Bytes to hash.
+ */
 export const sha256Hex = (
   input: Uint8Array | string,
 ): string => {

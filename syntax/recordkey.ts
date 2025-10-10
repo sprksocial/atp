@@ -1,3 +1,8 @@
+/**
+ * Validates a record key (rkey)
+ * @param rkey - Record key to validate
+ * @throws {InvalidRecordKeyError} if the record key is invalid
+ */
 export const ensureValidRecordKey = (rkey: string): void => {
   if (rkey.length > 512 || rkey.length < 1) {
     throw new InvalidRecordKeyError("record key must be 1 to 512 characters");
@@ -11,6 +16,11 @@ export const ensureValidRecordKey = (rkey: string): void => {
   }
 };
 
+/**
+ * Validates a record key (rkey) to a boolean
+ * @param rkey - Record key to validate
+ * @returns true if the record key is valid, false otherwise
+ */
 export const isValidRecordKey = (rkey: string): boolean => {
   try {
     ensureValidRecordKey(rkey);

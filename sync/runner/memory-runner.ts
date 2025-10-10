@@ -9,8 +9,9 @@ export type MemoryRunnerOptions = {
   setCursorInterval?: number; // milliseconds between persisted cursor saves (throttling)
 };
 
-// A queue with arbitrarily many partitions, each processing work sequentially.
-// Partitions are created lazily and taken out of memory when they go idle.
+/** A queue with arbitrarily many partitions, each processing work sequentially.
+ * Partitions are created lazily and taken out of memory when they go idle.
+ */
 export class MemoryRunner implements EventRunner {
   consecutive: ConsecutiveList<number> = new ConsecutiveList<number>();
   mainQueue: PQueue;

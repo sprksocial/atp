@@ -48,6 +48,7 @@ const ascii = createCodec("ascii", "a", (buf) => {
   return buf;
 });
 
+/** Supported base encodings */
 export type SupportedEncodings =
   | "utf8"
   | "utf-8"
@@ -68,6 +69,7 @@ const BASES: Record<SupportedEncodings, MultibaseCodec<string>> = {
   ...bases,
 };
 
+/** Supported base encoding multibase codecs */
 export default BASES;
 
 /**

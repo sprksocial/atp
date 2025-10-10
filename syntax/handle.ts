@@ -1,9 +1,9 @@
 export const INVALID_HANDLE = "handle.invalid";
 
-// Currently these are registration-time restrictions, not protocol-level
-// restrictions. We have a couple accounts in the wild that we need to clean up
-// before hard-disallow.
-// See also: https://en.wikipedia.org/wiki/Top-level_domain#Reserved_domains
+/** Registration-time restrictions, not protocol-level restrictions.
+ * `.test` is allowed but only should be used in testing and development.
+ * @see {https://en.wikipedia.org/wiki/Top-level_domain#Reserved_domains}
+ */
 export const DISALLOWED_TLDS = [
   ".local",
   ".arpa",
@@ -14,8 +14,6 @@ export const DISALLOWED_TLDS = [
   ".alt",
   // policy could concievably change on ".onion" some day
   ".onion",
-  // NOTE: .test is allowed in testing and devopment. In practical terms
-  // "should" "never" actually resolve and get registered in production
 ];
 
 /**
@@ -143,11 +141,14 @@ export const isValidTld = (handle: string): boolean => {
 
 /**
  * Thrown when a handle is invalid.
+ * Caused by invalid characters (only ASCII letters, digits, dashes, periods are allowed),
+ * length longer than 253 characters, or one of the {@linkcode DISALLOWED_TLDS} used.
  */
 export class InvalidHandleError extends Error {}
-/** @deprecated Never used */
+
+/** @deprecated Use {@linkcode InvalidHandleError} */
 export class ReservedHandleError extends Error {}
-/** @deprecated Never used */
+/** @deprecated Use {@linkcode InvalidHandleError} */
 export class UnsupportedDomainError extends Error {}
-/** @deprecated Never used */
+/** @deprecated Use {@linkcode InvalidHandleError} */
 export class DisallowedDomainError extends Error {}
