@@ -1,25 +1,12 @@
-/**
- * Creates signatures for messages.
- *
- * @prop jwtAlg - The JWT algorithm used for signing.
- * @prop sign - Returns a signature for the given message bytes.
- */
 export interface Signer {
   jwtAlg: string;
   sign(msg: Uint8Array): Uint8Array;
 }
 
-/**
- * Can create DID keys.
- * @prop did - Returns a DID key.
- */
 export interface Didable {
   did(): string;
 }
 
-/**
- * Combines a {@linkcode Signer} and {@linkcode Didable} into a Keypair.
- */
 export interface Keypair extends Signer, Didable {}
 
 /**

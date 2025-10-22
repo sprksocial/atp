@@ -14,6 +14,7 @@ export type LexValue =
   | Array<LexValue>
   | { [key: string]: LexValue };
 
+/** Record of LexValues */
 export type RepoRecord = Record<string, LexValue>;
 
 // @NOTE avoiding use of check.is() here only because it makes

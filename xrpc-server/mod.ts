@@ -1,5 +1,5 @@
 /**
- * XRPC Server implementation for atproto services.
+ * # XRPC Server implementation for atproto services.
  *
  * This module provides a Hono-based server implementation for atproto's XRPC protocol,
  * with support for Lexicon schema validation, authentication, rate limiting, and streaming.
@@ -15,14 +15,10 @@
  * - Comprehensive error handling with XRPC error types
  * - TypeScript-first with complete type definitions
  *
- * ## Runtime Compatibility
- * Works with Deno, Node.js, Bun, Cloudflare Workers, and other JavaScript runtimes
- * supported by Hono.
- *
- * Note: Subscription (WebSocket) endpoints are currently supported only in Deno
- * and Cloudflare Workers. On Node.js and Bun, query/procedure routes function
- * normally, but subscription endpoints are not yet available (WebSocket upgrades
- * will be rejected or unmounted).
+ * NOTE: streamMethods (WebSocket streaming endpoints) are currently
+ * only supported in Deno and Cloudflare Workers. This doesn't
+ * include the client-side StreamConnection function, which can be
+ * used in any runtime or browser.
  *
  * @example Basic server setup with a simple endpoint
  * ```ts

@@ -22,6 +22,10 @@ import {
 } from "./types.ts";
 import type { CID } from "multiformats/basics";
 
+/**
+ * Converts a DataDiff of a repo three arrays of RecordWriteDescripts,
+ * for creates, updates, and deletes in the diff.
+ */
 export const diffToWriteDescripts = (
   diff: DataDiff,
 ): Promise<RecordWriteDescript[]> => {
@@ -57,6 +61,10 @@ export const diffToWriteDescripts = (
   ]);
 };
 
+/**
+ * Ensures that all write operations given are create actions.
+ * @throws If any write operation is not a create action.
+ */
 export const ensureCreates = (
   descripts: RecordWriteDescript[],
 ): RecordCreateDescript[] => {
@@ -85,6 +93,9 @@ export const metaEqual = (a: Commit, b: Commit): boolean => {
   return a.did === b.did && a.version === b.version;
 };
 
+/**
+ * Generates a signature for an unsigned commit using the provided keypair.
+ */
 export const signCommit = (
   unsigned: UnsignedCommit,
   keypair: Keypair,
@@ -97,6 +108,10 @@ export const signCommit = (
   };
 };
 
+/**
+ * Ensures a commit is authenticated by verifying its signature
+ * against the provided DID key.
+ */
 export const verifyCommitSig = (
   commit: Commit,
   didKey: string,
@@ -106,10 +121,17 @@ export const verifyCommitSig = (
   return crypto.verifySignature(didKey, encoded, sig as Uint8Array);
 };
 
+/**
+ * Converts CBOR-encoded bytes to a LexValue using {@linkcode ipldToLex}.
+ */
 export const cborToLex = (val: Uint8Array): LexValue => {
   return ipldToLex(cborDecode(val));
 };
 
+/**
+ * Converts CBOR-encoded record bytes to a RepoRecord using {@linkcode cborToLex}.
+ * Validates that the parsed value is a valid RepoRecord.
+ */
 export const cborToLexRecord = (val: Uint8Array): RepoRecord => {
   const parsed = cborToLex(val);
   if (!check.is(parsed, schema.map)) {

@@ -451,20 +451,16 @@ Deno.test("subscription consumer reconnects w/ param update", async () => {
     for await (const msg of sub) {
       const typedMsg = msg as { count: number };
       messagesReceived++;
-      assertEquals(typedMsg.count >= 0, true); // Ensure valid count
+      assertEquals(typedMsg.count >= 0, true);
 
-      // Abort early to avoid lingering sockets/heartbeats; this simulates a reconnect trigger.
       if (messagesReceived === 2) {
         ac.abort(new Error("test-abort"));
         break;
       }
     }
 
-    // Allow internal subscription cleanup (heartbeat interval & socket close) to settle
-    // so Deno's leak detector doesn't flag the pending timer from the generator's wait(0).
-    await new Promise((r) => setTimeout(r, 0));
+    await wait(50);
 
-    // Ensure we actually received the expected early messages
     assertEquals(messagesReceived >= 2, true);
   } finally {
     await closeServer(httpServer);
@@ -499,27 +495,21 @@ Deno.test("subscription consumer aborts with signal", async () => {
         messages.push(typedMsg);
         if (typedMsg.count <= 6 && !disconnected) {
           disconnected = true;
-          // Abort and immediately break to ensure iterator finalizer runs,
-          // preventing lingering heartbeat intervals / WebSocket reads.
           abortController.abort(new Error("Oops!"));
           break;
         }
       }
     } catch (err) {
       error = err;
-    } finally {
-      // Give the subscription cleanup a microtask + tick to run.
-      await new Promise((r) => setTimeout(r, 0));
     }
 
-    // The subscription may terminate cleanly or throw - either is acceptable
+    await wait(50);
+
     if (error) {
       assertEquals(error instanceof Error, true);
       assertEquals((error as Error).message, "Oops!");
     }
-    // Ensure abort actually happened
     assertEquals(abortController.signal.aborted, true);
-    // Ensure we received at least one message before abort
     assertEquals(messages.length > 0, true);
   } finally {
     await closeServer(httpServer);

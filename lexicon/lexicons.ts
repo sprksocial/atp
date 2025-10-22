@@ -19,7 +19,31 @@ import {
 import { object as validateObject } from "./validation/complex.ts";
 
 /**
- * A collection of compiled lexicons.
+ * A collection of compiled lexicon docs with methods for adding,
+ * removing, validating, and iterating over them.
+ *
+ * @example Add and validate a lexicon
+ * ```typescript
+ * import { Lexicon } from "@atp/lexicon";
+ *
+ * // create your lexicons collection
+ * const lex = new Lexicons()
+ *
+ * // add your lexicons
+ * lex.add({
+ *   lex: 1,
+ *   id: 'com.example.post',
+ *   defs: {
+ *     // ...
+ *   }
+ * })
+ *
+ * // validate
+ * lex.assertValidRecord('com.example.record', {$type: 'com.example.record', ...})
+ * lex.assertValidXrpcParams('com.example.query', {...})
+ * lex.assertValidXrpcInput('com.example.procedure', {...})
+ * lex.assertValidXrpcOutput('com.example.query', {...})
+ * ```
  */
 export class Lexicons implements Iterable<LexiconDoc> {
   docs: Map<string, LexiconDoc> = new Map();
