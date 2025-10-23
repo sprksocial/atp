@@ -1,3 +1,4 @@
+/** A timed function to abort after a certain amount of time */
 export async function timed<F extends (signal: AbortSignal) => unknown>(
   ms: number,
   fn: F,

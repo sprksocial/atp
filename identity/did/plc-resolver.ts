@@ -2,6 +2,11 @@ import type { DidCache } from "../types.ts";
 import { BaseResolver } from "./base-resolver.ts";
 import { timed } from "./util.ts";
 
+/**
+ * Did resolver for resolving DIDs to atproto
+ * data, specifically `did:plc` DIDs.
+ * Can optionally cache resolved DID docs.
+ */
 export class DidPlcResolver extends BaseResolver {
   constructor(
     public plcUrl: string,

@@ -9,6 +9,11 @@ import { timed } from "./util.ts";
 /** Path to the DID document on a `did:web` DID. */
 export const DOC_PATH = "/.well-known/did.json";
 
+/**
+ * Did resolver for resolving DIDs to atproto
+ * data, specifically `did:web` DIDs.
+ * Can optionally cache resolved DID docs.
+ */
 export class DidWebResolver extends BaseResolver {
   constructor(
     public timeout: number,

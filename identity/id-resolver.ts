@@ -3,7 +3,8 @@ import { HandleResolver } from "./handle/index.ts";
 import type { IdentityResolverOpts } from "./types.ts";
 
 /**
- * Combines Handle and DID resolvers into a single identity resolver class.
+ * A single identity resolver class combining Did resolver and Handle resolver.
+ * Can resolve handles and dids to atproto data with an optional cache.
  */
 export class IdResolver {
   public handle: HandleResolver;

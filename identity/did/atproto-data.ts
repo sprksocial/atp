@@ -17,12 +17,14 @@ export {
   getPdsEndpoint as getPds,
 };
 
+/** Resolve a did to its `did:key` signing key, stringified */
 export const getKey = (doc: DidDocument): string | undefined => {
   const key = getSigningKey(doc);
   if (!key) return undefined;
   return getDidKeyFromMultibase(key);
 };
 
+/** Extract and format a `did:key` signing key from multibase */
 export const getDidKeyFromMultibase = (key: {
   type: string;
   publicKeyMultibase: string;
@@ -40,6 +42,7 @@ export const getDidKeyFromMultibase = (key: {
   return didKey;
 };
 
+/** Parse an atproto document ("did doc") to its atproto data*/
 export const parseToAtprotoDocument = (
   doc: DidDocument,
 ): Partial<AtprotoData> => {
@@ -52,6 +55,7 @@ export const parseToAtprotoDocument = (
   };
 };
 
+/** Authenticate and verify the existance of an atproto Did Document */
 export const ensureAtpDocument = (doc: DidDocument): AtprotoData => {
   const { did, signingKey, handle, pds } = parseToAtprotoDocument(doc);
   if (!did) {
@@ -69,6 +73,7 @@ export const ensureAtpDocument = (doc: DidDocument): AtprotoData => {
   return { did, signingKey, handle, pds };
 };
 
+/** Parse a `did:key` signing key from a Did Document */
 export const ensureAtprotoKey = (doc: DidDocument): string => {
   const { signingKey } = parseToAtprotoDocument(doc);
   if (!signingKey) {

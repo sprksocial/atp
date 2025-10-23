@@ -7,6 +7,10 @@ import { BaseResolver } from "./base-resolver.ts";
 import { DidPlcResolver } from "./plc-resolver.ts";
 import { DidWebResolver } from "./web-resolver.ts";
 
+/**
+ * Did Resolver class combining DidPlcResolver and DidWebResolver,
+ * resolves did:plc and did:web dids with optional caching.
+ */
 export class DidResolver extends BaseResolver {
   methods: Record<string, BaseResolver>;
 

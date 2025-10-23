@@ -1,6 +1,11 @@
 import { DAY, HOUR } from "@atp/common";
 import type { CacheResult, DidCache, DidDocument } from "../types.ts";
 
+/**
+ * Value stored in cache for a DID doc
+ * @prop doc - DID Document object
+ * @prop updatedAt - Last time DID doc cached was updated
+ */
 type CacheVal = {
   doc: DidDocument;
   updatedAt: number;

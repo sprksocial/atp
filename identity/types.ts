@@ -69,6 +69,10 @@ export type CacheResult = {
   expired: boolean;
 };
 
+/**
+ * An optional configured cache for caching resolved
+ * did documents and getting the cached did docs.
+ */
 export interface DidCache {
   cacheDid(
     did: string,

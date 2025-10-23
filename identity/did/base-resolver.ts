@@ -13,6 +13,10 @@ import {
 } from "../types.ts";
 import * as atprotoData from "./atproto-data.ts";
 
+/**
+ * Core functionality of did and handle resolution and validation,
+ * including cache handling.
+ */
 export abstract class BaseResolver {
   constructor(public cache?: DidCache) {}
 
