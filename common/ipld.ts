@@ -168,7 +168,18 @@ export const jsonToIpld = (val: JsonValue): IpldValue => {
     // walk plain objects
     const toReturn: Record<string, IpldValue> = {};
     for (const key of Object.keys(val)) {
-      toReturn[key] = jsonToIpld(obj[key]);
+      const value = obj[key];
+      if (
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value) &&
+        typeof (value as Record<string, unknown>)["$link"] === "string" &&
+        Object.keys(value).length === 1
+      ) {
+        toReturn[key] = CID.parse((value as { $link: string }).$link);
+      } else {
+        toReturn[key] = jsonToIpld(value);
+      }
     }
     return toReturn;
   }

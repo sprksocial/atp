@@ -1,5 +1,5 @@
 import { Command } from "@cliffy/command";
-import { genTsObj, readAllLexicons } from "../util.ts";
+import { genTsObj, readAllLexicons } from "../../util.ts";
 
 const command = new Command()
   .description("Generate a TS file that exports an array of lexicons")

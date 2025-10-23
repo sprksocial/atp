@@ -23,10 +23,12 @@ const ReadableStream = globalThis.ReadableStream ||
     }
   } as typeof globalThis.ReadableStream);
 
+/** Check whether an XRPC response object is an error */
 export function isErrorResponseBody(v: unknown): v is ErrorResponseBody {
   return errorResponseBody.safeParse(v).success;
 }
 
+/** Get the HTTP method of lexicon procedure or query schema */
 export function getMethodSchemaHTTPMethod(
   schema: LexXrpcProcedure | LexXrpcQuery,
 ): "post" | "get" {

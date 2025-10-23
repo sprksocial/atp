@@ -1,4 +1,3 @@
-import dns from "node:dns/promises";
 import type { HandleResolverOpts } from "../types.ts";
 
 const SUBDOMAIN = "_atproto";
@@ -40,7 +39,7 @@ export class HandleResolver {
   async resolveDns(handle: string): Promise<string | undefined> {
     let chunkedResults: string[][];
     try {
-      chunkedResults = await dns.resolveTxt(`${SUBDOMAIN}.${handle}`);
+      chunkedResults = await Deno.resolveDns(`${SUBDOMAIN}.${handle}`, "TXT");
     } catch {
       return undefined;
     }
@@ -69,9 +68,10 @@ export class HandleResolver {
     try {
       const backupIps = await this.getBackupNameserverIps();
       if (!backupIps || backupIps.length < 1) return undefined;
-      const resolver = new dns.Resolver();
-      resolver.setServers(backupIps);
-      chunkedResults = await resolver.resolveTxt(`${SUBDOMAIN}.${handle}`);
+      const nameServers = backupIps.map(ip => ({ ipAddr: ip }));
+      chunkedResults = await Deno.resolveDns(`${SUBDOMAIN}.${handle}`, "TXT", {
+        nameServer: nameServers[0], // Use first backup server
+      });
     } catch {
       return undefined;
     }
@@ -92,12 +92,12 @@ export class HandleResolver {
       return undefined;
     } else if (!this.backupNameserverIps) {
       const responses = await Promise.allSettled(
-        this.backupNameservers.map((h) => dns.lookup(h)),
+        this.backupNameservers.map((h) => Deno.resolveDns(h, "A")),
       );
       for (const res of responses) {
         if (res.status === "fulfilled") {
           this.backupNameserverIps ??= [];
-          this.backupNameserverIps.push(res.value.address);
+          this.backupNameserverIps.push(...res.value);
         }
       }
     }
