@@ -1,3 +1,7 @@
+/**
+ * Generic event runner interface
+ * for event tracking and processing
+ */
 export interface EventRunner {
   getCursor(): Awaited<number | undefined>;
   trackEvent(

@@ -327,6 +327,14 @@ export class Firehose {
   }
 }
 
+/**
+ * Parse a {@link Commit} object while authenticating the commit
+ * @param idResolver Identity resolver for DIDs and handles
+ * @param evt Commit event object to parse
+ * @param matchCollection Lexicon collection to match record to
+ * @param forceKeyRefresh Whether to force a refresh when resolving AT Protocol Key
+ * @returns A parsed authenticated commit
+ */
 export const parseCommitAuthenticated = async (
   idResolver: IdResolver,
   evt: Commit,
@@ -372,6 +380,12 @@ export const parseCommitAuthenticated = async (
   });
 };
 
+/**
+ * Parse a {@link Commit} object without authenticating the commit
+ * @param evt Commit event object to parse
+ * @param matchCollection Lexicon collection to match record to
+ * @returns A parsed commit
+ */
 export const parseCommitUnauthenticated = (
   evt: Commit,
   matchCollection?: ((col: string) => boolean) | null,
@@ -439,6 +453,10 @@ const formatCommitOps = async (
   return evts;
 };
 
+/**
+ * Parse {@link Sync} object to a sync event
+ * @param evt Sync event to parse
+ */
 export const parseSync = async (evt: Sync): Promise<SyncEvt | null> => {
   const car = await readCarWithRoot(evt.blocks);
 
@@ -453,6 +471,12 @@ export const parseSync = async (evt: Sync): Promise<SyncEvt | null> => {
   };
 };
 
+/**
+ * Parse and authenticate an identity event
+ * @param idResolver DID and handle resolver for authentication
+ * @param evt Identity event to parse
+ * @param unauthenticated If true authentication is skipped
+ */
 export const parseIdentity = async (
   idResolver: IdResolver,
   evt: Identity,
@@ -486,6 +510,10 @@ const verifyHandle = async (
   return res === did ? handle : undefined;
 };
 
+/**
+ * Parse an account event
+ * @param evt Account event to parse
+ */
 export const parseAccount = (evt: Account): AccountEvt | undefined => {
   if (evt.status && !isValidStatus(evt.status)) return;
   return {

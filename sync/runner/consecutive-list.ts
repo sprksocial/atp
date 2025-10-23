@@ -1,8 +1,10 @@
 /**
  * Add items to a list, and mark those items as
  * completed. Upon item completion, get list of consecutive
- * items completed at the head of the list. Example:
+ * items completed at the head of the list.
  *
+ * @example Get consecultive item list
+ * ```typescript
  * const consecutive = new ConsecutiveList<number>()
  * const item1 = consecutive.push(1)
  * const item2 = consecutive.push(2)
@@ -10,6 +12,7 @@
  * item2.complete() // []
  * item1.complete() // [1, 2]
  * item3.complete() // [3]
+ * ```
  */
 export class ConsecutiveList<T> {
   list: ConsecutiveItem<T>[] = [];
@@ -29,6 +32,7 @@ export class ConsecutiveList<T> {
   }
 }
 
+/** Process being run consecutively in a {@link ConsecutiveList} */
 export class ConsecutiveItem<T> {
   isComplete = false;
   constructor(

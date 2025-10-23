@@ -2,6 +2,13 @@ import PQueue from "p-queue";
 import { ConsecutiveList } from "./consecutive-list.ts";
 import type { EventRunner } from "./types.ts";
 
+/**
+ * Options for {@link MemoryRunner}
+ * @param setCursor Method to save the current cursor
+ * @param concurrency Maximum amount of concurrent events being processed
+ * @param startCursor Starting Cursor for filling in downtime
+ * @param setCursorInterval Interval on which to run setCursor
+ */
 export type MemoryRunnerOptions = {
   setCursor?: (cursor: number) => Promise<void>;
   concurrency?: number;
