@@ -80,7 +80,8 @@ export function createServer(
 
 /**
  * XRPC server implementation that handles HTTP and WebSocket requests.
- * Manages method registration, authentication, rate limiting, and streaming.
+ * Manages method registration, authentication, rate limiting, and streaming
+ * with automatic schema validation.
  */
 export class Server {
   /** The underlying Hono HTTP server instance */

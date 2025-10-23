@@ -80,9 +80,7 @@ export type HandlerInput = {
   body: unknown;
 };
 
-/**
- * Result of successful authentication.
- */
+/** Result of successful authentication. */
 export type AuthResult = {
   /** Authentication credentials (e.g., user info, tokens) */
   credentials: unknown;
@@ -90,14 +88,13 @@ export type AuthResult = {
   artifacts?: unknown;
 };
 
+/** Zod Schema for request headers. */
 export const headersSchema: z.ZodRecord<z.ZodString, z.ZodString> = z.record(
   z.string(),
   z.string(),
 );
 
-/**
- * HTTP headers as a record of string key-value pairs.
- */
+/** HTTP headers as a record of string key-value pairs. */
 export type Headers = z.infer<typeof headersSchema>;
 
 export const handlerSuccess: z.ZodObject<{
@@ -110,14 +107,10 @@ export const handlerSuccess: z.ZodObject<{
   headers: headersSchema.optional(),
 });
 
-/**
- * Successful response from a method handler.
- */
+/** Successful response from a method handler. */
 export type HandlerSuccess = z.infer<typeof handlerSuccess>;
 
-/**
- * Handler response that pipes through a buffer.
- */
+/** Handler response that pipes through a buffer. */
 export type HandlerPipeThroughBuffer = {
   /** Content encoding of the response */
   encoding: string;
@@ -127,9 +120,7 @@ export type HandlerPipeThroughBuffer = {
   headers?: Headers;
 };
 
-/**
- * Handler response that pipes through a stream.
- */
+/** Handler response that pipes through a stream. */
 export type HandlerPipeThroughStream = {
   /** Content encoding of the response */
   encoding: string;
@@ -139,26 +130,18 @@ export type HandlerPipeThroughStream = {
   headers?: Headers;
 };
 
-/**
- * Union type for handler responses that pipe data through either a buffer or stream.
- */
+/** Union type for handler responses that pipe data through either a buffer or stream. */
 export type HandlerPipeThrough =
   | HandlerPipeThroughBuffer
   | HandlerPipeThroughStream;
 
-/**
- * Authentication state for a handler context.
- */
+/** Authentication state for a handler context. */
 export type Auth = void | AuthResult;
 
-/**
- * Input data for a handler context.
- */
+/** Input data for a handler context. */
 export type Input = void | HandlerInput;
 
-/**
- * Output data from a handler.
- */
+/** Output data from a handler. */
 export type Output = void | HandlerSuccess | ErrorResult;
 
 /**
@@ -364,9 +347,7 @@ export function isSharedRateLimitOpts<
   return "name" in opts && typeof opts.name === "string";
 }
 
-/**
- * Options for configuring payload size limits by content type.
- */
+/** Options for configuring payload size limits by content type. */
 export type RouteOptions = {
   /** Maximum size for binary/blob payloads in bytes */
   blobLimit?: number;
@@ -376,9 +357,7 @@ export type RouteOptions = {
   textLimit?: number;
 };
 
-/**
- * Simplified route options with only blob limit configuration.
- */
+/** Simplified route options with only blob limit configuration. */
 export type RouteOpts = {
   /** Maximum size for binary/blob payloads in bytes */
   blobLimit?: number;

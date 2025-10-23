@@ -7,18 +7,23 @@ import {
 import { ResponseType, XRPCError } from "./errors.ts";
 import { logger } from "./logger.ts";
 
+/** Context about the request and response */
 export interface RateLimiterContext {
   req: Request;
   res?: Response;
 }
 
+/** Method type to calculate the group key of the request */
 export type CalcKeyFn<C extends RateLimiterContext = RateLimiterContext> = (
   ctx: C,
 ) => string | null;
+
+/** Method function to calculate the amount of points at a given time for a duration */
 export type CalcPointsFn<C extends RateLimiterContext = RateLimiterContext> = (
   ctx: C,
 ) => number;
 
+/** Generic rate limiter interface used for all rate limiters */
 export interface RateLimiterI<
   C extends RateLimiterContext = RateLimiterContext,
 > {
@@ -26,6 +31,7 @@ export interface RateLimiterI<
   reset: RateLimiterReset<C>;
 }
 
+/** Method options for {@link RateLimiterConsume} */
 export type RateLimiterConsumeOptions<
   C extends RateLimiterContext = RateLimiterContext,
 > = {
@@ -33,6 +39,7 @@ export type RateLimiterConsumeOptions<
   calcPoints?: CalcPointsFn<C>;
 };
 
+/** Generic rate limiter request consume method type */
 export type RateLimiterConsume<
   C extends RateLimiterContext = RateLimiterContext,
 > = (
@@ -40,6 +47,14 @@ export type RateLimiterConsume<
   opts?: RateLimiterConsumeOptions<C>,
 ) => Promise<RateLimiterStatus | RateLimitExceededError | null>;
 
+/** Information about the current status of the rate limiter
+ * @prop limit Current point limit
+ * @prop duration Duration limit is applied
+ * @prop remainingPoints The remaining points before the limit is reached
+ * @prop msBeforeNext Milliseconds before the next duration begins
+ * @prop consumedPoints Amount of points consumed in this duration
+ * @prop isFirstInDuration Is this the first point in this duration?
+ */
 export type RateLimiterStatus = {
   limit: number;
   duration: number;
@@ -49,16 +64,27 @@ export type RateLimiterStatus = {
   isFirstInDuration: boolean;
 };
 
+/** Options for {@link RateLimiterReset} */
 export type RateLimiterResetOptions<
   C extends RateLimiterContext = RateLimiterContext,
 > = {
   calcKey?: CalcKeyFn<C>;
 };
 
+/** Generic method type to reset any rate limiter **/
 export type RateLimiterReset<
   C extends RateLimiterContext = RateLimiterContext,
 > = (ctx: C, opts?: RateLimiterResetOptions<C>) => Promise<void>;
 
+/**
+ * Generic options for {@link RateLimiter}
+ * @prop keyPrefix A prefix to differentiate multiple rate limiters
+ * @prop durationMs Millisecond duration of the period the limit is applied on
+ * @prop points Amount of points allowed over the duration
+ * @prop calcKey Method to calculate what rate limits apply to the request
+ * @prop calcPoints Method to calculate the group key for the request
+ * @prop failClosed Should all requests be rejected if the rate limiter fails?
+ */
 export type RateLimiterOptions<
   C extends RateLimiterContext = RateLimiterContext,
 > = {
@@ -140,6 +166,13 @@ export class RateLimiter<C extends RateLimiterContext = RateLimiterContext>
   }
 }
 
+/**
+ * Rate limiter implementation using memory,
+ * recommended for low-scale uses.
+ *
+ * Should not be used with Cloudflare Workers
+ * or serverless/edge use cases.
+ */
 export class MemoryRateLimiter<
   C extends RateLimiterContext = RateLimiterContext,
 > extends RateLimiter<C> {
@@ -153,6 +186,11 @@ export class MemoryRateLimiter<
   }
 }
 
+/**
+ * Rate limiter implementation using Redis,
+ * recommended for medium or high scale
+ * or any serverless/edge use case.
+ */
 export class RedisRateLimiter<
   C extends RateLimiterContext = RateLimiterContext,
 > extends RateLimiter<C> {
@@ -167,6 +205,12 @@ export class RedisRateLimiter<
   }
 }
 
+/**
+ * Method type to get rate limiter status
+ * from a response and a rate limiter instance
+ * @param limiter Rate limiter instance
+ * @param res Response returned by rate limiter
+ */
 export const formatLimiterStatus = (
   limiter: RateLimiterAbstract,
   res: RateLimiterRes,
@@ -181,6 +225,7 @@ export const formatLimiterStatus = (
   };
 };
 
+/** Options for {@link WrappedRateLimiter} */
 export type WrappedRateLimiterOptions<
   C extends RateLimiterContext = RateLimiterContext,
 > = {
@@ -276,6 +321,7 @@ const getTightestLimit = (
   return lowest;
 };
 
+/** Options for {@link RouteRateLimiter} */
 export type RouteRateLimiterOptions<
   C extends RateLimiterContext = RateLimiterContext,
 > = {
@@ -349,6 +395,7 @@ function setStatusHeaders<C extends RateLimiterContext = RateLimiterContext>(
   );
 }
 
+/** XRPC error returned by rate limiter when rate limit has been exceeded */
 export class RateLimitExceededError extends XRPCError {
   constructor(
     public status: RateLimiterStatus,

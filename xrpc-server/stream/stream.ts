@@ -129,6 +129,9 @@ export async function* byMessage(
   }
 }
 
+/** Ensure that a chunk adheres to the message frame type,
+ * and isn't an error or unknown frame type
+ */
 export function ensureChunkIsMessage(chunk: Uint8Array): MessageFrame<unknown> {
   const frame = Frame.fromBytes(chunk);
   if (frame.isMessage()) {

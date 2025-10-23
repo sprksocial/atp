@@ -11,6 +11,13 @@ type CacheVal = {
   updatedAt: number;
 };
 
+/**
+ * DID cache using memory, recommended for low scale
+ * use cases.
+ *
+ * Not compatible with Cloudflare Workers or serverless/edge
+ * setups
+ */
 export class MemoryCache implements DidCache {
   public staleTTL: number;
   public maxTTL: number;

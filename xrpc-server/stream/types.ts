@@ -106,6 +106,7 @@ export class DisconnectError extends Error {
   }
 }
 
+/** Different closure codes for normal, abnormal and policy violation closures. */
 export enum CloseCode {
   /** Normal closure, meaning the purpose for which the connection was established has been fulfilled */
   Normal = 1000,

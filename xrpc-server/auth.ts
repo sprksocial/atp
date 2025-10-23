@@ -4,7 +4,16 @@ import { MINUTE } from "@atp/common";
 import * as crypto from "@atp/crypto";
 import { AuthRequiredError } from "./errors.ts";
 
-type ServiceJwtParams = {
+/**
+ * Parameters for service JWT creation
+ * @prop iss The issuer of the key (corresponds to user DID)
+ * @prop aud The intended audience of the key, the service it's intended for
+ * @prop iat When the key was issued at
+ * @prop exp When the key expires
+ * @prop lxm Lexicon (XRPC) endpoints the key is allowed to be used for
+ * @prop keypair Signing key to be used to create the JWT token
+ */
+export type ServiceJwtParams = {
   iss: string;
   aud: string;
   iat?: number;
@@ -13,11 +22,23 @@ type ServiceJwtParams = {
   keypair: crypto.Keypair;
 };
 
-type ServiceJwtHeaders = {
+/**
+ * Headers of a service JWT token
+ * @prop alg Algorithm used for the JWT token's encoding
+ */
+export type ServiceJwtHeaders = {
   alg: string;
 } & Record<string, unknown>;
 
-type ServiceJwtPayload = {
+/**
+ * Parameters for service JWT creation
+ * @prop iss The issuer of the token (corresponds to user DID)
+ * @prop aud The intended audience of the token, the service it's intended for
+ * @prop exp When the key expires
+ * @prop lxm Lexicon (XRPC) endpoints the token is allowed to be used for
+ * @prop jti JWT Identifier
+ */
+export type ServiceJwtPayload = {
   iss: string;
   aud: string;
   exp: number;
@@ -25,9 +46,13 @@ type ServiceJwtPayload = {
   jti?: string;
 };
 
-export const createServiceJwt = async (
+/**
+ * Create a JWT token string for service auth
+ * @param params Information and permissions given to the service JWT token
+ */
+export const createServiceJwt = (
   params: ServiceJwtParams,
-): Promise<string> => {
+): string => {
   const { iss, aud, keypair } = params;
   const iat = params.iat ?? Math.floor(Date.now() / 1e3);
   const exp = params.exp ?? iat + MINUTE / 1e3;
@@ -47,7 +72,7 @@ export const createServiceJwt = async (
   });
   const toSignStr = `${jsonToB64Url(header)}.${jsonToB64Url(payload)}`;
   const toSign = ui8.fromString(toSignStr, "utf8");
-  const sig = await keypair.sign(toSign);
+  const sig = keypair.sign(toSign);
   return `${toSignStr}.${ui8.toString(sig, "base64url")}`;
 };
 
@@ -68,10 +93,10 @@ export const createServiceJwt = async (
  * fetch(url, { headers: auth.headers });
  * ```
  */
-export const createServiceAuthHeaders = async (
+export const createServiceAuthHeaders = (
   params: ServiceJwtParams,
-): Promise<{ headers: { authorization: string } }> => {
-  const jwt = await createServiceJwt(params);
+): { headers: { authorization: string } } => {
+  const jwt = createServiceJwt(params);
   return {
     headers: { authorization: `Bearer ${jwt}` },
   };
@@ -81,6 +106,7 @@ const jsonToB64Url = (json: Record<string, unknown>): string => {
   return common.utf8ToB64Url(JSON.stringify(json));
 };
 
+/** Verify a message signature against a key */
 export type VerifySignatureWithKeyFn = (
   key: string,
   msgBytes: Uint8Array,
@@ -88,10 +114,21 @@ export type VerifySignatureWithKeyFn = (
   alg: string,
 ) => boolean;
 
+/**
+ * Verify a JWT token is valid against the context in which
+ * it's being used, including the lxm matching the current endpoint,
+ * the aud matching the service DID, and the key itself matching
+ * the signing key of the DID who claims to have issued it
+ * @param jwtStr The JWT token being used
+ * @param ownDid The DID of the current service, null indicates to skip the audience check
+ * @param lxm The lexicon permissions of the JWT token, null indicates to skip the lxm check
+ * @param getSigningKey A function to get the signing key of the issuer
+ * @param verifySignatureWithKey A method to verify the signature with the JWT token,
+ */
 export const verifyJwt = async (
   jwtStr: string,
-  ownDid: string | null, // null indicates to skip the audience check
-  lxm: string | null, // null indicates to skip the lxm check
+  ownDid: string | null,
+  lxm: string | null,
   getSigningKey: (
     iss: string,
     forceRefresh: boolean,
@@ -153,7 +190,7 @@ export const verifyJwt = async (
 
   let validSig: boolean;
   try {
-    validSig = await verifySignatureWithKey(
+    validSig = verifySignatureWithKey(
       signingKey,
       msgBytes,
       sigBytes,
@@ -171,7 +208,7 @@ export const verifyJwt = async (
     const freshSigningKey = await getSigningKey(payload.iss, true);
     try {
       validSig = freshSigningKey !== signingKey
-        ? await verifySignatureWithKey(
+        ? verifySignatureWithKey(
           freshSigningKey,
           msgBytes,
           sigBytes,
@@ -196,6 +233,13 @@ export const verifyJwt = async (
   return payload;
 };
 
+/**
+ * Default method to verify a JWT signature against a key.
+ * @param key to verify JWT token against
+ * @param msgBytes Corresponding message
+ * @param sigBytes JWT signature bytes to verify
+ * @param alg Encoding algorithm for JWT signature
+ */
 export const cryptoVerifySignatureWithKey: VerifySignatureWithKeyFn = (
   key: string,
   msgBytes: Uint8Array,

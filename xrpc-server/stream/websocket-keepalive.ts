@@ -5,16 +5,28 @@ import { SECOND, wait } from "@atp/common";
 import { CloseCode, DisconnectError } from "./types.ts";
 import { iterateBinary } from "./stream.ts";
 
-// Public options are web-standard and protocol-safe.
+/**
+ * Options for a {@link WebSocketKeepAlive} instance
+ *
+ * @prop getUrl Method to get the current URL of the websocket endpoint
+ * @prop maxReconnectSeconds Maximum time a request can take to reconnect
+ * @prop signal Abort signal to send when aborting connection
+ *
+ * @prop heartbeatIntervalMs Interval to send provided heartbeatPayload on,
+ * @prop heartbeatPayload Method to create payload to send for heartbeat
+ * @prop isPong If provided, we mark alive only when it returns true for a message
+ *   if omitted, *any* message is considered proof of life
+ *
+ * @prop onReconnectError Reconnect hook
+ *
+ * @prop createSocket Socket factory override (lets you use custom client if needed)
+ * @prop protocols Override value for accepted protocols
+ */
 export type KeepAliveOptions = {
   getUrl: () => Promise<string>;
   maxReconnectSeconds?: number;
   signal?: AbortSignal;
 
-  // Heartbeat (optional, protocol-safe):
-  // - If provided, we'll send this payload periodically.
-  // - If `isPong` is provided, we mark alive only when it returns true for a message.
-  // - If omitted, we consider *any* incoming message as proof of life.
   heartbeatIntervalMs?: number; // default 10 * SECOND
   heartbeatPayload?: () => string | ArrayBuffer | Uint8Array | Blob;
   isPong?: (data: unknown) => boolean;
@@ -22,7 +34,6 @@ export type KeepAliveOptions = {
   // Reconnect hook
   onReconnectError?: (error: unknown, n: number, initialSetup: boolean) => void;
 
-  // Socket factory override (lets you use custom client if needed)
   createSocket?: (url: string, protocols?: string | string[]) => WebSocket;
   protocols?: string | string[];
 };

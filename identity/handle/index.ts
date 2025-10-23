@@ -4,6 +4,10 @@ import type { HandleResolverOpts } from "../types.ts";
 const SUBDOMAIN = "_atproto";
 const PREFIX = "did=";
 
+/**
+ * Identity resolver for resolving handles to DIDs
+ * using DNS
+ */
 export class HandleResolver {
   public timeout: number;
   private backupNameservers: string[] | undefined;
