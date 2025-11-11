@@ -1,6 +1,6 @@
 import { Command } from "@cliffy/command";
-import { readAllLexicons } from "../../util.ts";
-import * as mdGen from "../../mdgen/index.ts";
+import { readAllLexicons } from "../util.ts";
+import * as mdGen from "../mdgen/index.ts";
 import process from "node:process";
 
 const isDeno = typeof Deno !== "undefined";

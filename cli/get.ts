@@ -20,9 +20,10 @@ interface PromptState {
   recordAlreadyShown: boolean;
 }
 
-async function resolveDid(input: string): Promise<string> {
-  const idResolver = new IdResolver({});
-
+async function resolveDid(
+  input: string,
+  idResolver: IdResolver,
+): Promise<string> {
   if (!input.startsWith("did:")) {
     const handleResolution = await idResolver.handle.resolve(input);
     if (!handleResolution) {
@@ -34,8 +35,7 @@ async function resolveDid(input: string): Promise<string> {
   return input;
 }
 
-async function getPdsUrl(did: string): Promise<string> {
-  const idResolver = new IdResolver({});
+async function getPdsUrl(did: string, idResolver: IdResolver): Promise<string> {
   const didDoc = await idResolver.did.resolve(did);
 
   if (!didDoc?.service) {
@@ -264,18 +264,19 @@ function createFetchPrompt(
 
 export async function handleGetCommand(input: string) {
   try {
+    const idResolver = new IdResolver({});
     const isFullUri = input.includes("/");
     let atUri: AtUri | null = null;
     let did: string;
 
     if (isFullUri) {
       atUri = new AtUri(input);
-      did = await resolveDid(atUri.hostname);
+      did = await resolveDid(atUri.hostname, idResolver);
     } else {
-      did = await resolveDid(input);
+      did = await resolveDid(input, idResolver);
     }
 
-    const pdsUrl = await getPdsUrl(did);
+    const pdsUrl = await getPdsUrl(did, idResolver);
     const xrpcClient = createXrpcClient(pdsUrl);
 
     const state: PromptState = {
@@ -283,6 +284,17 @@ export async function handleGetCommand(input: string) {
       rkey: atUri?.rkey,
       recordAlreadyShown: false,
     };
+
+    if (state.collection && state.rkey) {
+      const record = await fetchRecord(
+        xrpcClient,
+        did,
+        state.collection,
+        state.rkey,
+      );
+      console.log(JSON.stringify(record, null, 2));
+      return;
+    }
 
     const prompts: Array<{
       name: string;

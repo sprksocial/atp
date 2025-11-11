@@ -1193,15 +1193,9 @@
       },
       "cli": {
         "dependencies": [
-          "jsr:@cliffy/ansi@^1.0.0-rc.8",
           "jsr:@cliffy/command@^1.0.0-rc.8",
           "jsr:@cliffy/prompt@^1.0.0-rc.8",
-          "jsr:@std/fs@^1.0.19",
-          "jsr:@std/path@^1.1.2",
-          "jsr:@ts-morph/ts-morph@26",
-          "jsr:@zod/zod@^4.1.11",
-          "npm:@atproto/api@0.18",
-          "npm:prettier@^3.6.2"
+          "npm:@atproto/api@0.18"
         ]
       },
       "common": {
@@ -1228,6 +1222,17 @@
           "npm:@did-plc/lib@^0.0.4",
           "npm:@did-plc/server@^0.0.1",
           "npm:get-port@^7.1.0"
+        ]
+      },
+      "lex-gen": {
+        "dependencies": [
+          "jsr:@cliffy/ansi@^1.0.0-rc.8",
+          "jsr:@cliffy/command@^1.0.0-rc.8",
+          "jsr:@std/fs@^1.0.19",
+          "jsr:@std/path@^1.1.2",
+          "jsr:@ts-morph/ts-morph@26",
+          "jsr:@zod/zod@^4.1.11",
+          "npm:prettier@^3.6.2"
         ]
       },
       "lexicon": {
