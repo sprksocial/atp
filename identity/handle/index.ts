@@ -68,7 +68,7 @@ export class HandleResolver {
     try {
       const backupIps = await this.getBackupNameserverIps();
       if (!backupIps || backupIps.length < 1) return undefined;
-      const nameServers = backupIps.map(ip => ({ ipAddr: ip }));
+      const nameServers = backupIps.map((ip) => ({ ipAddr: ip }));
       chunkedResults = await Deno.resolveDns(`${SUBDOMAIN}.${handle}`, "TXT", {
         nameServer: nameServers[0], // Use first backup server
       });
