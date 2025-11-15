@@ -297,11 +297,8 @@ const lexiconTs = (
           !main.input.schema;
         const streamingOutput = main.output?.encoding && !main.output.schema;
         if (streamingInput || streamingOutput) {
-          //= import stream from 'node:stream'
-          file.addImportDeclaration({
-            moduleSpecifier: "node:stream",
-            defaultImport: "stream",
-          });
+          //= ReadableStream is a web standard API
+          // No import needed for ReadableStream
         }
       }
 
@@ -359,9 +356,9 @@ function genServerXrpcMethod(
       name: "body",
       type: def.input.schema
         ? def.input.encoding.includes(",")
-          ? "InputSchema | stream.Readable"
+          ? "InputSchema | ReadableStream"
           : "InputSchema"
-        : "stream.Readable",
+        : "ReadableStream",
     });
   } else {
     file.addTypeAlias({
@@ -393,7 +390,7 @@ function genServerXrpcMethod(
       if (def.output.encoding.includes(",")) {
         handlerSuccess.addProperty({
           name: "body",
-          type: "OutputSchema | Uint8Array | stream.Readable",
+          type: "OutputSchema | Uint8Array | ReadableStream",
         });
       } else {
         handlerSuccess.addProperty({ name: "body", type: "OutputSchema" });
@@ -401,7 +398,7 @@ function genServerXrpcMethod(
     } else if (def.output?.encoding) {
       handlerSuccess.addProperty({
         name: "body",
-        type: "Uint8Array | stream.Readable",
+        type: "Uint8Array | ReadableStream",
       });
     }
     handlerSuccess.addProperty({

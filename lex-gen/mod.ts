@@ -3,7 +3,7 @@
  *
  * A command-line interface for generating docs, servers, and clients
  * from AT Protocol lexicon files.
- * 
+ *
  * Previously named `lex-cli`
  *
  * Turn lexicon files into:
