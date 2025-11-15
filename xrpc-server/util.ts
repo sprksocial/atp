@@ -248,13 +248,18 @@ function createBodyParser(
       }
       const text = await req.text();
       return JSON.parse(text);
-    } else {
+    } else if (
+      encoding.startsWith("text/") ||
+      encoding === "application/x-www-form-urlencoded"
+    ) {
       if (textLimit && bodySize > textLimit) {
         throw new InvalidRequestError(
           `Request body too large: ${bodySize} bytes exceeds text limit of ${textLimit} bytes`,
         );
       }
       return await req.text();
+    } else {
+      return;
     }
   };
 }
@@ -271,7 +276,7 @@ function decodeBodyStream(
   }
 
   if (!contentEncoding) {
-    return req.body.pipeThrough(new TextDecoderStream());
+    return req.body;
   }
 
   if (!contentLength) {
