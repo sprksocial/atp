@@ -1,7 +1,6 @@
 import { NSID } from "@atp/syntax";
-import { resolve, toFileUrl } from "@std/path";
+import { parse } from "@std/jsonc";
 import type { LexiconConfig } from "./types.ts";
-import process from "node:process";
 
 function isValidLexiconPattern(pattern: string): boolean {
   if (pattern.endsWith(".*")) {
@@ -107,9 +106,8 @@ export async function loadLexiconConfig(
 ): Promise<LexiconConfig | null> {
   if (!configPath) {
     const possiblePaths = [
-      "./lexicon.config.ts",
-      "./lexicon.config.js",
       "./lexicon.config.json",
+      "./lexicon.config.jsonc",
     ];
     for (const path of possiblePaths) {
       try {
@@ -131,22 +129,12 @@ export async function loadLexiconConfig(
   }
 
   try {
-    if (configPath.endsWith(".json")) {
-      const content = Deno.readTextFileSync(configPath);
-      const parsed = JSON.parse(content);
-      return defineLexiconConfig(parsed);
-    } else {
-      const cwd = typeof Deno !== "undefined" ? Deno.cwd() : process.cwd();
-      const resolvedPath = resolve(cwd, configPath);
-      const fileUrl = toFileUrl(resolvedPath).href;
-      const module = await import(fileUrl);
-      const config = module.default ?? module.config;
-      if (typeof config === "function") {
-        return defineLexiconConfig(config());
-      } else {
-        return defineLexiconConfig(config);
-      }
-    }
+    const content = typeof Deno !== "undefined"
+      ? Deno.readTextFileSync(configPath)
+      : (await import("node:fs")).readFileSync(configPath, "utf-8");
+      
+    const parsed = parse(content) as unknown as LexiconConfig;
+    return defineLexiconConfig(parsed);
   } catch (error) {
     console.warn(`Failed to load config from ${configPath}:`, error);
     return null;
