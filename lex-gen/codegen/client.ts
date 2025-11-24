@@ -74,9 +74,9 @@ const indexTs = (
     file.addImportDeclaration({
       moduleSpecifier: "@atp/xrpc",
       namedImports: [
-      { name: "XrpcClient" },
-      { name: "FetchHandler", isTypeOnly: true },
-      { name: "FetchHandlerOptions", isTypeOnly: true },
+        { name: "XrpcClient" },
+        { name: "FetchHandler", isTypeOnly: true },
+        { name: "FetchHandlerOptions", isTypeOnly: true },
       ],
     });
     //= import {schemas} from './lexicons.ts'
@@ -637,6 +637,7 @@ function genClientXrpcCommon(
     name: "toKnownErr",
     isExported: true,
     parameters: [{ name: "e", type: "unknown" }],
+    returnType: "unknown",
     statements: customErrors.length
       ? [
         "if (e instanceof XRPCError) {",

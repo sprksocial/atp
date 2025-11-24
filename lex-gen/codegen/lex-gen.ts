@@ -191,7 +191,7 @@ export function genCommonImports(
   if (needsBlobRef) {
     file.addImportDeclaration({
       isTypeOnly: true,
-        moduleSpecifier: "@atp/lexicon",
+      moduleSpecifier: "@atp/lexicon",
       namedImports: [{ name: "BlobRef" }],
     });
   }
@@ -200,16 +200,16 @@ export function genCommonImports(
   if (needsCID) {
     file.addImportDeclaration({
       isTypeOnly: true,
-        moduleSpecifier: "multiformats/cid",
+      moduleSpecifier: "multiformats/cid",
       namedImports: [{ name: "CID" }],
     });
   }
 
   const utilPath = `${
-          baseNsid
-            .split(".")
-            .map((_str) => "..")
-            .join("/")
+    baseNsid
+      .split(".")
+      .map((_str) => "..")
+      .join("/")
   }/util${importExtension}`;
 
   if (needsTypedValidation) {
@@ -224,6 +224,13 @@ export function genCommonImports(
         }/lexicons${importExtension}`,
       })
       .addNamedImports([{ name: "validate", alias: "_validate" }]);
+
+    //= import type { ValidationResult } from '@atp/lexicon'
+    file.addImportDeclaration({
+      isTypeOnly: true,
+      moduleSpecifier: "@atp/lexicon",
+      namedImports: [{ name: "ValidationResult" }],
+    });
 
     // tsc adds protection against circular imports, which hurts bundle size.
     // Since we know that lexicon.ts and util.ts do not depend on the file being
@@ -286,12 +293,12 @@ export function collectExternalImports(
 ): Map<string, Set<string>> {
   const imports: Map<string, Set<string>> = new Map();
   const mappings = options?.mappings;
-  
+
   // Check if any records exist (which use ATP_METHODS)
   const hasRecords = lexiconDocs.some((lexiconDoc) =>
     Object.values(lexiconDoc.defs).some((def) => def.type === "record")
   );
-  
+
   // Record classes use ATP_METHODS which may need external imports
   // Note: put is commented out in genRecordCls, so we don't import it
   if (hasRecords) {
@@ -357,15 +364,15 @@ export function genImports(
       }
     } else {
       const targetPath = "/" + nsid.split(".").join("/") + importExtension;
-    let resolvedPath = getRelativePath(startPath, targetPath);
-    if (!resolvedPath.startsWith(".")) {
-      resolvedPath = `./${resolvedPath}`;
-    }
-    file.addImportDeclaration({
-      isTypeOnly: true,
-      moduleSpecifier: resolvedPath,
-      namespaceImport: toTitleCase(nsid),
-    });
+      let resolvedPath = getRelativePath(startPath, targetPath);
+      if (!resolvedPath.startsWith(".")) {
+        resolvedPath = `./${resolvedPath}`;
+      }
+      file.addImportDeclaration({
+        isTypeOnly: true,
+        moduleSpecifier: resolvedPath,
+        namespaceImport: toTitleCase(nsid),
+      });
     }
   }
 }
@@ -563,6 +570,7 @@ export function genToken(file: SourceFile, lexUri: string, def: LexToken) {
       declarations: [
         {
           name: toScreamingSnakeCase(getHash(lexUri)),
+          type: "string",
           initializer: `\`\${id}#${getHash(lexUri)}\``,
         },
       ],
@@ -868,24 +876,26 @@ function genObjHelpers(
 
   const isX = toCamelCase(`is-${ifaceName}`);
 
-  //= export function is{X}<V>(v: V) {...}
+  //= export function is{X}<V>(v: V): v is {ifaceName} & V {...}
   file
     .addFunction({
       name: isX,
       typeParameters: [{ name: `V` }],
       parameters: [{ name: `v`, type: `V` }],
+      returnType: `v is ${ifaceName} & V`,
       isExported: true,
     })
     .setBodyText(`return is$typed(v, id, ${hashVar})`);
 
   const validateX = toCamelCase(`validate-${ifaceName}`);
 
-  //= export function validate{X}(v: unknown) {...}
+  //= export function validate{X}<V>(v: V): ValidationResult<{ifaceName} & V> {...}
   file
     .addFunction({
       name: validateX,
       typeParameters: [{ name: `V` }],
       parameters: [{ name: `v`, type: `V` }],
+      returnType: `ValidationResult<${ifaceName} & V>`,
       isExported: true,
     })
     .setBodyText(

@@ -143,8 +143,8 @@ const indexTs = (
       }
       file.addImportDeclaration({
         isTypeOnly: true,
-          moduleSpecifier: `./types/${
-            lexiconDoc.id.split(".").join("/")
+        moduleSpecifier: `./types/${
+          lexiconDoc.id.split(".").join("/")
         }${importExtension}`,
         namespaceImport: toTitleCase(lexiconDoc.id),
       });
