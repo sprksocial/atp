@@ -9,6 +9,7 @@ import { NSID } from "@atp/syntax";
 import type { GeneratedAPI } from "../types.ts";
 import { gen, lexiconsTs, utilTs } from "./common.ts";
 import {
+  collectExternalImports,
   genCommonImports,
   genImports,
   genRecord,
@@ -16,6 +17,7 @@ import {
   genXrpcInput,
   genXrpcOutput,
   genXrpcParams,
+  resolveExternalImport,
 } from "./lex-gen.ts";
 import {
   type CodeGenOptions,
@@ -95,6 +97,41 @@ const indexTs = (
         name: "schemas",
       });
 
+    // collect and import external lexicon references
+    const externalImports = collectExternalImports(lexiconDocs, options);
+    const mappings = options?.mappings;
+    for (const [nsid, types] of externalImports) {
+      const mapping = resolveExternalImport(nsid, mappings);
+      if (mapping) {
+        if (typeof mapping.imports === "string") {
+          file.addImportDeclaration({
+            isTypeOnly: true,
+            moduleSpecifier: mapping.imports,
+            namedImports: [{ name: toTitleCase(nsid), isTypeOnly: true }],
+          });
+        } else {
+          const result = mapping.imports(nsid);
+          if (result.type === "namespace") {
+            file.addImportDeclaration({
+              isTypeOnly: true,
+              moduleSpecifier: result.from,
+              namespaceImport: toTitleCase(nsid),
+            });
+          } else {
+            const namedImports = Array.from(types).map((typeName) => ({
+              name: toTitleCase(typeName),
+              isTypeOnly: true,
+            }));
+            file.addImportDeclaration({
+              isTypeOnly: true,
+              moduleSpecifier: result.from,
+              namedImports,
+            });
+          }
+        }
+      }
+    }
+
     // generate type imports
     for (const lexiconDoc of lexiconDocs) {
       if (
@@ -106,8 +143,8 @@ const indexTs = (
       }
       file.addImportDeclaration({
         isTypeOnly: true,
-        moduleSpecifier: `./types/${
-          lexiconDoc.id.split(".").join("/")
+          moduleSpecifier: `./types/${
+            lexiconDoc.id.split(".").join("/")
         }${importExtension}`,
         namespaceImport: toTitleCase(lexiconDoc.id),
       });

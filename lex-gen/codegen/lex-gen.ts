@@ -191,7 +191,7 @@ export function genCommonImports(
   if (needsBlobRef) {
     file.addImportDeclaration({
       isTypeOnly: true,
-      moduleSpecifier: "@atp/lexicon",
+        moduleSpecifier: "@atp/lexicon",
       namedImports: [{ name: "BlobRef" }],
     });
   }
@@ -200,16 +200,16 @@ export function genCommonImports(
   if (needsCID) {
     file.addImportDeclaration({
       isTypeOnly: true,
-      moduleSpecifier: "multiformats/cid",
+        moduleSpecifier: "multiformats/cid",
       namedImports: [{ name: "CID" }],
     });
   }
 
   const utilPath = `${
-    baseNsid
-      .split(".")
-      .map((_str) => "..")
-      .join("/")
+          baseNsid
+            .split(".")
+            .map((_str) => "..")
+            .join("/")
   }/util${importExtension}`;
 
   if (needsTypedValidation) {
@@ -280,6 +280,41 @@ export function genCommonImports(
   }
 }
 
+export function collectExternalImports(
+  lexiconDocs: LexiconDoc[],
+  options?: CodeGenOptions,
+): Map<string, Set<string>> {
+  const imports: Map<string, Set<string>> = new Map();
+  const mappings = options?.mappings;
+  
+  // Check if any records exist (which use ATP_METHODS)
+  const hasRecords = lexiconDocs.some((lexiconDoc) =>
+    Object.values(lexiconDoc.defs).some((def) => def.type === "record")
+  );
+  
+  // Record classes use ATP_METHODS which may need external imports
+  // Note: put is commented out in genRecordCls, so we don't import it
+  if (hasRecords) {
+    const atpMethods = [
+      "com.atproto.repo.listRecords",
+      "com.atproto.repo.getRecord",
+      "com.atproto.repo.createRecord",
+      "com.atproto.repo.deleteRecord",
+    ];
+    for (const methodNsid of atpMethods) {
+      const mapping = resolveExternalImport(methodNsid, mappings);
+      if (mapping) {
+        if (!imports.has(methodNsid)) {
+          imports.set(methodNsid, new Set());
+        }
+        // These methods use QueryParams, InputSchema, etc.
+        imports.get(methodNsid)!.add("main");
+      }
+    }
+  }
+  return imports;
+}
+
 export function genImports(
   file: SourceFile,
   imports: Map<string, Set<string>>,
@@ -298,7 +333,7 @@ export function genImports(
         file.addImportDeclaration({
           isTypeOnly: true,
           moduleSpecifier: mapping.imports,
-          namespaceImport: toTitleCase(nsid),
+          namedImports: [{ name: toTitleCase(nsid), isTypeOnly: true }],
         });
       } else {
         const result = mapping.imports(nsid);
@@ -322,15 +357,15 @@ export function genImports(
       }
     } else {
       const targetPath = "/" + nsid.split(".").join("/") + importExtension;
-      let resolvedPath = getRelativePath(startPath, targetPath);
-      if (!resolvedPath.startsWith(".")) {
-        resolvedPath = `./${resolvedPath}`;
-      }
-      file.addImportDeclaration({
-        isTypeOnly: true,
-        moduleSpecifier: resolvedPath,
-        namespaceImport: toTitleCase(nsid),
-      });
+    let resolvedPath = getRelativePath(startPath, targetPath);
+    if (!resolvedPath.startsWith(".")) {
+      resolvedPath = `./${resolvedPath}`;
+    }
+    file.addImportDeclaration({
+      isTypeOnly: true,
+      moduleSpecifier: resolvedPath,
+      namespaceImport: toTitleCase(nsid),
+    });
     }
   }
 }
@@ -890,7 +925,7 @@ function refToUnionType(
   return `$Typed<${refToType(ref, baseNsid, imports, mappings)}>`;
 }
 
-function resolveExternalImport(
+export function resolveExternalImport(
   nsid: string,
   mappings?: ImportMapping[],
 ): ImportMapping | undefined {
