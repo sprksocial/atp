@@ -48,7 +48,7 @@ export async function genClientApi(
   const nsidTree = lexiconsToDefTree(lexiconDocs);
   const nsidTokens = schemasToNsidTokens(lexiconDocs);
   for (const lexiconDoc of lexiconDocs) {
-    api.files.push(await lexiconTs(project, lexicons, lexiconDoc));
+    api.files.push(await lexiconTs(project, lexicons, lexiconDoc, options));
   }
   api.files.push(await utilTs(project));
   api.files.push(await lexiconsTs(project, lexiconDocs, options));
@@ -66,7 +66,8 @@ const indexTs = (
   options?: CodeGenOptions,
 ) =>
   gen(project, "/index.ts", (file) => {
-    const extension = options?.useJsExtension ? ".js" : ".ts";
+    const importExtension = options?.importSuffix ??
+      (options?.useJsExtension ? ".js" : ".ts");
     //= import { XrpcClient, type FetchHandler, type FetchHandlerOptions } from '@atp/xrpc'
     const xrpcImport = file.addImportDeclaration({
       moduleSpecifier: "@atp/xrpc",
@@ -78,7 +79,7 @@ const indexTs = (
     ]);
     //= import {schemas} from './lexicons.ts'
     file
-      .addImportDeclaration({ moduleSpecifier: `./lexicons${extension}` })
+      .addImportDeclaration({ moduleSpecifier: `./lexicons${importExtension}` })
       .addNamedImports([{ name: "schemas" }]);
 
     // Check if any lexicon docs use cid-link types
@@ -110,7 +111,7 @@ const indexTs = (
 
     //= import { type OmitKey, type Un$Typed } from './util.ts'
     file
-      .addImportDeclaration({ moduleSpecifier: `./util${extension}` })
+      .addImportDeclaration({ moduleSpecifier: `./util${importExtension}` })
       .addNamedImports([
         { name: "OmitKey", isTypeOnly: true },
         { name: "Un$Typed", isTypeOnly: true },
@@ -120,7 +121,7 @@ const indexTs = (
     for (const lexicon of lexiconDocs) {
       const moduleSpecifier = `./types/${
         lexicon.id.split(".").join("/")
-      }${extension}`;
+      }${importExtension}`;
       file
         .addImportDeclaration({ moduleSpecifier })
         .setNamespaceImport(toTitleCase(lexicon.id));
@@ -476,6 +477,7 @@ const lexiconTs = (
   project: Project,
   lexicons: Lexicons,
   lexiconDoc: LexiconDoc,
+  options?: CodeGenOptions,
 ) =>
   gen(
     project,
@@ -499,28 +501,28 @@ const lexiconTs = (
 
       genCommonImports(file, lexiconDoc.id, lexiconDoc);
 
-      const imports: Set<string> = new Set();
+      const imports: Map<string, Set<string>> = new Map();
       for (const defId in lexiconDoc.defs) {
         const def = lexiconDoc.defs[defId];
         const lexUri = `${lexiconDoc.id}#${defId}`;
         if (defId === "main") {
           if (def.type === "query" || def.type === "procedure") {
             genXrpcParams(file, lexicons, lexUri, false);
-            genXrpcInput(file, imports, lexicons, lexUri, false);
-            genXrpcOutput(file, imports, lexicons, lexUri);
+            genXrpcInput(file, imports, lexicons, lexUri, false, options);
+            genXrpcOutput(file, imports, lexicons, lexUri, false, options);
             genClientXrpcCommon(file, lexicons, lexUri);
           } else if (def.type === "subscription") {
             continue;
           } else if (def.type === "record") {
-            genRecord(file, imports, lexicons, lexUri);
+            genRecord(file, imports, lexicons, lexUri, options);
           } else {
-            genUserType(file, imports, lexicons, lexUri);
+            genUserType(file, imports, lexicons, lexUri, options);
           }
         } else {
-          genUserType(file, imports, lexicons, lexUri);
+          genUserType(file, imports, lexicons, lexUri, options);
         }
       }
-      genImports(file, imports, lexiconDoc.id);
+      genImports(file, imports, lexiconDoc.id, options);
       return Promise.resolve();
     },
   );

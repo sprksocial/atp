@@ -1,8 +1,11 @@
 import type { LexiconDoc, LexUserType } from "@atp/lexicon";
 import { NSID } from "@atp/syntax";
+import type { ImportMapping } from "../types.ts";
 
 export interface CodeGenOptions {
   useJsExtension?: boolean;
+  importSuffix?: string;
+  mappings?: ImportMapping[];
 }
 
 export interface DefTreeNodeUserType {

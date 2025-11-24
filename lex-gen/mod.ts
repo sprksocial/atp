@@ -33,7 +33,18 @@
  */
 import { Command } from "@cliffy/command";
 import { genApi, genMd, genServer, genTsObj } from "./cmd/index.ts";
+import { defineLexiconConfig, loadLexiconConfig } from "./config.ts";
 import process from "node:process";
+
+export { defineLexiconConfig, loadLexiconConfig };
+export type {
+  GitSourceConfig,
+  ImportMapping,
+  LexiconConfig,
+  ModulesConfig,
+  PullConfig,
+  SourceConfig,
+} from "./types.ts";
 
 const isDeno = typeof Deno !== "undefined";
 

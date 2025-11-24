@@ -21,7 +21,7 @@ export const utilTs = (
 ) =>
   gen(project, "/util.ts", (file) => {
     file.replaceWithText(`
-import { type ValidationResult } from '@atp/lexicon'
+import type { ValidationResult } from '@atp/lexicon'
 
 export type OmitKey<T, K extends keyof T> = {
   [K2 in keyof T as K2 extends K ? never : K2]: T[K2]
@@ -144,7 +144,8 @@ export const lexiconsTs = (
   options?: CodeGenOptions,
 ) =>
   gen(project, "/lexicons.ts", (file) => {
-    const extension = options?.useJsExtension ? ".js" : ".ts";
+    const importExtension = options?.importSuffix ??
+      (options?.useJsExtension ? ".js" : ".ts");
     const nsidToEnum = (nsid: string): string => {
       return nsid
         .split(".")
@@ -166,7 +167,7 @@ export const lexiconsTs = (
 
     //= import { is$typed, maybe$typed, type $Typed } from "./util${extension}"
     file
-      .addImportDeclaration({ moduleSpecifier: `./util${extension}` })
+      .addImportDeclaration({ moduleSpecifier: `./util${importExtension}` })
       .addNamedImports([
         { name: "is$typed" },
         { name: "maybe$typed" },

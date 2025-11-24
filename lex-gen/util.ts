@@ -3,24 +3,90 @@ import { statSync } from "@std/fs/unstable-stat";
 import { mkdirSync } from "@std/fs/unstable-mkdir";
 import { writeFileSync } from "@std/fs/unstable-write-file";
 import { existsSync } from "@std/fs";
-import { join } from "@std/path";
+import { globToRegExp, join } from "@std/path";
 import { removeSync } from "@std/fs/unstable-remove";
 import { readDirSync } from "@std/fs/unstable-read-dir";
 import { colors } from "@cliffy/ansi/colors";
 import { ZodError } from "zod";
 import { type LexiconDoc, parseLexiconDoc } from "@atp/lexicon";
 import type { FileDiff, GeneratedAPI } from "./types.ts";
+import process from "node:process";
 
 type RecursiveZodError = {
   _errors?: string[];
   [k: string]: RecursiveZodError | string[] | undefined;
 };
 
+export function expandGlobPatterns(patterns: string[]): string[] {
+  const files: string[] = [];
+  const cwd = typeof Deno !== "undefined" ? Deno.cwd() : process.cwd();
+
+  function walkDir(
+    dir: string,
+    relativePath: string,
+    regex: RegExp,
+    files: string[],
+  ): void {
+    try {
+      if (!existsSync(dir)) return;
+      const entries = Array.from(readDirSync(dir));
+      for (const entry of entries) {
+        const fullPath = join(dir, entry.name);
+        const relPath = relativePath
+          ? join(relativePath, entry.name)
+          : entry.name;
+        if (statSync(fullPath).isDirectory) {
+          walkDir(fullPath, relPath, regex, files);
+        } else if (entry.name.endsWith(".json")) {
+          const testPath = relPath.startsWith("/") ? relPath : `/${relPath}`;
+          if (regex.test(testPath) || regex.test(relPath)) {
+            files.push(fullPath);
+          }
+        }
+      }
+    } catch {
+      // skip
+    }
+  }
+
+  for (const pattern of patterns) {
+    const normalizedPattern = pattern.startsWith("./")
+      ? pattern.slice(2)
+      : pattern;
+    const regex = globToRegExp(normalizedPattern, {
+      extended: true,
+      globstar: true,
+    });
+    const basePath = normalizedPattern.split("*")[0] ||
+      normalizedPattern.split("?")[0] || "";
+    const searchDir = basePath.includes("/")
+      ? join(
+        cwd,
+        basePath.substring(0, basePath.lastIndexOf("/") || basePath.length),
+      )
+      : cwd;
+
+    walkDir(searchDir, "", regex, files);
+  }
+
+  return Array.from(new Set(files));
+}
+
 export function readAllLexicons(paths: string[] | string): LexiconDoc[] {
   const docs: LexiconDoc[] = [];
-  for (const path of Array.isArray(paths) ? paths : [paths]) {
+  const pathArray = Array.isArray(paths) ? paths : [paths];
+  const expandedPaths: string[] = [];
+
+  for (const path of pathArray) {
+    if (path.includes("*") || path.includes("?")) {
+      expandedPaths.push(...expandGlobPatterns([path]));
+    } else {
+      expandedPaths.push(path);
+    }
+  }
+
+  for (const path of expandedPaths) {
     if (statSync(path).isDirectory) {
-      // If it's a directory, recursively read all .json files in it
       const entries = Array.from(readDirSync(path));
       const subPaths = entries.map((entry) => join(path, entry.name));
       docs.push(...readAllLexicons(subPaths));

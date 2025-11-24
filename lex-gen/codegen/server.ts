@@ -58,7 +58,8 @@ const indexTs = (
   options?: CodeGenOptions,
 ) =>
   gen(project, "/index.ts", (file) => {
-    const extension = options?.useJsExtension ? ".js" : ".ts";
+    const importExtension = options?.importSuffix ??
+      (options?.useJsExtension ? ".js" : ".ts");
 
     // Check if there are any subscription types
     const hasSubscriptions = lexiconDocs.some((doc) =>
@@ -69,7 +70,7 @@ const indexTs = (
     const namedImports = [
       { name: "Auth", isTypeOnly: true },
       { name: "Options", alias: "XrpcOptions", isTypeOnly: true },
-      { name: "Server", alias: "XrpcServer" },
+      { name: "Server", alias: "XrpcServer", isTypeOnly: true },
       { name: "MethodConfigOrHandler", isTypeOnly: true },
       { name: "createServer", alias: "createXrpcServer" },
     ];
@@ -88,7 +89,7 @@ const indexTs = (
     //= import {schemas} from './lexicons.ts'
     file
       .addImportDeclaration({
-        moduleSpecifier: "./lexicons.ts",
+        moduleSpecifier: `./lexicons${importExtension}`,
       })
       .addNamedImport({
         name: "schemas",
@@ -103,13 +104,13 @@ const indexTs = (
       ) {
         continue;
       }
-      file
-        .addImportDeclaration({
-          moduleSpecifier: `./types/${
-            lexiconDoc.id.split(".").join("/")
-          }${extension}`,
-        })
-        .setNamespaceImport(toTitleCase(lexiconDoc.id));
+      file.addImportDeclaration({
+        isTypeOnly: true,
+        moduleSpecifier: `./types/${
+          lexiconDoc.id.split(".").join("/")
+        }${importExtension}`,
+        namespaceImport: toTitleCase(lexiconDoc.id),
+      });
     }
 
     // generate token enums
@@ -286,9 +287,7 @@ const lexiconTs = (
 ) =>
   gen(
     project,
-    `/types/${lexiconDoc.id.split(".").join("/")}${
-      options?.useJsExtension ? ".js" : ".ts"
-    }`,
+    `/types/${lexiconDoc.id.split(".").join("/")}.ts`,
     (file) => {
       const main = lexiconDoc.defs.main;
       if (main?.type === "query" || main?.type === "procedure") {
@@ -304,27 +303,27 @@ const lexiconTs = (
 
       genCommonImports(file, lexiconDoc.id, lexiconDoc);
 
-      const imports: Set<string> = new Set();
+      const imports: Map<string, Set<string>> = new Map();
       for (const defId in lexiconDoc.defs) {
         const def = lexiconDoc.defs[defId];
         const lexUri = `${lexiconDoc.id}#${defId}`;
         if (defId === "main") {
           if (def.type === "query" || def.type === "procedure") {
             genXrpcParams(file, lexicons, lexUri);
-            genXrpcInput(file, imports, lexicons, lexUri);
-            genXrpcOutput(file, imports, lexicons, lexUri, false);
+            genXrpcInput(file, imports, lexicons, lexUri, false, options);
+            genXrpcOutput(file, imports, lexicons, lexUri, false, options);
             genServerXrpcMethod(file, lexicons, lexUri);
           } else if (def.type === "subscription") {
             genXrpcParams(file, lexicons, lexUri);
-            genXrpcOutput(file, imports, lexicons, lexUri, false);
+            genXrpcOutput(file, imports, lexicons, lexUri, false, options);
             genServerXrpcStreaming(file, lexicons, lexUri);
           } else if (def.type === "record") {
-            genRecord(file, imports, lexicons, lexUri);
+            genRecord(file, imports, lexicons, lexUri, options);
           } else {
-            genUserType(file, imports, lexicons, lexUri);
+            genUserType(file, imports, lexicons, lexUri, options);
           }
         } else {
-          genUserType(file, imports, lexicons, lexUri);
+          genUserType(file, imports, lexicons, lexUri, options);
         }
       }
       genImports(file, imports, lexiconDoc.id, options);
@@ -439,6 +438,7 @@ function genServerXrpcStreaming(
   const def = lexicons.getDefOrThrow(lexUri, ["subscription"]);
 
   file.addImportDeclaration({
+    isTypeOnly: true,
     moduleSpecifier: "@atp/xrpc-server",
     namedImports: [{ name: "ErrorFrame" }],
   });
