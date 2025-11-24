@@ -69,62 +69,54 @@ const indexTs = (
     const importExtension = options?.importSuffix ??
       (options?.useJsExtension ? ".js" : ".ts");
     //= import { XrpcClient, type FetchHandler, type FetchHandlerOptions } from '@atp/xrpc'
-    const xrpcImport = file.addImportDeclaration({
+    file.addImportDeclaration({
       moduleSpecifier: "@atp/xrpc",
+      namedImports: [
+        { name: "XrpcClient" },
+        { name: "FetchHandler", isTypeOnly: true },
+        { name: "FetchHandlerOptions", isTypeOnly: true },
+      ],
     });
-    xrpcImport.addNamedImports([
-      { name: "XrpcClient" },
-      { name: "FetchHandler", isTypeOnly: true },
-      { name: "FetchHandlerOptions", isTypeOnly: true },
-    ]);
     //= import {schemas} from './lexicons.ts'
-    file
-      .addImportDeclaration({ moduleSpecifier: `./lexicons${importExtension}` })
-      .addNamedImports([{ name: "schemas" }]);
-
-    // Check if any lexicon docs use cid-link types
-    const needsCID = lexiconDocs.some((lexiconDoc) =>
-      Object.values(lexiconDoc.defs).some((def) =>
-        def.type === "cid-link" ||
-        (def.type === "object" &&
-          Object.values(def.properties || {}).some((prop) =>
-            "type" in prop && prop.type === "cid-link"
-          )) ||
-        (def.type === "array" && def.items.type === "cid-link") ||
-        (def.type === "record" &&
-          Object.values(def.record.properties || {}).some((prop) =>
-            "type" in prop && (prop.type === "cid-link" ||
-              (prop.type === "array" && "items" in prop &&
-                prop.items.type === "cid-link"))
-          ))
-      )
-    );
-
-    //= import {CID} from 'multiformats/cid'
-    if (needsCID) {
-      file
-        .addImportDeclaration({
-          moduleSpecifier: "multiformats/cid",
-        })
-        .addNamedImports([{ name: "CID" }]);
-    }
+    file.addImportDeclaration({
+      moduleSpecifier: `./lexicons${importExtension}`,
+      namedImports: [{ name: "schemas" }],
+    });
 
     //= import { type OmitKey, type Un$Typed } from './util.ts'
-    file
-      .addImportDeclaration({ moduleSpecifier: `./util${importExtension}` })
-      .addNamedImports([
-        { name: "OmitKey", isTypeOnly: true },
-        { name: "Un$Typed", isTypeOnly: true },
-      ]);
+    file.addImportDeclaration({
+      moduleSpecifier: `./util${importExtension}`,
+      isTypeOnly: true,
+      namedImports: [
+        { name: "OmitKey" },
+        { name: "Un$Typed" },
+      ],
+    });
 
     // generate type imports and re-exports
     for (const lexicon of lexiconDocs) {
       const moduleSpecifier = `./types/${
         lexicon.id.split(".").join("/")
       }${importExtension}`;
-      file
-        .addImportDeclaration({ moduleSpecifier })
-        .setNamespaceImport(toTitleCase(lexicon.id));
+
+      const defs = Object.values(lexicon.defs);
+      const hasRecord = defs.some((d) => d.type === "record");
+      const hasQueryOrProc = defs.some(
+        (d) => d.type === "query" || d.type === "procedure",
+      );
+      const needsValue = defs.some(
+        (d) =>
+          (d.type === "query" || d.type === "procedure") && d.errors?.length,
+      );
+
+      if (hasRecord || hasQueryOrProc) {
+        file.addImportDeclaration({
+          moduleSpecifier,
+          isTypeOnly: !needsValue,
+          namespaceImport: toTitleCase(lexicon.id),
+        });
+      }
+
       file
         .addExportDeclaration({ moduleSpecifier })
         .setNamespaceExport(toTitleCase(lexicon.id));
@@ -483,27 +475,37 @@ const lexiconTs = (
     project,
     `/types/${lexiconDoc.id.split(".").join("/")}.ts`,
     (file) => {
-      const main = lexiconDoc.defs.main;
+      // Filter out subscriptions as they are not currently generated for client
+      const filteredDefs = Object.fromEntries(
+        Object.entries(lexiconDoc.defs).filter(([_, def]) =>
+          def.type !== "subscription"
+        ),
+      );
+      const filteredDoc = { ...lexiconDoc, defs: filteredDefs };
+
+      const main = filteredDoc.defs.main;
       if (
         main?.type === "query" ||
-        main?.type === "subscription" ||
         main?.type === "procedure"
       ) {
+        const needsXrpcError = (main.type === "query" ||
+          main.type === "procedure") && main.errors?.length;
+
         //= import {HeadersMap, XRPCError} from '@atp/xrpc'
-        const xrpcImport = file.addImportDeclaration({
+        file.addImportDeclaration({
           moduleSpecifier: "@atp/xrpc",
+          isTypeOnly: !needsXrpcError,
+          namedImports: needsXrpcError
+            ? [{ name: "HeadersMap", isTypeOnly: true }, { name: "XRPCError" }]
+            : [{ name: "HeadersMap" }],
         });
-        xrpcImport.addNamedImports([
-          { name: "HeadersMap" },
-          { name: "XRPCError" },
-        ]);
       }
 
-      genCommonImports(file, lexiconDoc.id, lexiconDoc);
+      genCommonImports(file, lexiconDoc.id, filteredDoc);
 
       const imports: Map<string, Set<string>> = new Map();
-      for (const defId in lexiconDoc.defs) {
-        const def = lexiconDoc.defs[defId];
+      for (const defId in filteredDoc.defs) {
+        const def = filteredDoc.defs[defId];
         const lexUri = `${lexiconDoc.id}#${defId}`;
         if (defId === "main") {
           if (def.type === "query" || def.type === "procedure") {
@@ -511,8 +513,6 @@ const lexiconTs = (
             genXrpcInput(file, imports, lexicons, lexUri, false, options);
             genXrpcOutput(file, imports, lexicons, lexUri, false, options);
             genClientXrpcCommon(file, lexicons, lexUri);
-          } else if (def.type === "subscription") {
-            continue;
           } else if (def.type === "record") {
             genRecord(file, imports, lexicons, lexUri, options);
           } else {
@@ -599,7 +599,7 @@ function genClientXrpcCommon(
   file.addFunction({
     name: "toKnownErr",
     isExported: true,
-    parameters: [{ name: "e", type: "any" }],
+    parameters: [{ name: "e", type: "unknown" }],
     statements: customErrors.length
       ? [
         "if (e instanceof XRPCError) {",

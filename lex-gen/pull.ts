@@ -48,7 +48,7 @@ export async function pullLexicons(config: PullConfig): Promise<void> {
 
   if (config.clean && existsSync(pullDir)) {
     console.log(`Cleaning ${pullDir}...`);
-    removeSync(pullDir);
+    removeSync(pullDir, { recursive: true });
   }
 
   mkdirSync(pullDir, { recursive: true });

@@ -132,7 +132,7 @@ export async function loadLexiconConfig(
     const content = typeof Deno !== "undefined"
       ? Deno.readTextFileSync(configPath)
       : (await import("node:fs")).readFileSync(configPath, "utf-8");
-      
+
     const parsed = parse(content) as unknown as LexiconConfig;
     return defineLexiconConfig(parsed);
   } catch (error) {
