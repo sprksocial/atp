@@ -1228,11 +1228,21 @@
           "npm:multiformats@^13.4.1"
         ]
       },
+      "data": {
+        "dependencies": [
+          "npm:multiformats@^13.4.1"
+        ]
+      },
       "identity": {
         "dependencies": [
           "npm:@did-plc/lib@^0.0.4",
           "npm:@did-plc/server@^0.0.1",
           "npm:get-port@^7.1.0"
+        ]
+      },
+      "lex": {
+        "dependencies": [
+          "npm:multiformats@^13.4.1"
         ]
       },
       "lex-gen": {

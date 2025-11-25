@@ -1,0 +1,9 @@
+{
+  "name": "@atp/lex",
+  "version": "0.1.0-alpha.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "multiformats": "npm:multiformats@^13.4.1"
+  }
+}
