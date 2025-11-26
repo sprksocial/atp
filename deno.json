@@ -10,7 +10,6 @@
     "xrpc",
     "xrpc-server",
     "sync",
-    "cli",
     "data",
     "lex",
     "lex-gen"

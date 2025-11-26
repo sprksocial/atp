@@ -1,4 +1,4 @@
-import { utf8Len } from "../index.ts";
+import { utf8Len } from "@atp/data";
 import { graphemeLen } from "../utf8.ts";
 import { assertEquals } from "@std/assert";
 
