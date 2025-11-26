@@ -4,6 +4,7 @@ import {
   genFileDiff,
   printFileDiff,
   readAllLexicons,
+  shouldPullLexicons,
 } from "../util.ts";
 import { genClientApi } from "../codegen/client.ts";
 import { formatGeneratedFiles } from "../codegen/util.ts";
@@ -43,7 +44,13 @@ const command = new Command()
         }
       }
 
-      if (config?.pull) {
+      const filesProvidedViaCli = input !== undefined;
+      const needsPull = shouldPullLexicons(
+        config,
+        filesProvidedViaCli,
+        finalInput,
+      );
+      if (needsPull && config?.pull) {
         await pullLexicons(config.pull);
       }
 
@@ -65,7 +72,7 @@ const command = new Command()
       }
       console.log("API generated.");
 
-      if (config?.pull) {
+      if (needsPull && config?.pull) {
         cleanupPullDirectory(config.pull);
       }
     },

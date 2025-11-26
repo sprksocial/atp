@@ -1,5 +1,5 @@
 import { Command } from "@cliffy/command";
-import { readAllLexicons } from "../util.ts";
+import { readAllLexicons, shouldPullLexicons } from "../util.ts";
 import * as mdGen from "../mdgen/index.ts";
 import { loadLexiconConfig } from "../config.ts";
 import { cleanupPullDirectory, pullLexicons } from "../pull.ts";
@@ -50,14 +50,20 @@ const command = new Command()
         }
       }
 
-      if (config?.pull) {
+      const filesProvidedViaCli = input !== undefined;
+      const needsPull = shouldPullLexicons(
+        config,
+        filesProvidedViaCli,
+        [finalInput],
+      );
+      if (needsPull && config?.pull) {
         await pullLexicons(config.pull);
       }
 
       const lexicons = readAllLexicons(finalInput);
       await mdGen.process(finalOutput, lexicons);
 
-      if (config?.pull) {
+      if (needsPull && config?.pull) {
         cleanupPullDirectory(config.pull);
       }
     },

@@ -1,5 +1,9 @@
 import { Command } from "@cliffy/command";
-import { genTsObj, readAllLexicons } from "../util.ts";
+import {
+  genTsObj,
+  readAllLexicons,
+  shouldPullLexicons,
+} from "../util.ts";
 import { loadLexiconConfig } from "../config.ts";
 import { cleanupPullDirectory, pullLexicons } from "../pull.ts";
 import process from "node:process";
@@ -25,14 +29,23 @@ const command = new Command()
       }
     }
 
-    if (config?.pull) {
+    const filesProvidedViaCli = input !== undefined;
+    const finalInputArray = Array.isArray(finalInput)
+      ? finalInput
+      : [finalInput];
+    const needsPull = shouldPullLexicons(
+      config,
+      filesProvidedViaCli,
+      finalInputArray,
+    );
+    if (needsPull && config?.pull) {
       await pullLexicons(config.pull);
     }
 
     const lexicons = readAllLexicons(finalInput);
     console.log(genTsObj(lexicons));
 
-    if (config?.pull) {
+    if (needsPull && config?.pull) {
       cleanupPullDirectory(config.pull);
     }
   });

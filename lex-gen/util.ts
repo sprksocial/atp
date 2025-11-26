@@ -9,7 +9,7 @@ import { readDirSync } from "@std/fs/unstable-read-dir";
 import { colors } from "@cliffy/ansi/colors";
 import { ZodError } from "zod";
 import { type LexiconDoc, parseLexiconDoc } from "@atp/lexicon";
-import type { FileDiff, GeneratedAPI } from "./types.ts";
+import type { FileDiff, GeneratedAPI, LexiconConfig } from "./types.ts";
 import process from "node:process";
 
 type RecursiveZodError = {
@@ -23,7 +23,7 @@ export function expandGlobPatterns(patterns: string[]): string[] {
 
   function walkDir(
     dir: string,
-    relativePath: string,
+    relativeToCwd: string,
     regex: RegExp,
     files: string[],
   ): void {
@@ -32,14 +32,14 @@ export function expandGlobPatterns(patterns: string[]): string[] {
       const entries = Array.from(readDirSync(dir));
       for (const entry of entries) {
         const fullPath = join(dir, entry.name);
-        const relPath = relativePath
-          ? join(relativePath, entry.name)
+        const relToCwd = relativeToCwd
+          ? join(relativeToCwd, entry.name)
           : entry.name;
         if (statSync(fullPath).isDirectory) {
-          walkDir(fullPath, relPath, regex, files);
+          walkDir(fullPath, relToCwd, regex, files);
         } else if (entry.name.endsWith(".json")) {
-          const testPath = relPath.startsWith("/") ? relPath : `/${relPath}`;
-          if (regex.test(testPath) || regex.test(relPath)) {
+          const testPath = relToCwd.startsWith("/") ? relToCwd : `/${relToCwd}`;
+          if (regex.test(testPath) || regex.test(relToCwd)) {
             files.push(fullPath);
           }
         }
@@ -59,14 +59,18 @@ export function expandGlobPatterns(patterns: string[]): string[] {
     });
     const basePath = normalizedPattern.split("*")[0] ||
       normalizedPattern.split("?")[0] || "";
-    const searchDir = basePath.includes("/")
-      ? join(
-        cwd,
-        basePath.substring(0, basePath.lastIndexOf("/") || basePath.length),
-      )
-      : cwd;
+    let searchDir = cwd;
+    let relativeToCwd = "";
+    if (basePath.includes("/")) {
+      const lastSlashIndex = basePath.lastIndexOf("/");
+      if (lastSlashIndex >= 0) {
+        const baseDir = basePath.substring(0, lastSlashIndex);
+        searchDir = join(cwd, baseDir);
+        relativeToCwd = baseDir;
+      }
+    }
 
-    walkDir(searchDir, "", regex, files);
+    walkDir(searchDir, relativeToCwd, regex, files);
   }
 
   return Array.from(new Set(files));
@@ -235,4 +239,52 @@ function readdirRecursiveSync(root: string, files: string[] = [], prefix = "") {
 
 function dedup(arr: string[]): string[] {
   return Array.from(new Set(arr));
+}
+
+export function shouldPullLexicons(
+  config: LexiconConfig | null,
+  filesProvidedViaCli: boolean,
+  files: string[],
+): boolean {
+  if (!config?.pull) {
+    return false;
+  }
+
+  if (filesProvidedViaCli) {
+    return false;
+  }
+
+  const cwd = typeof Deno !== "undefined" ? Deno.cwd() : process.cwd();
+
+  for (const filePattern of files) {
+    const normalizedPattern = filePattern.startsWith("./")
+      ? filePattern.slice(2)
+      : filePattern;
+    const filePath = normalizedPattern.startsWith("/")
+      ? normalizedPattern
+      : join(cwd, normalizedPattern);
+
+    if (filePattern.includes("*") || filePattern.includes("?")) {
+      const expanded = expandGlobPatterns([filePattern]);
+      if (expanded.length === 0) {
+        return true;
+      }
+      let allExist = true;
+      for (const file of expanded) {
+        if (!existsSync(file)) {
+          allExist = false;
+          break;
+        }
+      }
+      if (!allExist) {
+        return true;
+      }
+    } else {
+      if (!existsSync(filePath)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
