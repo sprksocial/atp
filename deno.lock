@@ -14,14 +14,17 @@
     "jsr:@noble/curves@^2.0.1": "2.0.1",
     "jsr:@noble/hashes@2": "2.0.1",
     "jsr:@noble/hashes@^2.0.1": "2.0.1",
+    "jsr:@panva/jose@^6.1.2": "6.1.2",
     "jsr:@std/assert@^1.0.14": "1.0.16",
     "jsr:@std/bytes@^1.0.5": "1.0.6",
     "jsr:@std/cbor@~0.1.8": "0.1.8",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
+    "jsr:@std/encoding@~1.0.5": "1.0.10",
     "jsr:@std/fmt@~1.0.2": "1.0.8",
     "jsr:@std/fs@1": "1.0.20",
     "jsr:@std/fs@^1.0.19": "1.0.20",
     "jsr:@std/internal@^1.0.12": "1.0.12",
+    "jsr:@std/io@~0.224.9": "0.224.9",
     "jsr:@std/json@^1.0.2": "1.0.2",
     "jsr:@std/jsonc@^1.0.1": "1.0.2",
     "jsr:@std/path@1": "1.1.3",
@@ -31,7 +34,8 @@
     "jsr:@std/text@~1.0.7": "1.0.16",
     "jsr:@ts-morph/common@0.27": "0.27.0",
     "jsr:@ts-morph/ts-morph@26": "26.0.0",
-    "jsr:@zod/zod@^4.1.11": "4.1.11",
+    "jsr:@zod/zod@^4.1.11": "4.1.13",
+    "jsr:@zod/zod@^4.1.13": "4.1.13",
     "npm:@atproto/crypto@*": "0.4.4",
     "npm:@did-plc/lib@^0.0.4": "0.0.4",
     "npm:@did-plc/server@^0.0.1": "0.0.1_express@4.21.2",
@@ -49,7 +53,10 @@
     "@cliffy/ansi@1.0.0-rc.8": {
       "integrity": "ba37f10ce55bbfbdd8ddd987f91f029b17bce88385b98ba3058870f3b007b80c",
       "dependencies": [
-        "jsr:@std/fmt"
+        "jsr:@cliffy/internal",
+        "jsr:@std/encoding@~1.0.5",
+        "jsr:@std/fmt",
+        "jsr:@std/io"
       ]
     },
     "@cliffy/command@1.0.0-rc.8": {
@@ -104,6 +111,9 @@
     "@noble/hashes@2.0.1": {
       "integrity": "e0e908292a0bf91099cf8ba0720a1647cef82ab38b588815b5e9535b4ff4d7bb"
     },
+    "@panva/jose@6.1.2": {
+      "integrity": "8091029ed5c005904f543a0820b13aab27d1426d9cf5e89661f048e9f62ae9a5"
+    },
     "@std/assert@1.0.16": {
       "integrity": "6a7272ed1eaa77defe76e5ff63ca705d9c495077e2d5fd0126d2b53fc5bd6532",
       "dependencies": [
@@ -135,6 +145,9 @@
     },
     "@std/internal@1.0.12": {
       "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
+    },
+    "@std/io@0.224.9": {
+      "integrity": "4414664b6926f665102e73c969cfda06d2c4c59bd5d0c603fd4f1b1c840d6ee3"
     },
     "@std/json@1.0.2": {
       "integrity": "d9e5497801c15fb679f55a2c01c7794ad7a5dfda4dd1bebab5e409cb5e0d34d4"
@@ -179,6 +192,9 @@
     },
     "@zod/zod@4.1.11": {
       "integrity": "0d48947455491addca672d8ef766d86bc7bc3add07e78d049b8ffd643bb33a7a"
+    },
+    "@zod/zod@4.1.13": {
+      "integrity": "fef799152d630583b248645fcac03abedd13e39fd2b752d9466b905d73619bfd"
     }
   },
   "npm": {
@@ -1132,21 +1148,11 @@
           "npm:multiformats@^13.4.1"
         ]
       },
-      "data": {
-        "dependencies": [
-          "npm:multiformats@^13.4.1"
-        ]
-      },
       "identity": {
         "dependencies": [
           "npm:@did-plc/lib@^0.0.4",
           "npm:@did-plc/server@^0.0.1",
           "npm:get-port@^7.1.0"
-        ]
-      },
-      "lex": {
-        "dependencies": [
-          "npm:multiformats@^13.4.1"
         ]
       },
       "lex-gen": {
@@ -1165,6 +1171,18 @@
         "dependencies": [
           "npm:multiformats@^13.4.1",
           "npm:zod@^4.1.11"
+        ]
+      },
+      "oauth/jwk": {
+        "dependencies": [
+          "jsr:@panva/jose@^6.1.2",
+          "jsr:@zod/zod@^4.1.13",
+          "npm:multiformats@^13.4.1"
+        ]
+      },
+      "oauth/types": {
+        "dependencies": [
+          "jsr:@zod/zod@^4.1.11"
         ]
       },
       "repo": {

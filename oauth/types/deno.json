@@ -1,0 +1,9 @@
+{
+  "name": "@atp/oauth-types",
+  "version": "0.1.0-alpha.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "zod": "jsr:@zod/zod@^4.1.11"
+  }
+}

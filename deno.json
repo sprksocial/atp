@@ -10,9 +10,8 @@
     "xrpc",
     "xrpc-server",
     "sync",
-    "data",
-    "lex",
-    "lex-gen"
+    "lex-gen",
+    "oauth/*"
   ],
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.14"

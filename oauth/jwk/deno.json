@@ -1,0 +1,11 @@
+{
+  "name": "@atp/jwk",
+  "version": "0.1.0-alpha.1",
+  "exports": "./mod.ts",
+  "license": "MIT",
+  "imports": {
+    "jose": "jsr:@panva/jose@^6.1.2",
+    "multiformats": "npm:multiformats@^13.4.1",
+    "zod": "jsr:@zod/zod@^4.1.13"
+  }
+}
