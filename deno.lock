@@ -18,10 +18,12 @@
     "jsr:@std/bytes@^1.0.5": "1.0.6",
     "jsr:@std/cbor@~0.1.8": "0.1.8",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
+    "jsr:@std/encoding@~1.0.5": "1.0.10",
     "jsr:@std/fmt@~1.0.2": "1.0.8",
     "jsr:@std/fs@1": "1.0.20",
     "jsr:@std/fs@^1.0.19": "1.0.20",
     "jsr:@std/internal@^1.0.12": "1.0.12",
+    "jsr:@std/io@~0.224.9": "0.224.9",
     "jsr:@std/json@^1.0.2": "1.0.2",
     "jsr:@std/jsonc@^1.0.1": "1.0.2",
     "jsr:@std/path@1": "1.1.3",
@@ -49,7 +51,10 @@
     "@cliffy/ansi@1.0.0-rc.8": {
       "integrity": "ba37f10ce55bbfbdd8ddd987f91f029b17bce88385b98ba3058870f3b007b80c",
       "dependencies": [
-        "jsr:@std/fmt"
+        "jsr:@cliffy/internal",
+        "jsr:@std/encoding@~1.0.5",
+        "jsr:@std/fmt",
+        "jsr:@std/io"
       ]
     },
     "@cliffy/command@1.0.0-rc.8": {
@@ -135,6 +140,9 @@
     },
     "@std/internal@1.0.12": {
       "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
+    },
+    "@std/io@0.224.9": {
+      "integrity": "4414664b6926f665102e73c969cfda06d2c4c59bd5d0c603fd4f1b1c840d6ee3"
     },
     "@std/json@1.0.2": {
       "integrity": "d9e5497801c15fb679f55a2c01c7794ad7a5dfda4dd1bebab5e409cb5e0d34d4"
@@ -1132,21 +1140,11 @@
           "npm:multiformats@^13.4.1"
         ]
       },
-      "data": {
-        "dependencies": [
-          "npm:multiformats@^13.4.1"
-        ]
-      },
       "identity": {
         "dependencies": [
           "npm:@did-plc/lib@^0.0.4",
           "npm:@did-plc/server@^0.0.1",
           "npm:get-port@^7.1.0"
-        ]
-      },
-      "lex": {
-        "dependencies": [
-          "npm:multiformats@^13.4.1"
         ]
       },
       "lex-gen": {

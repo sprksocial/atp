@@ -10,8 +10,6 @@
     "xrpc",
     "xrpc-server",
     "sync",
-    "data",
-    "lex",
     "lex-gen"
   ],
   "imports": {
