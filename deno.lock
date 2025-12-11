@@ -7,21 +7,21 @@
     "jsr:@cliffy/internal@1.0.0-rc.8": "1.0.0-rc.8",
     "jsr:@cliffy/table@1.0.0-rc.8": "1.0.0-rc.8",
     "jsr:@david/code-block-writer@13": "13.0.3",
-    "jsr:@hono/hono@*": "4.9.9",
-    "jsr:@hono/hono@^4.9.8": "4.9.9",
-    "jsr:@logtape/file@^1.2.0-dev.344+834f24a9": "1.2.0-dev.344+834f24a9",
-    "jsr:@logtape/logtape@^1.2.0-dev.344+834f24a9": "1.2.0-dev.344+834f24a9",
+    "jsr:@hono/hono@^4.10.8": "4.10.8",
+    "jsr:@logtape/file@^1.2.2": "1.2.2",
+    "jsr:@logtape/logtape@^1.2.2": "1.2.2",
     "jsr:@noble/curves@^2.0.1": "2.0.1",
     "jsr:@noble/hashes@2": "2.0.1",
     "jsr:@noble/hashes@^2.0.1": "2.0.1",
-    "jsr:@std/assert@^1.0.14": "1.0.16",
-    "jsr:@std/bytes@^1.0.5": "1.0.6",
-    "jsr:@std/cbor@~0.1.8": "0.1.8",
+    "jsr:@std/assert@^1.0.16": "1.0.16",
+    "jsr:@std/bytes@^1.0.6": "1.0.6",
+    "jsr:@std/cbor@~0.1.9": "0.1.9",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/encoding@~1.0.5": "1.0.10",
     "jsr:@std/fmt@~1.0.2": "1.0.8",
     "jsr:@std/fs@1": "1.0.20",
     "jsr:@std/fs@^1.0.19": "1.0.20",
+    "jsr:@std/fs@^1.0.20": "1.0.20",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/io@~0.224.9": "0.224.9",
     "jsr:@std/json@^1.0.2": "1.0.2",
@@ -29,11 +29,12 @@
     "jsr:@std/path@1": "1.1.3",
     "jsr:@std/path@^1.1.2": "1.1.3",
     "jsr:@std/path@^1.1.3": "1.1.3",
-    "jsr:@std/streams@^1.0.9": "1.0.13",
+    "jsr:@std/streams@^1.0.14": "1.0.14",
     "jsr:@std/text@~1.0.7": "1.0.16",
     "jsr:@ts-morph/common@0.27": "0.27.0",
     "jsr:@ts-morph/ts-morph@26": "26.0.0",
-    "jsr:@zod/zod@^4.1.11": "4.1.11",
+    "jsr:@zod/zod@^4.1.11": "4.1.13",
+    "jsr:@zod/zod@^4.1.13": "4.1.13",
     "npm:@atproto/crypto@*": "0.4.4",
     "npm:@did-plc/lib@^0.0.4": "0.0.4",
     "npm:@did-plc/server@^0.0.1": "0.0.1_express@4.21.2",
@@ -44,8 +45,7 @@
     "npm:multiformats@^13.4.1": "13.4.1",
     "npm:p-queue@^8.1.1": "8.1.1",
     "npm:prettier@^3.6.2": "3.6.2",
-    "npm:rate-limiter-flexible@^2.4.2": "2.4.2",
-    "npm:zod@^4.1.11": "4.1.11"
+    "npm:rate-limiter-flexible@9": "9.0.0"
   },
   "jsr": {
     "@cliffy/ansi@1.0.0-rc.8": {
@@ -88,17 +88,17 @@
     "@hono/hono@4.9.8": {
       "integrity": "908150f13e90181a051a3af3bf15203aff00190682afedfd38824d0cb9299a95"
     },
-    "@hono/hono@4.9.9": {
-      "integrity": "1d716e97b71e91b852c70beb85c9d3b236393282c59d5e268b07cfd224a77318"
+    "@hono/hono@4.10.8": {
+      "integrity": "afdbfc8d3028faa79d0d23096265cb41863f7f49cbf8542959bbdffc4c71365a"
     },
-    "@logtape/file@1.2.0-dev.344+834f24a9": {
-      "integrity": "4d674c368f8130dc1403c5c93a316726a65d6b17e36b094780f1b2ed301f5e1b",
+    "@logtape/file@1.2.2": {
+      "integrity": "a602f49148d0d5553dd3398506e9579e7294bab5706dff91f4c18abde53f1985",
       "dependencies": [
         "jsr:@logtape/logtape"
       ]
     },
-    "@logtape/logtape@1.2.0-dev.344+834f24a9": {
-      "integrity": "204222be0f94cd1b64a500e2dcdea22a1618a086fc531b054351e3cfa079c435"
+    "@logtape/logtape@1.2.2": {
+      "integrity": "628fa8d52245aa1c81fd3af91622b621c1974fc8be71afb7574cd256b6aff953"
     },
     "@noble/curves@2.0.1": {
       "integrity": "21ef41d207a203f60ba37a4fdcbc4f4a545b10c5dab7f293889f18292f81ab23",
@@ -118,8 +118,8 @@
     "@std/bytes@1.0.6": {
       "integrity": "f6ac6adbd8ccd99314045f5703e23af0a68d7f7e58364b47d2c7f408aeb5820a"
     },
-    "@std/cbor@0.1.8": {
-      "integrity": "a0d1c520f8963358cc96defd8cbd1f9e81e40adc2bbfb301f122150f2024d93e",
+    "@std/cbor@0.1.9": {
+      "integrity": "fe1f61f445a34c8f97973b58fecbfb24e48fcc88df7b1253d9b6fe5d2ea16936",
       "dependencies": [
         "jsr:@std/bytes",
         "jsr:@std/streams"
@@ -162,8 +162,8 @@
     "@std/streams@1.0.10": {
       "integrity": "75c0b1431873cd0d8b3d679015220204d36d3c7420d93b60acfc379eb0dc30af"
     },
-    "@std/streams@1.0.13": {
-      "integrity": "772d208cd0d3e5dac7c1d9e6cdb25842846d136eea4a41a62e44ed4ab0c8dd9e"
+    "@std/streams@1.0.14": {
+      "integrity": "c0df6cdd73bd4bbcbe4baa89e323b88418c90ceb2d926f95aa99bdcdbfca2411"
     },
     "@std/text@1.0.16": {
       "integrity": "ddb9853b75119a2473857d691cf1ec02ad90793a2e8b4a4ac49d7354281a0cf8"
@@ -187,6 +187,9 @@
     },
     "@zod/zod@4.1.11": {
       "integrity": "0d48947455491addca672d8ef766d86bc7bc3add07e78d049b8ffd643bb33a7a"
+    },
+    "@zod/zod@4.1.13": {
+      "integrity": "fef799152d630583b248645fcac03abedd13e39fd2b752d9466b905d73619bfd"
     }
   },
   "npm": {
@@ -196,7 +199,7 @@
         "@ipld/dag-cbor@7.0.3",
         "multiformats@9.9.0",
         "pino",
-        "zod@3.25.76"
+        "zod"
       ]
     },
     "@atproto/common@0.1.1": {
@@ -205,7 +208,7 @@
         "@ipld/dag-cbor@7.0.3",
         "multiformats@9.9.0",
         "pino",
-        "zod@3.25.76"
+        "zod"
       ]
     },
     "@atproto/crypto@0.1.0": {
@@ -235,7 +238,7 @@
         "axios",
         "multiformats@9.9.0",
         "uint8arrays",
-        "zod@3.25.76"
+        "zod"
       ]
     },
     "@did-plc/server@0.0.1_express@4.21.2": {
@@ -925,8 +928,8 @@
     "range-parser@1.2.1": {
       "integrity": "sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg=="
     },
-    "rate-limiter-flexible@2.4.2": {
-      "integrity": "sha512-rMATGGOdO1suFyf/mI5LYhts71g1sbdhmd6YvdiXO2gJnd42Tt6QS4JUKJKSWVVkMtBacm6l40FR7Trjo6Iruw=="
+    "rate-limiter-flexible@9.0.0": {
+      "integrity": "sha512-Dz+NKRx+V9WVLY6QJv2soo/eN+cYL/+/1XggE/tgnGuA+D/Q1em0hWVp6AZd8lfhzZ6+2wrk7TEwYN+x9AsHeg=="
     },
     "raw-body@2.5.2": {
       "integrity": "sha512-8zGqypfENjCIqGhgXToC8aB2r7YrBX+AQAfIPs/Mlk+BtPTztOvTS01NRW/3Eh60J+a48lt8qsCzirQ6loCVfA==",
@@ -1096,9 +1099,6 @@
     },
     "zod@3.25.76": {
       "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
-    },
-    "zod@4.1.11": {
-      "integrity": "sha512-WPsqwxITS2tzx1bzhIKsEs19ABD5vmCVa4xBo2tq/SrV4RNZtfws1EnCWQXM6yh8bD08a1idvkB5MZSBiZsjwg=="
     }
   },
   "remote": {
@@ -1113,7 +1113,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/assert@^1.0.14"
+      "jsr:@std/assert@^1.0.16"
     ],
     "members": {
       "bytes": {
@@ -1123,12 +1123,12 @@
       },
       "common": {
         "dependencies": [
-          "jsr:@logtape/file@^1.2.0-dev.344+834f24a9",
-          "jsr:@logtape/logtape@^1.2.0-dev.344+834f24a9",
-          "jsr:@std/cbor@~0.1.8",
+          "jsr:@logtape/file@^1.2.2",
+          "jsr:@logtape/logtape@^1.2.2",
+          "jsr:@std/cbor@~0.1.9",
           "jsr:@std/encoding@^1.0.10",
-          "jsr:@std/fs@^1.0.19",
-          "jsr:@zod/zod@^4.1.11",
+          "jsr:@std/fs@^1.0.20",
+          "jsr:@zod/zod@^4.1.13",
           "npm:@ipld/dag-cbor@^9.2.5",
           "npm:multiformats@^13.4.1"
         ]
@@ -1161,16 +1161,16 @@
       },
       "lexicon": {
         "dependencies": [
-          "npm:multiformats@^13.4.1",
-          "npm:zod@^4.1.11"
+          "jsr:@zod/zod@^4.1.13",
+          "npm:multiformats@^13.4.1"
         ]
       },
       "repo": {
         "dependencies": [
           "jsr:@std/encoding@^1.0.10",
+          "jsr:@zod/zod@^4.1.13",
           "npm:@ipld/dag-cbor@^9.2.5",
-          "npm:multiformats@^13.4.1",
-          "npm:zod@^4.1.11"
+          "npm:multiformats@^13.4.1"
         ]
       },
       "sync": {
@@ -1181,19 +1181,19 @@
       },
       "xrpc": {
         "dependencies": [
-          "jsr:@zod/zod@^4.1.11"
+          "jsr:@zod/zod@^4.1.13"
         ]
       },
       "xrpc-server": {
         "dependencies": [
-          "jsr:@hono/hono@^4.9.8",
-          "jsr:@std/cbor@~0.1.8",
+          "jsr:@hono/hono@^4.10.8",
+          "jsr:@std/cbor@~0.1.9",
           "jsr:@std/encoding@^1.0.10",
-          "jsr:@zod/zod@^4.1.11",
+          "jsr:@zod/zod@^4.1.13",
           "npm:get-port@^7.1.0",
           "npm:key-encoder@^2.0.3",
           "npm:multiformats@^13.4.1",
-          "npm:rate-limiter-flexible@^2.4.2"
+          "npm:rate-limiter-flexible@9"
         ]
       }
     }

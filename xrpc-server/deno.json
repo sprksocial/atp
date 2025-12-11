@@ -1,17 +1,17 @@
 {
   "name": "@atp/xrpc-server",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
-    "@std/cbor": "jsr:@std/cbor@^0.1.8",
+    "@std/cbor": "jsr:@std/cbor@^0.1.9",
     "@std/encoding": "jsr:@std/encoding@^1.0.10",
     "get-port": "npm:get-port@^7.1.0",
     "key-encoder": "npm:key-encoder@^2.0.3",
     "multiformats": "npm:multiformats@^13.4.1",
-    "zod": "jsr:@zod/zod@^4.1.11",
-    "hono": "jsr:@hono/hono@^4.9.8",
-    "rate-limiter-flexible": "npm:rate-limiter-flexible@^2.4.2"
+    "zod": "jsr:@zod/zod@^4.1.13",
+    "hono": "jsr:@hono/hono@^4.10.8",
+    "rate-limiter-flexible": "npm:rate-limiter-flexible@^9.0.0"
   },
   "test": {
     "permissions": {

@@ -1,17 +1,17 @@
 {
   "name": "@atp/common",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
     "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.2.5",
-    "@logtape/file": "jsr:@logtape/file@^1.2.0-dev.344+834f24a9",
-    "@logtape/logtape": "jsr:@logtape/logtape@^1.2.0-dev.344+834f24a9",
-    "@std/cbor": "jsr:@std/cbor@^0.1.8",
+    "@logtape/file": "jsr:@logtape/file@^1.2.2",
+    "@logtape/logtape": "jsr:@logtape/logtape@^1.2.2",
+    "@std/cbor": "jsr:@std/cbor@^0.1.9",
     "@std/encoding": "jsr:@std/encoding@^1.0.10",
-    "@std/fs": "jsr:@std/fs@^1.0.19",
+    "@std/fs": "jsr:@std/fs@^1.0.20",
     "multiformats": "npm:multiformats@^13.4.1",
-    "zod": "jsr:@zod/zod@^4.1.11"
+    "zod": "jsr:@zod/zod@^4.1.13"
   },
   "test": {
     "permissions": {
