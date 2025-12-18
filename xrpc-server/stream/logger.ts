@@ -1,4 +1,4 @@
-import { subsystemLogger } from "@atp/common";
+import { subsystemLogger } from "@atp/common/server";
 
 export const logger: ReturnType<typeof subsystemLogger> = subsystemLogger(
   "xrpc-stream",
