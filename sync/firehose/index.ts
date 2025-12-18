@@ -250,16 +250,20 @@ export class Firehose {
           if (!parsed) {
             continue;
           }
-          await this.opts.runner.trackEvent(parsed.did, parsed.seq, async () => {
-            const parsed = await this.parseEvt(evt);
-            for (const write of parsed) {
-              try {
-                await this.opts.handleEvent(write);
-              } catch (err) {
-                this.opts.onError(new FirehoseHandlerError(err, write));
+          await this.opts.runner.trackEvent(
+            parsed.did,
+            parsed.seq,
+            async () => {
+              const parsed = await this.parseEvt(evt);
+              for (const write of parsed) {
+                try {
+                  await this.opts.handleEvent(write);
+                } catch (err) {
+                  this.opts.onError(new FirehoseHandlerError(err, write));
+                }
               }
-            }
-          });
+            },
+          );
         } else {
           await this.processEvt(evt);
         }
