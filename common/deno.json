@@ -1,7 +1,10 @@
 {
   "name": "@atp/common",
-  "version": "0.1.0-alpha.5",
-  "exports": "./mod.ts",
+  "version": "0.1.0-alpha.6",
+  "exports": {
+    ".": "./mod.ts",
+    "./server": "./server.ts"
+  },
   "license": "MIT",
   "imports": {
     "@ipld/dag-cbor": "npm:@ipld/dag-cbor@^9.2.5",
