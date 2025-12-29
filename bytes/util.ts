@@ -1,4 +1,13 @@
-import { bases } from "multiformats/basics";
+import * as base10 from "multiformats/bases/base10";
+import * as base16 from "multiformats/bases/base16";
+import * as base2 from "multiformats/bases/base2";
+import * as base256emoji from "multiformats/bases/base256emoji";
+import * as base32 from "multiformats/bases/base32";
+import * as base36 from "multiformats/bases/base36";
+import * as base58 from "multiformats/bases/base58";
+import * as base64 from "multiformats/bases/base64";
+import * as base8 from "multiformats/bases/base8";
+import * as identityBase from "multiformats/bases/identity";
 import type { MultibaseCodec } from "multiformats";
 import { allocUnsafe } from "./alloc.ts";
 
@@ -47,6 +56,19 @@ const ascii = createCodec("ascii", "a", (buf) => {
 
   return buf;
 });
+
+const bases = {
+  ...identityBase,
+  ...base2,
+  ...base8,
+  ...base10,
+  ...base16,
+  ...base32,
+  ...base36,
+  ...base58,
+  ...base64,
+  ...base256emoji,
+};
 
 /** Supported base encodings */
 export type SupportedEncodings =

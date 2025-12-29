@@ -1,6 +1,6 @@
 {
   "name": "@atp/crypto",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
@@ -11,7 +11,9 @@
   "test": {
     "permissions": {
       "env": true,
-      "read": ["./tests/interop"]
+      "read": [
+        "./tests/interop"
+      ]
     }
   }
 }
