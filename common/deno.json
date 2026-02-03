@@ -1,6 +1,6 @@
 {
   "name": "@atp/common",
-  "version": "0.1.0-alpha.8",
+  "version": "0.1.0-alpha.9",
   "exports": {
     ".": "./mod.ts",
     "./server": "./server.ts"
