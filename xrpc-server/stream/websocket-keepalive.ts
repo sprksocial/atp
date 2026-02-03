@@ -1,4 +1,4 @@
-import { type ClientOptions, WebSocket, createWebSocketStream } from "ws";
+import { type ClientOptions, createWebSocketStream, WebSocket } from "ws";
 import { isErrnoException, SECOND, wait } from "@atp/common";
 import { CloseCode, DisconnectError } from "./types.ts";
 
@@ -62,10 +62,9 @@ export class WebSocketKeepAlive {
           yield chunk;
         }
       } catch (_err) {
-        const err =
-          isErrnoException(_err) && _err.code === "ABORT_ERR"
-            ? _err.cause
-            : _err;
+        const err = isErrnoException(_err) && _err.code === "ABORT_ERR"
+          ? _err.cause
+          : _err;
         if (err instanceof DisconnectError) {
           this.ws?.close(err.wsCode);
           break;
