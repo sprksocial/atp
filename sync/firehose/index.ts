@@ -250,7 +250,7 @@ export class Firehose {
           if (!parsed) {
             continue;
           }
-          await this.opts.runner.trackEvent(
+          this.opts.runner.trackEvent(
             parsed.did,
             parsed.seq,
             async () => {

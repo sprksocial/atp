@@ -181,3 +181,9 @@ export const mapDefined = <T, S>(
   }
   return output;
 };
+
+export const isErrnoException = (
+  err: unknown,
+): err is NodeJS.ErrnoException => {
+  return !!err && (err as Record<string, unknown>)["code"] !== undefined;
+};

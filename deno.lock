@@ -35,7 +35,7 @@
     "jsr:@ts-morph/ts-morph@26": "26.0.0",
     "jsr:@zod/zod@^4.1.11": "4.1.13",
     "jsr:@zod/zod@^4.1.13": "4.1.13",
-    "npm:@atproto/crypto@*": "0.4.4",
+    "npm:@atproto/crypto@*": "0.1.0",
     "npm:@did-plc/lib@^0.0.4": "0.0.4",
     "npm:@did-plc/server@^0.0.1": "0.0.1_express@4.21.2",
     "npm:@ipld/dag-cbor@^9.2.5": "9.2.5",
@@ -45,7 +45,8 @@
     "npm:multiformats@^13.4.1": "13.4.1",
     "npm:p-queue@^8.1.1": "8.1.1",
     "npm:prettier@^3.6.2": "3.6.2",
-    "npm:rate-limiter-flexible@9": "9.0.0"
+    "npm:rate-limiter-flexible@9": "9.0.0",
+    "npm:ws@^8.18.0": "8.18.3"
   },
   "jsr": {
     "@cliffy/ansi@1.0.0-rc.8": {
@@ -221,19 +222,11 @@
         "uint8arrays"
       ]
     },
-    "@atproto/crypto@0.4.4": {
-      "integrity": "sha512-Yq9+crJ7WQl7sxStVpHgie5Z51R05etaK9DLWYG/7bR5T4bhdcIgF6IfklLShtZwLYdVVj+K15s0BqW9a8PSDA==",
-      "dependencies": [
-        "@noble/curves",
-        "@noble/hashes",
-        "uint8arrays"
-      ]
-    },
     "@did-plc/lib@0.0.4": {
       "integrity": "sha512-Omeawq3b8G/c/5CtkTtzovSOnWuvIuCI4GTJNrt1AmCskwEQV7zbX5d6km1mjJNbE0gHuQPTVqZxLVqetNbfwA==",
       "dependencies": [
         "@atproto/common@0.1.1",
-        "@atproto/crypto@0.1.0",
+        "@atproto/crypto",
         "@ipld/dag-cbor@7.0.3",
         "axios",
         "multiformats@9.9.0",
@@ -245,7 +238,7 @@
       "integrity": "sha512-GtxxHcOrOQ6fNI1ufq3Zqjc2PtWqPZOdsuzlwtxiH9XibUGwDkb0GmaBHyU5GiOxOKZEW1GspZ8mreBA6XOlTQ==",
       "dependencies": [
         "@atproto/common@0.1.0",
-        "@atproto/crypto@0.1.0",
+        "@atproto/crypto",
         "@did-plc/lib",
         "axios",
         "cors",
@@ -272,15 +265,6 @@
         "cborg@4.2.15",
         "multiformats@13.4.1"
       ]
-    },
-    "@noble/curves@1.9.7": {
-      "integrity": "sha512-gbKGcRUYIjA3/zCCNaWDciTMFI0dCkvou3TL8Zmy5Nc7sJ47a0jtOeZoTaMxkuqRo9cRhjOdZJXegxYE5FN/xw==",
-      "dependencies": [
-        "@noble/hashes"
-      ]
-    },
-    "@noble/hashes@1.8.0": {
-      "integrity": "sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A=="
     },
     "@noble/secp256k1@1.7.2": {
       "integrity": "sha512-/qzwYl5eFLH8OWIecQWM31qld2g1NfjgylK+TNhqtaUKP37Nm+Y+z30Fjhw0Ct8p9yCQEm2N3W/AckdIb3SMcQ=="
@@ -1094,6 +1078,9 @@
     "vary@1.1.2": {
       "integrity": "sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg=="
     },
+    "ws@8.18.3": {
+      "integrity": "sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg=="
+    },
     "xtend@4.0.2": {
       "integrity": "sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ=="
     },
@@ -1193,7 +1180,8 @@
           "npm:get-port@^7.1.0",
           "npm:key-encoder@^2.0.3",
           "npm:multiformats@^13.4.1",
-          "npm:rate-limiter-flexible@9"
+          "npm:rate-limiter-flexible@9",
+          "npm:ws@^8.18.0"
         ]
       }
     }
