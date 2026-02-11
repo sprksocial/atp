@@ -33,6 +33,7 @@ export type KeepAliveOptions = {
 
   // Reconnect hook
   onReconnectError?: (error: unknown, n: number, initialSetup: boolean) => void;
+  onReconnect?: () => void;
 
   createSocket?: (url: string, protocols?: string | string[]) => WebSocket;
   protocols?: string | string[];
@@ -72,15 +73,16 @@ export class WebSocketKeepAlive {
         forwardSignal(this.opts.signal, ac);
       }
 
-      // Track liveness (application-level heartbeat)
-      this.startHeartbeat(ws, ac);
-
       // When the socket opens, reset backoff.
       ws.addEventListener(
         "open",
         () => {
+          if (!this.initialSetup) {
+            this.opts.onReconnect?.();
+          }
           this.initialSetup = false;
           this.reconnects = 0;
+          this.startHeartbeat(ws, ac);
         },
         { once: true },
       );
@@ -102,7 +104,7 @@ export class WebSocketKeepAlive {
 
       try {
         // Iterate incoming binary chunks
-        for await (const chunk of iterateBinary(ws)) {
+        for await (const chunk of iterateBinary(ws, ac.signal)) {
           yield chunk;
         }
       } catch (error) {
@@ -162,12 +164,7 @@ export class WebSocketKeepAlive {
         // No pong/traffic since last tick → consider dead and close.
         ws.close(1000);
         // Abort the iterator with a recognizable shape like before.
-        const domErr = new DOMException("Aborted", "AbortError");
-        domErr.cause = new DisconnectError(
-          CloseCode.Abnormal,
-          "HeartbeatTimeout",
-        );
-        ac.abort(domErr);
+        ac.abort(new AbnormalCloseError("HeartbeatTimeout"));
         return;
       }
       isAlive = false;

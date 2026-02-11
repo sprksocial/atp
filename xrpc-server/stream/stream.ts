@@ -22,7 +22,10 @@ async function toUint8Array(data: unknown): Promise<Uint8Array> {
  * - Yields Uint8Array
  * - Cleans up listeners on close/error/return()
  */
-export function iterateBinary(ws: WebSocket): AsyncIterable<Uint8Array> {
+export function iterateBinary(
+  ws: WebSocket,
+  signal?: AbortSignal,
+): AsyncIterable<Uint8Array> {
   const queue: (Uint8Array | Error | null)[] = [];
   let resolve: ((v: IteratorResult<Uint8Array>) => void) | null = null;
 
@@ -65,16 +68,25 @@ export function iterateBinary(ws: WebSocket): AsyncIterable<Uint8Array> {
     const err = (ev as ErrorEvent).error ?? new Error("WebSocket error");
     queue.push(err);
     pump();
+    cleanup();
   };
 
   const onClose = () => {
     queue.push(null);
     pump();
+    cleanup();
   };
 
   ws.addEventListener("message", onMessage);
   ws.addEventListener("error", onError);
   ws.addEventListener("close", onClose);
+  if (signal?.aborted) {
+    queue.push(makeAbortError(signal.reason));
+    pump();
+    cleanup();
+  } else if (signal) {
+    signal.addEventListener("abort", onAbort);
+  }
 
   const iterator: AsyncIterator<Uint8Array> = {
     next() {
@@ -104,6 +116,7 @@ export function iterateBinary(ws: WebSocket): AsyncIterable<Uint8Array> {
     ws.removeEventListener("message", onMessage);
     ws.removeEventListener("error", onError);
     ws.removeEventListener("close", onClose);
+    signal?.removeEventListener("abort", onAbort);
   }
 
   return {
@@ -111,6 +124,18 @@ export function iterateBinary(ws: WebSocket): AsyncIterable<Uint8Array> {
       return iterator;
     },
   };
+
+  function onAbort() {
+    queue.push(makeAbortError(signal?.reason));
+    pump();
+    cleanup();
+  }
+}
+
+function makeAbortError(reason: unknown): Error {
+  const err = new DOMException("Aborted", "AbortError");
+  err.cause = reason;
+  return err;
 }
 
 /** Iterate by low-level Frame (binary in → Frame out) */
