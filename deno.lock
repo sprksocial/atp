@@ -39,6 +39,7 @@
     "npm:@did-plc/lib@^0.0.4": "0.0.4",
     "npm:@did-plc/server@^0.0.1": "0.0.1_express@4.21.2",
     "npm:@ipld/dag-cbor@^9.2.5": "9.2.5",
+    "npm:@opentelemetry/api@^1.9.0": "1.9.0",
     "npm:@types/node@*": "24.2.0",
     "npm:get-port@^7.1.0": "7.1.0",
     "npm:key-encoder@^2.0.3": "2.0.3",
@@ -268,6 +269,9 @@
     },
     "@noble/secp256k1@1.7.2": {
       "integrity": "sha512-/qzwYl5eFLH8OWIecQWM31qld2g1NfjgylK+TNhqtaUKP37Nm+Y+z30Fjhw0Ct8p9yCQEm2N3W/AckdIb3SMcQ=="
+    },
+    "@opentelemetry/api@1.9.0": {
+      "integrity": "sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg=="
     },
     "@types/bn.js@5.2.0": {
       "integrity": "sha512-DLbJ1BPqxvQhIGbeu8VbUC1DiAiahHtAYvA0ZEAa4P31F7IaArc8z3C3BRQdWX4mtLQuABG4yzp76ZrS02Ui1Q==",
@@ -1100,7 +1104,8 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/assert@^1.0.16"
+      "jsr:@std/assert@^1.0.16",
+      "npm:@opentelemetry/api@^1.9.0"
     ],
     "members": {
       "bytes": {
@@ -1162,6 +1167,7 @@
       },
       "sync": {
         "dependencies": [
+          "npm:@opentelemetry/api@^1.9.0",
           "npm:multiformats@^13.4.1",
           "npm:p-queue@^8.1.1"
         ]

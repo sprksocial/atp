@@ -27,6 +27,7 @@ import type {
   SyncEvt,
 } from "../events.ts";
 import type { EventRunner } from "../runner/index.ts";
+import { SyncTelemetry, type SyncTelemetryOptions } from "../telemetry.ts";
 import { didAndSeqForEvt } from "../util.ts";
 import {
   type Account,
@@ -79,6 +80,7 @@ export type FirehoseOptions = WebSocketOptions & {
   excludeAccount?: boolean;
   excludeCommit?: boolean;
   excludeSync?: boolean;
+  telemetry?: SyncTelemetryOptions;
 };
 
 /**
@@ -192,10 +194,23 @@ export class Firehose {
   private abortController: AbortController;
   private destoryDefer: Deferrable;
   private matchCollection: ((col: string) => boolean) | null = null;
+  private telemetry: SyncTelemetry;
 
   constructor(public opts: FirehoseOptions) {
     this.destoryDefer = createDeferrable();
     this.abortController = new AbortController();
+    const runnerTelemetry = this.opts.runner?.getTelemetry?.();
+    if (runnerTelemetry) {
+      if (opts.telemetry !== undefined) {
+        throw new Error(
+          "Telemetry configured on both Firehose and runner. Configure telemetry in one place.",
+        );
+      }
+      this.telemetry = runnerTelemetry;
+    } else {
+      this.telemetry = new SyncTelemetry(opts.telemetry);
+      this.opts.runner?.setTelemetry?.(this.telemetry);
+    }
     if (this.opts.getCursor && this.opts.runner) {
       throw new Error("Must set only `getCursor` or `runner`");
     }
@@ -236,6 +251,7 @@ export class Firehose {
         try {
           return isValidRepoEvent(value);
         } catch (err) {
+          this.telemetry.recordError("validation");
           this.opts.onError(new FirehoseValidationError(err, value));
         }
       },
@@ -245,6 +261,9 @@ export class Firehose {
   async start(): Promise<void> {
     try {
       for await (const evt of this.sub) {
+        const eventType = getRepoEventType(evt);
+        this.telemetry.recordEventReceived(eventType);
+        const eventContext = this.telemetry.activeContext();
         if (this.opts.runner) {
           const parsed = didAndSeqForEvt(evt);
           if (!parsed) {
@@ -254,18 +273,15 @@ export class Firehose {
             parsed.did,
             parsed.seq,
             async () => {
-              const parsed = await this.parseEvt(evt);
-              for (const write of parsed) {
-                try {
-                  await this.opts.handleEvent(write);
-                } catch (err) {
-                  this.opts.onError(new FirehoseHandlerError(err, write));
-                }
-              }
+              await this.telemetry.withContext(eventContext, async () => {
+                await this.processEvt(evt, eventType);
+              });
             },
           );
         } else {
-          await this.processEvt(evt);
+          await this.telemetry.withContext(eventContext, async () => {
+            await this.processEvt(evt, eventType);
+          });
         }
       }
     } catch (err) {
@@ -276,52 +292,82 @@ export class Firehose {
         this.destoryDefer.resolve();
         return;
       }
+      this.telemetry.recordError("subscription");
       this.opts.onError(new FirehoseSubscriptionError(err));
       await wait(this.opts.subscriptionReconnectDelay ?? 3000);
       return this.start();
     }
   }
 
-  private async parseEvt(evt: RepoEvent): Promise<Event[]> {
+  private async parseEvt(
+    evt: RepoEvent,
+    eventType: string,
+  ): Promise<{ events: Event[]; outcome: "ok" | "error" }> {
     try {
       if (isCommit(evt) && !this.opts.excludeCommit) {
-        return this.opts.unauthenticatedCommits
+        const events = this.opts.unauthenticatedCommits
           ? await parseCommitUnauthenticated(evt, this.matchCollection)
           : await parseCommitAuthenticated(
             this.opts.idResolver,
             evt,
             this.matchCollection,
           );
+        return { events, outcome: "ok" };
       } else if (isAccount(evt) && !this.opts.excludeAccount) {
         const parsed = parseAccount(evt);
-        return parsed ? [parsed] : [];
+        return { events: parsed ? [parsed] : [], outcome: "ok" };
       } else if (isIdentity(evt) && !this.opts.excludeIdentity) {
         const parsed = await parseIdentity(
           this.opts.idResolver,
           evt,
           this.opts.unauthenticatedHandles,
         );
-        return parsed ? [parsed] : [];
+        return { events: parsed ? [parsed] : [], outcome: "ok" };
       } else if (isSync(evt) && !this.opts.excludeSync) {
         const parsed = await parseSync(evt);
-        return parsed ? [parsed] : [];
+        return { events: parsed ? [parsed] : [], outcome: "ok" };
       } else {
-        return [];
+        return { events: [], outcome: "ok" };
       }
     } catch (err) {
+      this.telemetry.recordError("parse", eventType);
       this.opts.onError(new FirehoseParseError(err, evt));
-      return [];
+      return { events: [], outcome: "error" };
     }
   }
 
-  private async processEvt(evt: RepoEvent) {
-    const parsed = await this.parseEvt(evt);
-    for (const write of parsed) {
-      try {
-        await this.opts.handleEvent(write);
-      } catch (err) {
+  private async processEvt(
+    evt: RepoEvent,
+    eventType: string,
+  ) {
+    const parseStart = performance.now();
+    const parsed = await this.parseEvt(evt, eventType);
+    this.telemetry.recordParseDuration(
+      performance.now() - parseStart,
+      eventType,
+      parsed.outcome,
+    );
+    this.telemetry.recordEventsParsed(parsed.events.length, eventType);
+    for (const write of parsed.events) {
+      const handleStart = performance.now();
+      let outcome: "ok" | "error" = "ok";
+      await this.telemetry.withSpan(
+        "sync.firehose.event.handle",
+        { event_type: write.event },
+        async () => {
+          await this.opts.handleEvent(write);
+        },
+      ).catch((err) => {
+        outcome = "error";
+        this.telemetry.recordError("handler", write.event);
         this.opts.onError(new FirehoseHandlerError(err, write));
-      }
+      });
+      this.telemetry.recordHandleDuration(
+        performance.now() - handleStart,
+        write.event,
+        outcome,
+      );
+      this.telemetry.recordEventHandled(write.event, outcome);
     }
   }
 
@@ -578,3 +624,11 @@ export class FirehoseHandlerError extends Error {
     super("error in firehose event handler", { cause: err });
   }
 }
+
+const getRepoEventType = (evt: RepoEvent): string => {
+  if (isCommit(evt)) return "commit";
+  if (isAccount(evt)) return "account";
+  if (isIdentity(evt)) return "identity";
+  if (isSync(evt)) return "sync";
+  return "unknown";
+};

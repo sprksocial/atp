@@ -4,6 +4,7 @@
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
+    "@opentelemetry/api": "npm:@opentelemetry/api@^1.9.0",
     "multiformats": "npm:multiformats@^13.4.1",
     "p-queue": "npm:p-queue@^8.1.1"
   },

@@ -1,6 +1,7 @@
 import PQueue from "p-queue";
 import { ConsecutiveList } from "./consecutive-list.ts";
 import type { EventRunner } from "./types.ts";
+import { SyncTelemetry, type SyncTelemetryOptions } from "../telemetry.ts";
 
 /**
  * Options for {@link MemoryRunner}
@@ -14,6 +15,7 @@ export type MemoryRunnerOptions = {
   concurrency?: number;
   startCursor?: number;
   setCursorInterval?: number; // milliseconds between persisted cursor saves (throttling)
+  telemetry?: SyncTelemetryOptions;
 };
 
 /** A queue with arbitrarily many partitions, each processing work sequentially.
@@ -26,10 +28,20 @@ export class MemoryRunner implements EventRunner {
   cursor: number | undefined;
   private lastCursorSave = 0;
   private savingCursor = false;
+  private telemetry: SyncTelemetry;
 
   constructor(public opts: MemoryRunnerOptions = {}) {
     this.mainQueue = new PQueue({ concurrency: opts.concurrency ?? Infinity });
     this.cursor = opts.startCursor;
+    this.telemetry = new SyncTelemetry(opts.telemetry);
+  }
+
+  getTelemetry(): SyncTelemetry {
+    return this.telemetry;
+  }
+
+  setTelemetry(telemetry: SyncTelemetry): void {
+    this.telemetry = telemetry;
   }
 
   getCursor(): number | undefined {
@@ -60,14 +72,42 @@ export class MemoryRunner implements EventRunner {
     if (this.mainQueue.isPaused) return;
     const item = this.consecutive.push(seq);
     await this.addTask(did, async () => {
-      await handler();
+      const taskStart = performance.now();
+      try {
+        await handler();
+        this.telemetry.recordRunnerTaskDuration(
+          performance.now() - taskStart,
+          "ok",
+        );
+      } catch (err) {
+        this.telemetry.recordRunnerTaskDuration(
+          performance.now() - taskStart,
+          "error",
+        );
+        this.telemetry.recordError("runner");
+        throw err;
+      }
       const latest = item.complete().at(-1);
       if (latest !== undefined) {
         this.cursor = latest;
         const { setCursor, setCursorInterval } = this.opts;
         if (setCursor) {
           if (!setCursorInterval) {
-            await setCursor(this.cursor);
+            const saveStart = performance.now();
+            try {
+              await setCursor(this.cursor!);
+              this.telemetry.recordCursorSaveDuration(
+                performance.now() - saveStart,
+                "ok",
+              );
+            } catch (err) {
+              this.telemetry.recordCursorSaveDuration(
+                performance.now() - saveStart,
+                "error",
+              );
+              this.telemetry.recordError("runner");
+              throw err;
+            }
             this.lastCursorSave = Date.now();
           } else {
             const now = Date.now();
@@ -75,11 +115,22 @@ export class MemoryRunner implements EventRunner {
               now - this.lastCursorSave >= setCursorInterval &&
               !this.savingCursor
             ) {
-              // Set timestamp & flag before awaiting to avoid multiple saves racing in same interval
               this.lastCursorSave = now;
               this.savingCursor = true;
+              const saveStart = performance.now();
               try {
-                await setCursor(this.cursor);
+                await setCursor(this.cursor!);
+                this.telemetry.recordCursorSaveDuration(
+                  performance.now() - saveStart,
+                  "ok",
+                );
+              } catch (err) {
+                this.telemetry.recordCursorSaveDuration(
+                  performance.now() - saveStart,
+                  "error",
+                );
+                this.telemetry.recordError("runner");
+                throw err;
               } finally {
                 this.savingCursor = false;
               }
