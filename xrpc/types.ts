@@ -1,5 +1,10 @@
 import { z } from "zod";
-import type { ValidationError } from "@atp/lexicon";
+import type {
+  InferMethodInputBody,
+  InferMethodParams,
+  Procedure,
+  Query,
+} from "@atp/lex";
 
 export type QueryParams = Record<string, unknown>;
 export type HeadersMap = Record<string, string | undefined>;
@@ -18,6 +23,25 @@ export interface CallOptions {
   encoding?: string;
   signal?: AbortSignal;
   headers?: HeadersMap;
+}
+
+export type BinaryBodyInit =
+  | Uint8Array
+  | ArrayBuffer
+  | ArrayBufferView
+  | Blob
+  | ReadableStream<Uint8Array>
+  | AsyncIterable<Uint8Array>
+  | string;
+
+export interface XrpcCallOptions<
+  M extends Query | Procedure = Query | Procedure,
+> extends CallOptions {
+  params?: InferMethodParams<M>;
+  body?: M extends Procedure ? InferMethodInputBody<M, BinaryBodyInit>
+    : undefined;
+  validateRequest?: boolean;
+  validateResponse?: boolean;
 }
 
 export const errorResponseBody: z.ZodObject<{
@@ -186,7 +210,7 @@ export class XRPCError extends Error {
 export class XRPCInvalidResponseError extends XRPCError {
   constructor(
     public lexiconNsid: string,
-    public validationError: ValidationError,
+    public validationError: Error,
     public responseBody: unknown,
   ) {
     super(

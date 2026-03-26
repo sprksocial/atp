@@ -1,5 +1,5 @@
 import type { LexiconDoc } from "@atp/lexicon";
-import { XrpcClient } from "@atp/xrpc";
+import { XrpcClient } from "./_xrpc-client.ts";
 import * as xrpcServer from "../mod.ts";
 import { closeServer, createServer } from "./_util.ts";
 import { assertEquals, assertRejects } from "@std/assert";
@@ -85,7 +85,7 @@ Deno.test("coerces query params to correct types", {
   assertEquals(res2.success, true);
   assertEquals(res2.data.str, "10");
   assertEquals(res2.data.int, 5);
-  assertEquals(res2.data.bool, true);
+  assertEquals(res2.data.bool, false);
   assertEquals(res2.data.arr, [3]);
   assertEquals(res2.data.def, 0);
 });

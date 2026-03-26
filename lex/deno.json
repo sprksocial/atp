@@ -1,0 +1,21 @@
+{
+  "name": "@atp/lex",
+  "version": "0.1.0-alpha.0",
+  "exports": {
+    ".": "./mod.ts",
+    "./cbor": "./cbor/mod.ts",
+    "./document": "./document/mod.ts"
+  },
+  "license": "MIT",
+  "imports": {
+    "cborg": "npm:cborg@^4.2.15",
+    "multiformats/cid": "npm:multiformats@^13.4.1/cid",
+    "multiformats/hashes/digest": "npm:multiformats@^13.4.1/hashes/digest",
+    "multiformats/hashes/sha2": "npm:multiformats@^13.4.1/hashes/sha2"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-explicit-any", "no-slow-types", "require-await"]
+    }
+  }
+}

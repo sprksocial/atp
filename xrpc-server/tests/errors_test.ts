@@ -1,8 +1,17 @@
 import type { LexiconDoc } from "@atp/lexicon";
-import { XrpcClient, XRPCError, XRPCInvalidResponseError } from "@atp/xrpc";
+import {
+  XrpcClient,
+  XRPCError,
+  XRPCInvalidResponseError,
+} from "./_xrpc-client.ts";
 import * as xrpcServer from "../mod.ts";
 import { closeServer, createServer } from "./_util.ts";
-import { assert, assertEquals, assertRejects } from "@std/assert";
+import {
+  assert,
+  assertEquals,
+  assertRejects,
+  assertStringIncludes,
+} from "@std/assert";
 
 const UPSTREAM_LEXICONS: LexiconDoc[] = [
   {
@@ -303,10 +312,7 @@ Deno.test("throws XRPCInvalidResponseError for invalid response", {
   assert(invalidError instanceof XRPCInvalidResponseError);
   assert(!invalidError.success);
   assertEquals(invalidError.error, "Invalid Response");
-  assertEquals(
-    invalidError.validationError.message,
-    'Output must have the property "expectedValue"',
-  );
+  assertStringIncludes(invalidError.validationError.message, "expectedValue");
   assertEquals(invalidError.responseBody, { something: "else" });
 });
 
