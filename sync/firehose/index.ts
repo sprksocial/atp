@@ -532,9 +532,9 @@ export const parseIdentity = async (
   evt: Identity,
   unauthenticated = false,
 ): Promise<IdentityEvt | null> => {
-  const res = await idResolver.did.resolve(evt.did);
+  const res = await idResolver.did.resolve(evt.did).catch(() => null);
   const handle = res && !unauthenticated
-    ? await verifyHandle(idResolver, evt.did, res)
+    ? await verifyHandle(idResolver, evt.did, res).catch(() => undefined)
     : undefined;
 
   return {

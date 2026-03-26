@@ -201,6 +201,39 @@ Deno.test({
 });
 
 Deno.test({
+  name: "parseIdentity - handles DID resolution rejection",
+  async fn() {
+    const didCache = new MemoryCache();
+    const resolver = new IdResolver({
+      plcUrl: "http://localhost:3000",
+      didCache,
+    });
+
+    resolver.did.resolve = () =>
+      Promise.reject(new DOMException("timed out", "AbortError"));
+
+    const identity: Identity = {
+      $type: "com.atproto.sync.subscribeRepos#identity",
+      seq: 302,
+      time: "2024-01-01T14:02:30.000Z",
+      did: "did:plc:unknown",
+    };
+
+    const event = await parseIdentity(resolver, identity);
+
+    assertObjectMatch(event!, {
+      event: "identity",
+      seq: 302,
+      did: "did:plc:unknown",
+      handle: undefined,
+      didDocument: undefined,
+    });
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "parseIdentity - handles handle resolution failure",
   async fn() {
     const idResolver = createMockIdResolver();
@@ -222,6 +255,37 @@ Deno.test({
       seq: 303,
       did: "did:plc:alice123",
       handle: undefined, // Handle resolution failed
+      didDocument: {
+        id: "did:plc:alice123",
+      },
+    });
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
+  name: "parseIdentity - handles handle resolution rejection",
+  async fn() {
+    const idResolver = createMockIdResolver();
+
+    idResolver.handle.resolve = () =>
+      Promise.reject(new DOMException("timed out", "AbortError"));
+
+    const identity: Identity = {
+      $type: "com.atproto.sync.subscribeRepos#identity",
+      seq: 304,
+      time: "2024-01-01T14:04:00.000Z",
+      did: "did:plc:alice123",
+    };
+
+    const event = await parseIdentity(idResolver, identity);
+
+    assertObjectMatch(event!, {
+      event: "identity",
+      seq: 304,
+      did: "did:plc:alice123",
+      handle: undefined,
       didDocument: {
         id: "did:plc:alice123",
       },
