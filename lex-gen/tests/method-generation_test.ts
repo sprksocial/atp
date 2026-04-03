@@ -14,7 +14,7 @@ class DummyIndexer implements LexiconIndexer, AsyncIterable<LexiconDocument> {
     this.#docs = new Map(docs.map((doc) => [doc.id, doc]));
   }
 
-  async get(id: string): Promise<LexiconDocument> {
+  get(id: string): LexiconDocument {
     const doc = this.#docs.get(id);
     if (!doc) {
       throw new Error(`Document not found: ${id}`);

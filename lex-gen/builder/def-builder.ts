@@ -348,7 +348,7 @@ export class LexDefBuilder {
       type: `{ ${properties.join(";")} }`,
       schemaType: (ref) =>
         `l.TypedObjectSchema<l.$TypeOf<${ref.typeName}>, l.Validator<Omit<${ref.typeName}, "$type">>>`,
-      schema: async (ref) =>
+      schema: (ref) =>
         this.pure(
           `l.typedObject<${ref.typeName}>($nsid, ${
             JSON.stringify(hash)
@@ -391,7 +391,7 @@ export class LexDefBuilder {
       validationUtils,
     }: {
       type?: string | ((ref: ResolvedRef) => string);
-      schema?: string | ((ref: ResolvedRef) => Promise<string>);
+      schema?: string | ((ref: ResolvedRef) => Promise<string> | string);
       schemaType?: string | ((ref: ResolvedRef) => string);
       objectUtils?: boolean;
       validationUtils?: boolean;

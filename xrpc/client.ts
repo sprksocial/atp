@@ -20,6 +20,7 @@ import {
   httpResponseBodyParse,
   isErrorResponseBody,
 } from "./util.ts";
+import type { DidString } from "../lex/core/string-format.ts";
 
 type XrpcMethod = Query | Procedure;
 
@@ -38,7 +39,7 @@ export class XrpcClient {
     this.fetchHandler = this.agent.fetchHandler;
   }
 
-  get did() {
+  get did(): DidString | undefined {
     return this.agent.did;
   }
 

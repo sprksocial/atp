@@ -1,13 +1,12 @@
 import type { LexiconDocument } from "./lexicon.ts";
 
 export interface LexiconIndexer {
-  get(nsid: string): Promise<LexiconDocument>;
+  get(nsid: string): Promise<LexiconDocument> | LexiconDocument;
   [Symbol.asyncDispose]?: () => Promise<void>;
   [Symbol.asyncIterator]?: () => AsyncIterator<LexiconDocument, void, unknown>;
 }
 
-export class LexiconIterableIndexer
-  implements LexiconIndexer, AsyncDisposable {
+export class LexiconIterableIndexer implements LexiconIndexer, AsyncDisposable {
   readonly #lexicons: Map<string, LexiconDocument> = new Map();
   readonly #iterator:
     | AsyncIterator<LexiconDocument, void, unknown>
@@ -18,10 +17,9 @@ export class LexiconIterableIndexer
       | AsyncIterable<LexiconDocument>
       | Iterable<LexiconDocument>,
   ) {
-    this.#iterator =
-      Symbol.asyncIterator in source
-        ? source[Symbol.asyncIterator]()
-        : source[Symbol.iterator]();
+    this.#iterator = Symbol.asyncIterator in source
+      ? source[Symbol.asyncIterator]()
+      : source[Symbol.iterator]();
   }
 
   async get(id: string): Promise<LexiconDocument> {
