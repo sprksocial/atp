@@ -13,7 +13,7 @@ const command = new Command()
   .option(
     "-o, --out <out>",
     "output directory for generated TS files",
-    { required: true, default: "./src/lexicons" },
+    { required: true, default: "./lex" },
   )
   .option("--clear", "clear output directory before generating files", {
     default: false,

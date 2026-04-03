@@ -1,11 +1,5 @@
 import type { Context, HonoRequest, Next } from "hono";
 import { z } from "zod";
-import type {
-  InferMethodParams,
-  Procedure,
-  Query,
-  Subscription,
-} from "@atp/lex";
 import type { ErrorResult, XRPCError } from "./errors.ts";
 import type { CalcKeyFn, CalcPointsFn } from "./rate-limiter.ts";
 import type { RateLimiterI } from "./rate-limiter.ts";
@@ -27,47 +21,12 @@ export type CatchallHandler = (
   next: Next,
 ) => Promise<void | Response>;
 
-export type FetchHandler = (
-  request: Request,
-  connection?: unknown,
-) => Awaitable<Response>;
-
-export type HealthCheckHandler = (
-  request: Request,
-) => Awaitable<{ [x: string]: unknown; status: "ok" }>;
-
-export type HandlerErrorHook = (ctx: {
-  error: XRPCError;
-  request: Request;
-  nsid?: string;
-}) => Awaitable<void>;
-
-export type SocketErrorHook = (ctx: {
-  error: unknown;
-  request: Request;
-  nsid?: string;
-}) => Awaitable<void>;
-
 /**
  * Configuration options for the XRPC server.
  */
 export type Options = {
   /** Whether to validate response schemas */
   validateResponse?: boolean;
-  /** Optional fallback handler for non-/xrpc/* requests */
-  fallback?: FetchHandler;
-  /** Optional health check handler for /xrpc/_health */
-  healthCheck?: HealthCheckHandler;
-  /** Optional callback for reporting handler errors */
-  onHandlerError?: HandlerErrorHook;
-  /** Optional callback for reporting socket errors */
-  onSocketError?: SocketErrorHook;
-  /** Optional high water mark for websocket buffering */
-  highWaterMark?: number;
-  /** Optional low water mark for websocket buffering */
-  lowWaterMark?: number;
-  /** Optional websocket upgrade function (reserved for API parity) */
-  upgradeWebSocket?: unknown;
   /** Handler for catching all unmatched routes */
   catchall?: CatchallHandler;
   /** Payload size limits for different content types */
@@ -404,11 +363,6 @@ export type RouteOpts = {
   blobLimit?: number;
 };
 
-export type MethodAuth<
-  A extends Auth = Auth,
-  P extends Params = Params,
-> = MethodAuthVerifier<Extract<A, AuthResult>, P>;
-
 /**
  * Configuration object for an XRPC method including handler, auth, and options.
  * @template A - Authentication type
@@ -425,24 +379,10 @@ export type MethodConfig<
   /** The method handler function */
   handler: MethodHandler<A, P, I, O>;
   /** Optional authentication verifier */
-  auth?: MethodAuth<A, P>;
+  auth?: MethodAuthVerifier<Extract<A, AuthResult>, P>;
   /** Optional route configuration */
   opts?: RouteOptions;
   /** Optional rate limiting configuration */
-  rateLimit?:
-    | RateLimitOpts<HandlerContext<A, P, I>>
-    | RateLimitOpts<HandlerContext<A, P, I>>[];
-};
-
-export type MethodConfigWithAuth<
-  A extends AuthResult = AuthResult,
-  P extends Params = Params,
-  I extends Input = Input,
-  O extends Output = Output,
-> = {
-  handler: MethodHandler<A, P, I, O>;
-  auth: MethodAuth<A, P>;
-  opts?: RouteOptions;
   rateLimit?:
     | RateLimitOpts<HandlerContext<A, P, I>>
     | RateLimitOpts<HandlerContext<A, P, I>>[];
@@ -462,25 +402,6 @@ export type MethodConfigOrHandler<
   O extends Output = Output,
 > = MethodHandler<A, P, I, O> | MethodConfig<A, P, I, O>;
 
-export type LexMethodParams<
-  M extends Procedure | Query | Subscription,
-> = InferMethodParams<M>;
-
-export type LexMethodHandler<
-  M extends Procedure | Query,
-  A extends Auth = Auth,
-> = MethodHandler<A, LexMethodParams<M>, Input, Output>;
-
-export type LexMethodConfig<
-  M extends Procedure | Query,
-  A extends Auth = Auth,
-> = MethodConfig<A, LexMethodParams<M>, Input, Output>;
-
-export type LexMethodConfigWithAuth<
-  M extends Procedure | Query,
-  A extends AuthResult = AuthResult,
-> = MethodConfigWithAuth<A, LexMethodParams<M>, Input, Output>;
-
 /**
  * Configuration object for a streaming XRPC endpoint.
  * @template A - Authentication type
@@ -497,30 +418,6 @@ export type StreamConfig<
   /** The stream handler function */
   handler: StreamHandler<A, P, O>;
 };
-
-export type StreamConfigWithAuth<
-  A extends AuthResult = AuthResult,
-  P extends Params = Params,
-  O = unknown,
-> = {
-  auth: StreamAuthVerifier<A, P>;
-  handler: StreamHandler<A, P, O>;
-};
-
-export type LexSubscriptionHandler<
-  M extends Subscription,
-  A extends Auth = Auth,
-> = StreamHandler<A, LexMethodParams<M>, unknown>;
-
-export type LexSubscriptionConfig<
-  M extends Subscription,
-  A extends Auth = Auth,
-> = StreamConfig<A, LexMethodParams<M>, unknown>;
-
-export type LexSubscriptionConfigWithAuth<
-  M extends Subscription,
-  A extends AuthResult = AuthResult,
-> = StreamConfigWithAuth<A, LexMethodParams<M>, unknown>;
 
 /**
  * Union type allowing either a simple stream handler or full stream configuration.

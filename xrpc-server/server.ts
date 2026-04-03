@@ -1,6 +1,5 @@
 import type { Context, Handler } from "hono";
 import { Hono } from "hono";
-import { Procedure, Query, Subscription } from "@atp/lex";
 import {
   type LexiconDoc,
   Lexicons,
@@ -28,29 +27,19 @@ import {
   type AuthResult,
   type AuthVerifier,
   type Awaitable,
-  type FetchHandler,
   type HandlerContext,
   type HandlerSuccess,
   type Input,
   isHandlerPipeThroughBuffer,
   isHandlerPipeThroughStream,
   isSharedRateLimitOpts,
-  type LexMethodConfig,
-  type LexMethodConfigWithAuth,
-  type LexMethodHandler,
-  type LexSubscriptionConfig,
-  type LexSubscriptionConfigWithAuth,
-  type LexSubscriptionHandler,
   type MethodConfig,
   type MethodConfigOrHandler,
-  type MethodConfigWithAuth,
   type Options,
-  type Output,
   type Params,
   type ServerRateLimitDescription,
   type StreamConfig,
   type StreamConfigOrHandler,
-  type StreamConfigWithAuth,
 } from "./types.ts";
 import {
   asArray,
@@ -83,20 +72,10 @@ import {
  * @param options - Optional server configuration options
  */
 export function createServer(
-  options?: Options,
-): Server;
-export function createServer(
   lexicons?: LexiconDoc[],
   options?: Options,
-): Server;
-export function createServer(
-  lexiconsOrOptions?: LexiconDoc[] | Options,
-  options?: Options,
 ): Server {
-  if (Array.isArray(lexiconsOrOptions)) {
-    return new Server(lexiconsOrOptions, options);
-  }
-  return new Server(lexiconsOrOptions);
+  return new Server(lexicons, options);
 }
 
 /**
@@ -114,9 +93,6 @@ export class Server {
   >();
   /** Lexicon registry for schema validation and method definitions */
   lex: Lexicons = new Lexicons();
-  handlers: Map<string, FetchHandler> = new Map();
-  methods: Map<string, Query | Procedure> = new Map();
-  streamMethods: Map<string, Subscription> = new Map();
   /** Server configuration options */
   options: Options;
   /** Global rate limiter applied to all routes */
@@ -129,46 +105,21 @@ export class Server {
    * @param lexicons - Optional array of lexicon documents to register
    * @param opts - Server configuration options
    */
-  constructor(options?: Options);
-  constructor(lexicons?: LexiconDoc[], opts?: Options);
-  constructor(
-    lexiconsOrOptions?: LexiconDoc[] | Options,
-    opts: Options = {},
-  ) {
+  constructor(lexicons?: LexiconDoc[], opts: Options = {}) {
     this.app = new Hono();
-    const lexicons = Array.isArray(lexiconsOrOptions)
-      ? lexiconsOrOptions
-      : undefined;
-    this.options = Array.isArray(lexiconsOrOptions)
-      ? opts
-      : lexiconsOrOptions ?? {};
+    this.options = opts;
 
     if (lexicons) {
       this.addLexicons(lexicons);
     }
 
     this.app.use("*", this.catchall);
-    this.app.onError(createErrorHandler(this.options));
-    this.app.get("/xrpc/_health", async (c) => {
-      if (c.req.header("atproto-proxy") != null) {
-        throw new InvalidRequestError(
-          "atproto-proxy header is not allowed on health check endpoint",
-        );
-      }
-      const healthCheck = this.options.healthCheck;
-      const data = healthCheck
-        ? await healthCheck(c.req.raw)
-        : { status: "ok" };
-      return c.json(data);
-    });
+    this.app.onError(createErrorHandler(opts));
 
     this.app.notFound((c) => {
-      if (!c.req.url.includes("/xrpc/") && this.options.fallback) {
-        return this.options.fallback(c.req.raw) as Promise<Response> | Response;
-      }
       const nsid = parseUrlNsid(c.req.url);
       if (nsid) {
-        const def = this.getMethodDefinition(nsid);
+        const def = this.lex.getDef(nsid);
         if (def) {
           const expectedMethod = def.type === "procedure"
             ? "POST"
@@ -189,9 +140,8 @@ export class Server {
       return c.text("Not Found", 404);
     });
 
-    const rateLimits = this.options.rateLimits;
-    if (rateLimits) {
-      const { global, shared, creator, bypass } = rateLimits;
+    if (opts.rateLimits) {
+      const { global, shared, creator, bypass } = opts.rateLimits;
 
       if (global) {
         this.globalRateLimiter = RouteRateLimiter.from(
@@ -239,139 +189,16 @@ export class Server {
 
   // handlers
 
-  private getMainMethod<M extends Query | Procedure | Subscription>(
-    methodOrNamespace: M | { main: M },
-  ): M {
-    if (
-      typeof methodOrNamespace === "object" &&
-      methodOrNamespace !== null &&
-      "main" in methodOrNamespace
-    ) {
-      return methodOrNamespace.main;
-    }
-    return methodOrNamespace;
-  }
-
-  add<
-    M extends Query | Procedure,
-    A extends AuthResult,
-  >(
-    method: M | { main: M },
-    configOrFn: LexMethodConfigWithAuth<M, A>,
-  ): this;
-  add<
-    M extends Query | Procedure,
-  >(
-    method: M | { main: M },
-    configOrFn: LexMethodConfig<M, void> | LexMethodHandler<M, void>,
-  ): this;
-  add<
-    M extends Query | Procedure,
-    A extends Auth,
-  >(
-    method: M | { main: M },
-    configOrFn: LexMethodConfig<M, A> | LexMethodHandler<M, A>,
-  ): this;
-  add<
-    M extends Subscription,
-    A extends AuthResult,
-  >(
-    method: M | { main: M },
-    configOrFn: LexSubscriptionConfigWithAuth<M, A>,
-  ): this;
-  add<
-    M extends Subscription,
-  >(
-    method: M | { main: M },
-    configOrFn:
-      | LexSubscriptionConfig<M, void>
-      | LexSubscriptionHandler<M, void>,
-  ): this;
-  add<
-    M extends Subscription,
-    A extends Auth,
-  >(
-    method: M | { main: M },
-    configOrFn: LexSubscriptionConfig<M, A> | LexSubscriptionHandler<M, A>,
-  ): this;
-  add(
-    method:
-      | Query
-      | Procedure
-      | Subscription
-      | { main: Query | Procedure | Subscription },
-    configOrFn: unknown,
-  ): this {
-    const main = this.getMainMethod(
-      method as Query | Procedure | Subscription | {
-        main: Query | Procedure | Subscription;
-      },
-    );
-    if (this.handlers.has(main.nsid)) {
-      throw new TypeError(`Method ${main.nsid} already registered`);
-    }
-
-    if (main instanceof Subscription) {
-      this.addStreamMethod(main as any, configOrFn as any);
-    } else {
-      this.addMethod(main as any, configOrFn as any);
-    }
-
-    return this;
-  }
-
   /**
    * Registers a method handler for the specified NSID.
    * @param nsid - The namespace identifier for the method
    * @param configOrFn - Either a handler function or full method configuration
    */
-  method<
-    M extends Query | Procedure,
-    A extends AuthResult,
-  >(
-    method: M,
-    configOrFn: LexMethodConfigWithAuth<M, A>,
-  ): void;
-  method<
-    M extends Query | Procedure,
-  >(
-    method: M,
-    configOrFn: LexMethodConfig<M, void> | LexMethodHandler<M, void>,
-  ): void;
-  method<
-    M extends Query | Procedure,
-    A extends Auth,
-  >(
-    method: M,
-    configOrFn: LexMethodConfig<M, A> | LexMethodHandler<M, A>,
-  ): void;
-  method<
-    A extends AuthResult,
-    P extends Params = Params,
-    I extends Input = Input,
-    O extends Output = Output,
-  >(
-    nsid: string,
-    configOrFn: MethodConfigWithAuth<A, P, I, O>,
-  ): void;
-  method<
-    A extends Auth,
-    P extends Params = Params,
-    I extends Input = Input,
-    O extends Output = Output,
-  >(
-    nsid: string,
-    configOrFn: MethodConfigOrHandler<A, P, I, O>,
-  ): void;
   method(
-    nsidOrMethod: string | Query | Procedure,
-    configOrFn: unknown,
-  ): void {
-    if (typeof nsidOrMethod === "string") {
-      this.addMethod(nsidOrMethod, configOrFn as MethodConfigOrHandler);
-      return;
-    }
-    this.addMethod(nsidOrMethod as any, configOrFn as any);
+    nsid: string,
+    configOrFn: MethodConfigOrHandler,
+  ) {
+    this.addMethod(nsid, configOrFn);
   }
 
   /**
@@ -380,62 +207,18 @@ export class Server {
    * @param configOrFn - Either a handler function or full method configuration
    * @throws {Error} If the method is not found in the lexicon or is not a query/procedure
    */
-  addMethod<
-    M extends Query | Procedure,
-    A extends AuthResult,
-  >(
-    method: M,
-    configOrFn: LexMethodConfigWithAuth<M, A>,
-  ): void;
-  addMethod<
-    M extends Query | Procedure,
-  >(
-    method: M,
-    configOrFn: LexMethodConfig<M, void> | LexMethodHandler<M, void>,
-  ): void;
-  addMethod<
-    M extends Query | Procedure,
-    A extends Auth,
-  >(
-    method: M,
-    configOrFn: LexMethodConfig<M, A> | LexMethodHandler<M, A>,
-  ): void;
-  addMethod<
-    A extends AuthResult,
-    P extends Params = Params,
-    I extends Input = Input,
-    O extends Output = Output,
-  >(
-    nsid: string,
-    configOrFn: MethodConfigWithAuth<A, P, I, O>,
-  ): void;
-  addMethod<
-    A extends Auth,
-    P extends Params = Params,
-    I extends Input = Input,
-    O extends Output = Output,
-  >(
-    nsid: string,
-    configOrFn: MethodConfigOrHandler<A, P, I, O>,
-  ): void;
   addMethod(
-    nsidOrMethod: string | Query | Procedure,
-    configOrFn: unknown,
-  ): void {
-    const config: MethodConfig = typeof configOrFn === "function"
-      ? { handler: configOrFn as MethodConfig["handler"] }
-      : configOrFn as MethodConfig;
-
-    if (typeof nsidOrMethod !== "string") {
-      this.addLexMethod(nsidOrMethod, config);
-      return;
-    }
-
-    const def = this.lex.getDef(nsidOrMethod);
+    nsid: string,
+    configOrFn: MethodConfigOrHandler,
+  ) {
+    const config = typeof configOrFn === "function"
+      ? { handler: configOrFn }
+      : configOrFn;
+    const def = this.lex.getDef(nsid);
     if (!def || (def.type !== "query" && def.type !== "procedure")) {
-      throw new Error(`Method not found in lexicon: ${nsidOrMethod}`);
+      throw new Error(`Method not found in lexicon: ${nsid}`);
     }
-    this.addRoute(nsidOrMethod, def, config);
+    this.addRoute(nsid, def, config);
   }
 
   /**
@@ -443,53 +226,11 @@ export class Server {
    * @param nsid - The namespace identifier for the streaming method
    * @param configOrFn - Either a stream handler function or full stream configuration
    */
-  streamMethod<
-    M extends Subscription,
-    A extends AuthResult,
-  >(
-    method: M,
-    configOrFn: LexSubscriptionConfigWithAuth<M, A>,
-  ): void;
-  streamMethod<
-    M extends Subscription,
-  >(
-    method: M,
-    configOrFn:
-      | LexSubscriptionConfig<M, void>
-      | LexSubscriptionHandler<M, void>,
-  ): void;
-  streamMethod<
-    M extends Subscription,
-    A extends Auth,
-  >(
-    method: M,
-    configOrFn: LexSubscriptionConfig<M, A> | LexSubscriptionHandler<M, A>,
-  ): void;
-  streamMethod<
-    A extends AuthResult,
-    P extends Params = Params,
-    O = unknown,
-  >(
-    nsid: string,
-    configOrFn: StreamConfigWithAuth<A, P, O>,
-  ): void;
-  streamMethod<
-    A extends Auth,
-    P extends Params = Params,
-    O = unknown,
-  >(
-    nsid: string,
-    configOrFn: StreamConfigOrHandler<A, P, O>,
-  ): void;
   streamMethod(
-    nsidOrMethod: string | Subscription,
-    configOrFn: unknown,
-  ): void {
-    if (typeof nsidOrMethod === "string") {
-      this.addStreamMethod(nsidOrMethod, configOrFn as StreamConfigOrHandler);
-      return;
-    }
-    this.addStreamMethod(nsidOrMethod as any, configOrFn as any);
+    nsid: string,
+    configOrFn: StreamConfigOrHandler,
+  ) {
+    this.addStreamMethod(nsid, configOrFn);
   }
 
   /**
@@ -498,62 +239,18 @@ export class Server {
    * @param configOrFn - Either a stream handler function or full stream configuration
    * @throws {Error} If the subscription is not found in the lexicon
    */
-  addStreamMethod<
-    M extends Subscription,
-    A extends AuthResult,
-  >(
-    method: M,
-    configOrFn: LexSubscriptionConfigWithAuth<M, A>,
-  ): void;
-  addStreamMethod<
-    M extends Subscription,
-  >(
-    method: M,
-    configOrFn:
-      | LexSubscriptionConfig<M, void>
-      | LexSubscriptionHandler<M, void>,
-  ): void;
-  addStreamMethod<
-    M extends Subscription,
-    A extends Auth,
-  >(
-    method: M,
-    configOrFn: LexSubscriptionConfig<M, A> | LexSubscriptionHandler<M, A>,
-  ): void;
-  addStreamMethod<
-    A extends AuthResult,
-    P extends Params = Params,
-    O = unknown,
-  >(
-    nsid: string,
-    configOrFn: StreamConfigWithAuth<A, P, O>,
-  ): void;
-  addStreamMethod<
-    A extends Auth,
-    P extends Params = Params,
-    O = unknown,
-  >(
-    nsid: string,
-    configOrFn: StreamConfigOrHandler<A, P, O>,
-  ): void;
   addStreamMethod(
-    nsidOrMethod: string | Subscription,
-    configOrFn: unknown,
-  ): void {
-    const config: StreamConfig = typeof configOrFn === "function"
-      ? { handler: configOrFn as StreamConfig["handler"] }
-      : configOrFn as StreamConfig;
-
-    if (typeof nsidOrMethod !== "string") {
-      this.addLexSubscription(nsidOrMethod, config);
-      return;
-    }
-
-    const def = this.lex.getDef(nsidOrMethod);
+    nsid: string,
+    configOrFn: StreamConfigOrHandler,
+  ) {
+    const config = typeof configOrFn === "function"
+      ? { handler: configOrFn }
+      : configOrFn;
+    const def = this.lex.getDef(nsid);
     if (!def || def.type !== "subscription") {
-      throw new Error(`Subscription not found in lexicon: ${nsidOrMethod}`);
+      throw new Error(`Subscription not found in lexicon: ${nsid}`);
     }
-    this.addSubscription(nsidOrMethod, def, config);
+    this.addSubscription(nsid, def, config);
   }
 
   // lexicon
@@ -598,37 +295,15 @@ export class Server {
     } else {
       this.app.get(path, handler);
     }
-
-    this.handlers.set(nsid, this.fetch);
-  }
-
-  protected addLexMethod(
-    method: Query | Procedure,
-    config: MethodConfig,
-  ) {
-    const nsid = method.nsid;
-    const path = `/xrpc/${nsid}`;
-    const handler = this.createLexHandler(method, config);
-    this.methods.set(nsid, method);
-
-    if (method instanceof Procedure) {
-      this.app.post(path, handler);
-    } else {
-      this.app.get(path, handler);
-    }
-
-    this.handlers.set(nsid, this.fetch);
   }
 
   /**
    * Catchall handler that processes all XRPC routes and applies global rate limiting.
    */
   catchall: CatchallHandler = async (c, next) => {
-    const pathname = new URL(c.req.url).pathname;
-    if (!pathname.startsWith("/xrpc/")) {
+    if (!c.req.url.includes("/xrpc/")) {
       return await next();
     }
-    if (pathname === "/xrpc/_health") return await next();
 
     // Validate the NSID
     const nsid = parseUrlNsid(c.req.url);
@@ -655,7 +330,7 @@ export class Server {
 
     // Ensure that known XRPC methods are only called with the correct HTTP
     // method.
-    const def = this.getMethodDefinition(nsid);
+    const def = this.lex.getDef(nsid);
     if (def) {
       const expectedMethod = def.type === "procedure"
         ? "POST"
@@ -713,45 +388,6 @@ export class Server {
     routeOpts: RouteOptions,
   ): (req: Request) => Awaitable<Input> {
     return createInputVerifier(nsid, def, routeOpts, this.lex);
-  }
-
-  protected createLexInputVerifier(
-    method: Query | Procedure,
-    routeOpts: RouteOptions,
-  ): (req: Request) => Awaitable<Input> {
-    if (method instanceof Query) {
-      return createInputVerifier(
-        method.nsid,
-        { type: "query" } as LexXrpcQuery,
-        routeOpts,
-        this.lex,
-      );
-    }
-
-    return createInputVerifier(
-      method.nsid,
-      {
-        type: "procedure",
-        input: method.input.encoding
-          ? { encoding: method.input.encoding }
-          : undefined,
-      } as LexXrpcProcedure,
-      routeOpts,
-      this.lex,
-    );
-  }
-
-  protected createLexParamsVerifier(
-    method: Query | Procedure | Subscription,
-  ): (req: Request) => Params {
-    return (req: Request): Params => {
-      try {
-        const { searchParams } = new URL(req.url);
-        return method.parameters.fromURLSearchParams(searchParams) as Params;
-      } catch (e) {
-        throw new InvalidRequestError(String(e));
-      }
-    };
   }
 
   /**
@@ -870,101 +506,6 @@ export class Server {
     };
   }
 
-  createLexHandler<A extends Auth = Auth>(
-    method: Query | Procedure,
-    cfg: MethodConfig<A>,
-  ): Handler {
-    const authVerifier = this.createAuthVerifier(cfg);
-    const paramsVerifier = this.createLexParamsVerifier(method);
-    const inputVerifier = this.createLexInputVerifier(method, {
-      blobLimit: cfg.opts?.blobLimit ?? this.options.payload?.blobLimit,
-      jsonLimit: cfg.opts?.jsonLimit ?? this.options.payload?.jsonLimit,
-      textLimit: cfg.opts?.textLimit ?? this.options.payload?.textLimit,
-    });
-    const validateOutputFn = (output?: HandlerSuccess) =>
-      this.options.validateResponse && output
-        ? this.validateLexOutput(method, output)
-        : undefined;
-
-    const routeLimiter = this.createRouteRateLimiter(method.nsid, cfg);
-
-    return async (c: Context) => {
-      try {
-        const params = paramsVerifier(c.req.raw);
-
-        const auth: A = authVerifier
-          ? await authVerifier({ req: c.req.raw, res: c.res, params })
-          : (undefined as A);
-
-        let input: Input = undefined;
-        if (method instanceof Procedure) {
-          input = await inputVerifier(c.req.raw);
-          if (input && method.input.schema) {
-            const result = method.input.schema.safeParse(input.body);
-            if (!result.success) {
-              throw new InvalidRequestError(result.error.message);
-            }
-            input = { ...input, body: result.value };
-          }
-        }
-
-        const ctx: HandlerContext<A> = {
-          req: c.req.raw,
-          res: new Response(),
-          params,
-          input,
-          auth: auth as A,
-          resetRouteRateLimits: async () => {
-            if (routeLimiter) {
-              await routeLimiter.reset(ctx);
-            }
-          },
-        };
-
-        if (routeLimiter) {
-          await routeLimiter.handle(ctx);
-        }
-
-        const output = await cfg.handler(ctx);
-        if (isErrorResult(output)) {
-          throw XRPCError.fromErrorResult(output);
-        }
-
-        if (isHandlerPipeThroughBuffer(output)) {
-          setHeaders(c, output.headers);
-          return c.body(output.buffer.buffer as ArrayBuffer, 200, {
-            "Content-Type": output.encoding,
-          });
-        } else if (isHandlerPipeThroughStream(output)) {
-          setHeaders(c, output.headers);
-          return c.body(output.stream, 200, {
-            "Content-Type": output.encoding,
-          });
-        }
-
-        if (output) {
-          excludeErrorResult(output);
-          validateOutputFn(output);
-        }
-
-        if (output) {
-          setHeaders(c, output.headers);
-          if (output.encoding === "application/json") {
-            return c.json(ipldToJson(output.body) as JSON);
-          } else {
-            return c.body(output.body, 200, {
-              "Content-Type": output.encoding,
-            });
-          }
-        }
-
-        return c.body(null, 200);
-      } catch (err: unknown) {
-        throw err || new InternalServerError();
-      }
-    };
-  }
-
   /**
    * Adds a WebSocket subscription handler for the specified NSID.
    * @param nsid - The namespace identifier for the subscription
@@ -1026,125 +567,6 @@ export class Server {
         },
       }),
     );
-    this.handlers.set(nsid, this.fetch);
-  }
-
-  protected addLexSubscription<A extends Auth = Auth>(
-    method: Subscription,
-    cfg: StreamConfig<A>,
-  ) {
-    const paramsVerifier = this.createLexParamsVerifier(method);
-    const authVerifier = this.createAuthVerifier(cfg);
-    const nsid = method.nsid;
-    const { handler } = cfg;
-    this.streamMethods.set(nsid, method);
-
-    this.subscriptions.set(
-      nsid,
-      new XrpcStreamServer({
-        handler: async function* (req, signal) {
-          try {
-            const params = paramsVerifier(req);
-            const auth = authVerifier
-              ? await authVerifier({ req, params })
-              : (undefined as A);
-
-            for await (const item of handler({ req, params, auth, signal })) {
-              if (item instanceof Frame) {
-                yield item;
-                continue;
-              }
-              const type = (item as Record<string, unknown>)?.["$type"];
-              if (!check.is(item, schema.map) || typeof type !== "string") {
-                yield new MessageFrame(item);
-                continue;
-              }
-              const split = type.split("#");
-              let t: string;
-              if (
-                split.length === 2 && (split[0] === "" || split[0] === nsid)
-              ) {
-                t = `#${split[1]}`;
-              } else {
-                t = type;
-              }
-              const clone = { ...(item as Record<string, unknown>) };
-              delete clone["$type"];
-              yield new MessageFrame(clone, { type: t });
-            }
-          } catch (err) {
-            const xrpcError = XRPCError.fromError(err);
-            yield new ErrorFrame({
-              error: xrpcError.payload.error ?? "Unknown",
-              message: xrpcError.payload.message,
-            });
-          }
-        },
-      }),
-    );
-    this.handlers.set(nsid, this.fetch);
-  }
-
-  protected validateLexOutput(
-    method: Query | Procedure,
-    output: HandlerSuccess | void,
-  ) {
-    const expected = method.output.encoding;
-
-    if (expected === undefined) {
-      if (output !== undefined) {
-        throw new InternalServerError(
-          "A response body was provided when none was expected",
-        );
-      }
-      return;
-    }
-
-    if (output === undefined) {
-      throw new InternalServerError(
-        "A response body is expected but none was provided",
-      );
-    }
-
-    if (!matchesEncoding(expected, output.encoding)) {
-      throw new InternalServerError(
-        `Invalid response encoding: ${output.encoding}`,
-      );
-    }
-
-    if (method.output.schema) {
-      const result = method.output.schema.safeParse(output.body);
-      if (!result.success) {
-        throw new InternalServerError(result.error.message);
-      }
-      output.body = result.value;
-    }
-  }
-
-  private getMethodDefinition(
-    nsid: string,
-  ): undefined | { type: "query" | "procedure" | "subscription" } {
-    const method = this.methods.get(nsid);
-    if (method) {
-      return method instanceof Procedure
-        ? { type: "procedure" }
-        : { type: "query" };
-    }
-
-    if (this.streamMethods.has(nsid)) {
-      return { type: "subscription" };
-    }
-
-    const def = this.lex.getDef(nsid);
-    if (
-      def &&
-      (def.type === "query" || def.type === "procedure" ||
-        def.type === "subscription")
-    ) {
-      return { type: def.type };
-    }
-
-    return undefined;
   }
 
   private createRouteRateLimiter<A extends Auth, C extends HandlerContext>(
@@ -1209,10 +631,6 @@ export class Server {
     );
   }
 
-  fetch: FetchHandler = async (request: Request): Promise<Response> => {
-    return await this.handler.fetch(request);
-  };
-
   /**
    * Gets the underlying Hono app instance for external use.
    * @returns The Hono application instance
@@ -1224,20 +642,11 @@ export class Server {
 
 function createErrorHandler(
   opts: Options,
-): (err: Error, c: Context) => Promise<Response> {
-  return async (err: Error, c: Context): Promise<Response> => {
+): (err: Error, c: Context) => Response {
+  return (err: Error, c: Context): Response => {
     const errorParser = opts.errorParser ||
       ((e: unknown) => XRPCError.fromError(e));
     const xrpcError = errorParser(err);
-    const nsid = parseUrlNsid(c.req.url) ?? undefined;
-
-    if (opts.onHandlerError) {
-      await opts.onHandlerError({
-        error: xrpcError,
-        request: c.req.raw,
-        nsid,
-      });
-    }
 
     const statusCode = "statusCode" in xrpcError
       ? (xrpcError as { statusCode: number }).statusCode
@@ -1267,38 +676,3 @@ const defaultKey: CalcKeyFn<HandlerContext> = ({ req }) => {
       "unknown";
   return ip;
 };
-
-function matchesEncoding(expected: string, actual: string): boolean {
-  const normalizedExpected = normalizeEncoding(expected);
-  const normalizedActual = normalizeEncoding(actual);
-
-  if (normalizedExpected === "*/*") {
-    return true;
-  }
-
-  const [expectedType, expectedSubtype] = normalizedExpected.split("/");
-  const [actualType, actualSubtype] = normalizedActual.split("/");
-
-  if (
-    expectedType == null ||
-    expectedSubtype == null ||
-    actualType == null ||
-    actualSubtype == null
-  ) {
-    return false;
-  }
-
-  if (expectedType !== "*" && expectedType !== actualType) {
-    return false;
-  }
-
-  if (expectedSubtype !== "*" && expectedSubtype !== actualSubtype) {
-    return false;
-  }
-
-  return true;
-}
-
-function normalizeEncoding(encoding: string): string {
-  return encoding.split(";", 1)[0]?.trim().toLowerCase() ?? "";
-}
