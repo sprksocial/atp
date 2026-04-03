@@ -318,6 +318,14 @@ function resolveEncoding(
     return encodingHint;
   }
 
+  const inferredEncoding = inferEncoding(body);
+  if (
+    inferredEncoding !== undefined &&
+    matchesEncoding(schemaEncoding, inferredEncoding)
+  ) {
+    return inferredEncoding;
+  }
+
   if (schemaEncoding === "*/*") {
     return "application/octet-stream";
   }
@@ -350,6 +358,46 @@ function resolveEncoding(
     undefined,
     `Unable to determine payload encoding for ${schemaEncoding}`,
   );
+}
+
+function inferEncoding(body: unknown): string | undefined {
+  if (
+    body instanceof ArrayBuffer ||
+    ArrayBuffer.isView(body) ||
+    isReadableStreamLike(body)
+  ) {
+    return "application/octet-stream";
+  }
+
+  if (isFormDataLike(body)) {
+    return "multipart/form-data";
+  }
+
+  if (isURLSearchParamsLike(body)) {
+    return "application/x-www-form-urlencoded;charset=UTF-8";
+  }
+
+  if (isBlobLike(body)) {
+    return body.type || "application/octet-stream";
+  }
+
+  if (typeof body === "string") {
+    return "text/plain;charset=UTF-8";
+  }
+
+  if (isIterable(body)) {
+    return "application/octet-stream";
+  }
+
+  if (
+    typeof body === "boolean" ||
+    typeof body === "number" ||
+    typeof body === "object"
+  ) {
+    return "application/json";
+  }
+
+  return undefined;
 }
 
 function matchesEncoding(pattern: string, value: string): boolean {
@@ -398,4 +446,26 @@ function isBlobLike(value: unknown): value is Blob {
   }
 
   return false;
+}
+
+function isReadableStreamLike(value: unknown): value is ReadableStream {
+  return typeof ReadableStream === "function" &&
+    value instanceof ReadableStream;
+}
+
+function isFormDataLike(value: unknown): value is FormData {
+  return typeof FormData === "function" && value instanceof FormData;
+}
+
+function isURLSearchParamsLike(value: unknown): value is URLSearchParams {
+  return typeof URLSearchParams === "function" &&
+    value instanceof URLSearchParams;
+}
+
+function isIterable(
+  value: unknown,
+): value is Iterable<unknown> | AsyncIterable<unknown> {
+  return value != null &&
+    typeof value === "object" &&
+    (Symbol.iterator in value || Symbol.asyncIterator in value);
 }

@@ -9,7 +9,6 @@ import {
   type ValidatorContext,
 } from "../validation.ts";
 import { type Param, type ParamScalar, paramSchema } from "./_parameters.ts";
-import { StringSchema } from "./string.ts";
 
 export type ParamsSchemaShape = Record<string, Validator<Param | undefined>>;
 
@@ -88,25 +87,12 @@ export class ParamsSchema<
     const params: Record<string, Param> = {};
 
     for (const [key, value] of urlSearchParams.entries()) {
-      const validator = this.validatorsMap.get(key);
-
-      const coerced: ParamScalar =
-        validator != null && validator instanceof StringSchema
-          ? value
-          : value === "true"
-          ? true
-          : value === "false"
-          ? false
-          : /^-?\d+$/.test(value)
-          ? Number(value)
-          : value;
-
       if (params[key] === undefined) {
-        params[key] = coerced;
+        params[key] = value;
       } else if (Array.isArray(params[key])) {
-        (params[key] as ParamScalar[]).push(coerced);
+        (params[key] as ParamScalar[]).push(value);
       } else {
-        params[key] = [params[key] as ParamScalar, coerced];
+        params[key] = [params[key] as ParamScalar, value];
       }
     }
 
@@ -118,16 +104,69 @@ export class ParamsSchema<
 
     if (input !== undefined) {
       for (const [key, value] of Object.entries(input)) {
-        if (Array.isArray(value)) {
-          for (const v of value) {
-            urlSearchParams.append(key, String(v));
-          }
-        } else if (value !== undefined) {
-          urlSearchParams.append(key, String(value));
-        }
+        const normalized = normalizeParamValue(
+          this.validatorsMap.get(key),
+          value,
+        );
+        appendURLSearchParam(urlSearchParams, key, normalized);
       }
     }
 
     return urlSearchParams;
   }
+}
+
+function normalizeParamValue(
+  validator: Validator<Param | undefined> | undefined,
+  value: unknown,
+): Param | undefined {
+  const transformed = tryParseParam(validator, value) ??
+    tryParseParam(paramSchema, value);
+  if (transformed !== null) {
+    return transformed;
+  }
+
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(stringifyParamScalar);
+  }
+
+  return stringifyParamScalar(value);
+}
+
+function tryParseParam(
+  validator: Validator<unknown> | undefined,
+  value: unknown,
+): Param | undefined | null {
+  if (!(validator instanceof Schema)) {
+    return null;
+  }
+
+  const result = validator.safeParse(value);
+  return result.success ? result.value as Param | undefined : null;
+}
+
+function appendURLSearchParam(
+  urlSearchParams: URLSearchParams,
+  key: string,
+  value: Param | undefined,
+): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      urlSearchParams.append(key, String(item));
+    }
+  } else if (value !== undefined) {
+    urlSearchParams.append(key, String(value));
+  }
+}
+
+function stringifyParamScalar(value: unknown): ParamScalar {
+  if (typeof value === "boolean" || typeof value === "number") {
+    return value;
+  }
+
+  return String(value);
 }
