@@ -29,7 +29,7 @@ export class RefResolver {
   ) {}
 
   public readonly resolve = memoize(
-    (ref: string): Promise<ResolvedRef> => {
+    (ref: string): Promise<ResolvedRef> | ResolvedRef => {
       const [nsid, hash = "main"] = ref.split("#");
 
       if (nsid === "" || nsid === this.doc.id) {
@@ -49,13 +49,11 @@ export class RefResolver {
   }
 
   public readonly resolveLocal = memoize(
-    (hash: string): Promise<ResolvedRef> => {
+    (hash: string): ResolvedRef => {
       const hashes = Object.keys(this.doc.defs);
 
       if (!hashes.includes(hash)) {
-        return Promise.reject(
-          new Error(`Definition ${hash} not found in ${this.doc.id}`),
-        );
+        throw new Error(`Definition ${hash} not found in ${this.doc.id}`);
       }
 
       const pub = getPublicIdentifiers(hash);
@@ -63,10 +61,8 @@ export class RefResolver {
         if (otherHash === hash) continue;
         const otherPub = getPublicIdentifiers(otherHash);
         if (otherPub.typeName === pub.typeName) {
-          return Promise.reject(
-            new Error(
-              `Conflicting type names for definitions #${hash} and #${otherHash} in ${this.doc.id}`,
-            ),
+          throw new Error(
+            `Conflicting type names for definitions #${hash} and #${otherHash} in ${this.doc.id}`,
           );
         }
       }
@@ -89,12 +85,12 @@ export class RefResolver {
         "Variable and type name should be different",
       );
 
-      return Promise.resolve({ varName, typeName });
+      return { varName, typeName };
     },
   );
 
   private readonly resolveExternal = memoize(
-    (fullRef: string): Promise<ResolvedRef> => {
+    async (fullRef: string): Promise<ResolvedRef> => {
       const [nsid, hash] = fullRef.split("#");
       const moduleSpecifier = `${
         asRelativePath(
@@ -103,25 +99,24 @@ export class RefResolver {
         )
       }.defs${this.options.importExt ?? ".ts"}`;
 
-      return this.indexer.get(nsid).then((srcDoc) => {
-        const srcDefs = srcDoc.defs as unknown as Record<string, unknown>;
-        const srcDef = Object.hasOwn(srcDoc.defs, hash) ? srcDefs[hash] : null;
-        if (!srcDef) {
-          throw new Error(
-            `Missing def "${hash}" in "${nsid}" (referenced from ${this.doc.id})`,
-          );
-        }
+      const srcDoc = await this.indexer.get(nsid);
+      const srcDefs = srcDoc.defs as unknown as Record<string, unknown>;
+      const srcDef = Object.hasOwn(srcDoc.defs, hash) ? srcDefs[hash] : null;
+      if (!srcDef) {
+        throw new Error(
+          `Missing def "${hash}" in "${nsid}" (referenced from ${this.doc.id})`,
+        );
+      }
 
-        const nsIdentifier = this.getNsIdentifier(nsid, moduleSpecifier);
-        const publicIds = getPublicIdentifiers(hash);
+      const nsIdentifier = this.getNsIdentifier(nsid, moduleSpecifier);
+      const publicIds = getPublicIdentifiers(hash);
 
-        return {
-          varName: isSafeIdentifier(publicIds.varName)
-            ? `${nsIdentifier}.${publicIds.varName}`
-            : `${nsIdentifier}[${JSON.stringify(publicIds.varName)}]`,
-          typeName: `${nsIdentifier}.${publicIds.typeName}`,
-        };
-      });
+      return {
+        varName: isSafeIdentifier(publicIds.varName)
+          ? `${nsIdentifier}.${publicIds.varName}`
+          : `${nsIdentifier}[${JSON.stringify(publicIds.varName)}]`,
+        typeName: `${nsIdentifier}.${publicIds.typeName}`,
+      };
     },
   );
 

@@ -9,7 +9,7 @@ export class FilteredIndexer implements LexiconIndexer, AsyncDisposable {
     readonly filter: Filter,
   ) {}
 
-  get(id: string): Promise<LexiconDocument> {
+  get(id: string): Promise<LexiconDocument> | LexiconDocument {
     this.returned.add(id);
     return this.indexer.get(id);
   }
