@@ -20,7 +20,7 @@ import {
   httpResponseBodyParse,
   isErrorResponseBody,
 } from "./util.ts";
-import type { DidString } from "../lex/core/string-format.ts";
+import type { DidString } from "@atp/lex";
 
 type XrpcMethod = Query | Procedure;
 

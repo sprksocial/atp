@@ -1,5 +1,5 @@
 import { mkdir, rm, stat, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { IndentationText, Project } from "ts-morph";
 import type { LexiconDocument, LexiconIndexer } from "@atp/lex/document";
 import { buildFilter, type BuildFilterOptions } from "./filter.ts";
@@ -70,16 +70,18 @@ export class LexBuilder {
     } else if (!options.override) {
       await Promise.all(
         files.map((f) =>
-          assertNotFileExists(join(destination, f.getFilePath()))
+          assertNotFileExists(
+            resolveOutputFilePath(destination, f.getFilePath()),
+          )
         ),
       );
     }
 
     await Promise.all(
       Array.from(files, async (file) => {
-        const filePath = join(destination, file.getFilePath());
+        const filePath = resolveOutputFilePath(destination, file.getFilePath());
         const content = file.getFullText();
-        await mkdir(join(filePath, ".."), { recursive: true });
+        await mkdir(dirname(filePath), { recursive: true });
         await rm(filePath, { recursive: true, force: true });
         await writeFile(filePath, content, "utf8");
       }),
@@ -154,4 +156,11 @@ async function assertNotFileExists(file: string): Promise<void> {
     if (err instanceof Error && "code" in err && err.code === "ENOENT") return;
     throw err;
   }
+}
+
+function resolveOutputFilePath(destination: string, filePath: string): string {
+  const relativePath = filePath
+    .replaceAll("\\", "/")
+    .replace(/^(?:[A-Za-z]:)?\/+/, "");
+  return join(destination, ...relativePath.split("/").filter(Boolean));
 }

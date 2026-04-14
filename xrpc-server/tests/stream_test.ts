@@ -12,6 +12,29 @@ import { assertEquals, assertInstanceOf } from "@std/assert";
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
+function waitForSocketClose(ws: WebSocket, timeoutMs: number): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    if (ws.readyState === WebSocket.CLOSED) {
+      resolve();
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      ws.removeEventListener("close", onClose);
+      reject(
+        new Error(`Timed out waiting for socket close after ${timeoutMs}ms`),
+      );
+    }, timeoutMs);
+
+    const onClose = () => {
+      clearTimeout(timeoutId);
+      resolve();
+    };
+
+    ws.addEventListener("close", onClose, { once: true });
+  });
+}
+
 // Helper to create a test server
 function createTestServer(
   handlerFn: () => AsyncGenerator<Frame, void, unknown>,
@@ -112,7 +135,6 @@ Deno.test("kills handler and closes on error frame", async () => {
 
 Deno.test({
   name: "kills handler and closes client disconnect",
-  ignore: true,
   async fn() {
     let i = 1;
     const { url, close } = createTestServer(async function* () {
@@ -137,16 +159,7 @@ Deno.test({
       }
     }
 
-    await Promise.race([
-      new Promise<void>((resolve) => {
-        if (ws.readyState === WebSocket.CLOSED) {
-          resolve();
-        } else {
-          ws.onclose = () => resolve();
-        }
-      }),
-      wait(1000),
-    ]);
+    await waitForSocketClose(ws, 1000);
 
     // Grace period to let close take place on the server
     await wait(1);
