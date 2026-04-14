@@ -1,93 +1,46 @@
-import { type LexiconDoc, Lexicons, ValidationError } from "@atp/lexicon";
+import { Procedure, type Query } from "@atp/lex";
 import {
-  buildFetchHandler,
+  type Agent,
+  type AgentOptions,
+  buildAgent,
   type FetchHandler,
-  type FetchHandlerObject,
-  type FetchHandlerOptions,
-} from "./fetch-handler.ts";
+} from "./agent.ts";
 import {
-  type CallOptions,
   type Gettable,
   httpResponseCodeToEnum,
-  type QueryParams,
   ResponseType,
+  type XrpcCallOptions,
   XRPCError,
   XRPCInvalidResponseError,
   XRPCResponse,
 } from "./types.ts";
 import {
   combineHeaders,
-  constructMethodCallHeaders,
-  constructMethodCallUrl,
   encodeMethodCallBody,
-  getMethodSchemaHTTPMethod,
   httpResponseBodyParse,
   isErrorResponseBody,
 } from "./util.ts";
+import type { DidString } from "@atp/lex";
 
-/**
- * HTTP Client for AT Protocol XRPC APIs.
- *
- * Provides methods for making HTTP requests to AT Protocol XRPC APIs
- * with lexicon validation and response parsing.
- *
- * @example Fetching an XRPC endpoint
- * ```typescript
- * import { LexiconDoc } from '@atp/lexicon'
- * import { XrpcClient } from '@atp/xrpc'
- *
- * const pingLexicon = {
- *  lexicon: 1,
- *  id: 'io.example.ping',
- *  defs: {
- *    main: {
- *      type: 'query',
- *      description: 'Ping the server',
- *      parameters: {
- *        type: 'params',
- *        properties: { message: { type: 'string' } },
- *      },
- *      output: {
- *        encoding: 'application/json',
- *        schema: {
- *          type: 'object',
- *          required: ['message'],
- *          properties: { message: { type: 'string' } },
- *        },
- *      },
- *    },
- *  },
- * } satisfies LexiconDoc
- *
- * const xrpc = new XrpcClient('https://ping.example.com', [
- *   // Any number of lexicon here
- *   pingLexicon,
- * ])
- *
- * const res1 = await xrpc.call('io.example.ping', {
- *   message: 'hello world',
- * })
- * res1.encoding // => 'application/json'
- * res1.body // => {message: 'hello world'}
- * ```
- */
+type XrpcMethod = Query | Procedure;
+
 export class XrpcClient {
+  readonly agent: Agent;
   readonly fetchHandler: FetchHandler;
   readonly headers: Map<string, Gettable<null | string>> = new Map<
     string,
     Gettable<null | string>
   >();
-  readonly lex: Lexicons;
 
   constructor(
-    fetchHandlerOpts: FetchHandler | FetchHandlerObject | FetchHandlerOptions,
-    // "Lexicons" is redundant here (because that class implements
-    // "Iterable<LexiconDoc>") but we keep it for explicitness:
-    lex: Lexicons | Iterable<LexiconDoc>,
+    agentOpts: Agent | AgentOptions,
   ) {
-    this.fetchHandler = buildFetchHandler(fetchHandlerOpts);
+    this.agent = buildAgent(agentOpts);
+    this.fetchHandler = this.agent.fetchHandler;
+  }
 
-    this.lex = lex instanceof Lexicons ? lex : new Lexicons(lex);
+  get did(): DidString | undefined {
+    return this.agent.did;
   }
 
   setHeader(key: string, value: Gettable<null | string>): void {
@@ -102,48 +55,31 @@ export class XrpcClient {
     this.headers.clear();
   }
 
-  async call(
-    methodNsid: string,
-    params?: QueryParams,
-    data?: unknown,
-    opts?: CallOptions,
+  async call<const M extends XrpcMethod>(
+    method: M,
+    options: XrpcCallOptions<M> = {} as XrpcCallOptions<M>,
   ): Promise<XRPCResponse> {
-    const def = this.lex.getDefOrThrow(methodNsid);
-    if (!def || (def.type !== "query" && def.type !== "procedure")) {
-      throw new TypeError(
-        `Invalid lexicon: ${methodNsid}. Must be a query or procedure.`,
-      );
-    }
+    const params = this.getValidatedParams(method, options);
+    const reqUrl = this.constructMethodCallUrl(method, params);
+    const reqHeaders = this.constructMethodCallHeaders(method, options);
+    const reqBody = this.constructMethodCallBody(method, reqHeaders, options);
 
-    // @TODO: should we validate the params and data here?
-    // this.lex.assertValidXrpcParams(methodNsid, params)
-    // if (data !== undefined) {
-    //   this.lex.assertValidXrpcInput(methodNsid, data)
-    // }
-
-    const reqUrl = constructMethodCallUrl(methodNsid, def, params);
-    const reqMethod = getMethodSchemaHTTPMethod(def);
-    const reqHeaders = constructMethodCallHeaders(def, data, opts);
-    const reqBody = encodeMethodCallBody(reqHeaders, data);
-
-    // The duplex field is required for streaming bodies, but not yet reflected
-    // anywhere in docs or types. See whatwg/fetch#1438, nodejs/node#46221.
     const init: RequestInit & { duplex: "half" } = {
-      method: reqMethod,
+      method: method instanceof Procedure ? "post" : "get",
       headers: combineHeaders(reqHeaders, this.headers),
       body: reqBody,
       duplex: "half",
       redirect: "follow",
-      signal: opts?.signal,
+      signal: options.signal,
     };
 
     try {
-      const response = await this.fetchHandler.call(undefined, reqUrl, init);
+      const response = await this.fetchHandler(reqUrl as `/${string}`, init);
 
       const resStatus = response.status;
       const resHeaders = Object.fromEntries(response.headers.entries());
       const resBodyBytes = await response.arrayBuffer();
-      const resBody = httpResponseBodyParse(
+      let resBody = this.parseResponseBody(
         response.headers.get("content-type"),
         resBodyBytes,
       );
@@ -155,14 +91,18 @@ export class XrpcClient {
         throw new XRPCError(resCode, error, message, resHeaders);
       }
 
-      try {
-        this.lex.assertValidXrpcOutput(methodNsid, resBody);
-      } catch (e: unknown) {
-        if (e instanceof ValidationError) {
-          throw new XRPCInvalidResponseError(methodNsid, e, resBody);
-        }
+      this.assertValidResponseEncoding(method, response, resBody);
 
-        throw e;
+      if (options.validateResponse !== false && method.output.schema) {
+        const result = method.output.schema.safeParse(resBody);
+        if (!result.success) {
+          throw new XRPCInvalidResponseError(
+            method.nsid,
+            result.error,
+            resBody,
+          );
+        }
+        resBody = result.value;
       }
 
       return new XRPCResponse(resBody, resHeaders);
@@ -170,4 +110,363 @@ export class XrpcClient {
       throw XRPCError.from(err);
     }
   }
+
+  private getValidatedParams<M extends XrpcMethod>(
+    method: M,
+    options: XrpcCallOptions<M>,
+  ): Record<string, unknown> | undefined {
+    if (options.validateRequest !== true) {
+      return options.params as Record<string, unknown> | undefined;
+    }
+
+    const result = method.parameters.safeParse(options.params);
+    if (!result.success) {
+      throw new XRPCError(
+        ResponseType.InvalidRequest,
+        undefined,
+        result.error.message,
+        undefined,
+        { cause: result.error },
+      );
+    }
+
+    return result.value as Record<string, unknown> | undefined;
+  }
+
+  private constructMethodCallUrl(
+    method: XrpcMethod,
+    params?: Record<string, unknown>,
+  ): string {
+    const pathname = `/xrpc/${encodeURIComponent(method.nsid)}`;
+    const searchParams = method.parameters.toURLSearchParams(
+      (params ?? {}) as Record<string, unknown>,
+    );
+    const query = searchParams.toString();
+    return query.length > 0 ? `${pathname}?${query}` : pathname;
+  }
+
+  private constructMethodCallHeaders<M extends XrpcMethod>(
+    method: M,
+    options: XrpcCallOptions<M>,
+  ): Headers {
+    const headers = new Headers();
+
+    if (options.headers != null) {
+      for (const [name, value] of Object.entries(options.headers)) {
+        if (value !== undefined) {
+          headers.set(name, value);
+        }
+      }
+    }
+
+    if (method.output.encoding !== undefined) {
+      headers.set("accept", method.output.encoding);
+    }
+
+    return headers;
+  }
+
+  private constructMethodCallBody<M extends XrpcMethod>(
+    method: M,
+    headers: Headers,
+    options: XrpcCallOptions<M>,
+  ): BodyInit | undefined {
+    if (!(method instanceof Procedure)) {
+      return undefined;
+    }
+
+    let body = options.body as unknown;
+
+    if (options.validateRequest === true && method.input.schema) {
+      const result = method.input.schema.safeParse(body);
+      if (!result.success) {
+        throw new XRPCError(
+          ResponseType.InvalidRequest,
+          undefined,
+          result.error.message,
+          undefined,
+          { cause: result.error },
+        );
+      }
+      body = result.value;
+    }
+
+    const headerEncoding = headers.get("content-type") ?? undefined;
+    if (
+      options.encoding !== undefined &&
+      headerEncoding !== undefined &&
+      !matchesEncoding(options.encoding, headerEncoding)
+    ) {
+      throw new XRPCError(
+        ResponseType.InvalidRequest,
+        undefined,
+        `Conflicting content-type values: ${options.encoding} and ${headerEncoding}`,
+      );
+    }
+
+    const resolved = resolveProcedurePayload(
+      method.input.encoding,
+      body,
+      options.encoding ?? headerEncoding,
+    );
+
+    if (resolved === undefined) {
+      headers.delete("content-type");
+      return undefined;
+    }
+
+    headers.set("content-type", resolved.encoding);
+    return encodeMethodCallBody(headers, body);
+  }
+
+  private parseResponseBody(
+    mimeType: string | null,
+    data: ArrayBuffer,
+  ): unknown {
+    if (data.byteLength === 0 && mimeType == null) {
+      return undefined;
+    }
+
+    return httpResponseBodyParse(mimeType, data);
+  }
+
+  private assertValidResponseEncoding(
+    method: XrpcMethod,
+    response: Response,
+    body: unknown,
+  ): void {
+    const expected = method.output.encoding;
+    const contentType = response.headers.get("content-type");
+
+    if (expected === undefined) {
+      if (body !== undefined) {
+        throw new XRPCError(
+          ResponseType.InvalidResponse,
+          undefined,
+          `Expected empty response body for ${method.nsid}`,
+        );
+      }
+      return;
+    }
+
+    if (contentType == null) {
+      throw new XRPCError(
+        ResponseType.InvalidResponse,
+        undefined,
+        `Missing content-type in response for ${method.nsid}`,
+      );
+    }
+
+    if (!matchesEncoding(expected, contentType)) {
+      throw new XRPCError(
+        ResponseType.InvalidResponse,
+        undefined,
+        `Unexpected response content-type: ${contentType}`,
+      );
+    }
+  }
+}
+
+function resolveProcedurePayload(
+  schemaEncoding: string | undefined,
+  body: unknown,
+  encodingHint: string | undefined,
+): undefined | { encoding: string } {
+  if (schemaEncoding === undefined) {
+    if (body !== undefined) {
+      throw new XRPCError(
+        ResponseType.InvalidRequest,
+        undefined,
+        "Cannot send a request body for a method without input payload",
+      );
+    }
+    if (encodingHint !== undefined) {
+      throw new XRPCError(
+        ResponseType.InvalidRequest,
+        undefined,
+        `Unexpected encoding hint (${encodingHint})`,
+      );
+    }
+    return undefined;
+  }
+
+  if (body === undefined) {
+    throw new XRPCError(
+      ResponseType.InvalidRequest,
+      undefined,
+      "A request body is expected but none was provided",
+    );
+  }
+
+  return {
+    encoding: resolveEncoding(schemaEncoding, body, encodingHint),
+  };
+}
+
+function resolveEncoding(
+  schemaEncoding: string,
+  body: unknown,
+  encodingHint: string | undefined,
+): string {
+  if (encodingHint != null && encodingHint.length > 0) {
+    if (!matchesEncoding(schemaEncoding, encodingHint)) {
+      throw new XRPCError(
+        ResponseType.InvalidRequest,
+        undefined,
+        `Cannot send content-type "${encodingHint}" for "${schemaEncoding}" encoding`,
+      );
+    }
+    return encodingHint;
+  }
+
+  const inferredEncoding = inferEncoding(body);
+  if (
+    inferredEncoding !== undefined &&
+    matchesEncoding(schemaEncoding, inferredEncoding)
+  ) {
+    return inferredEncoding;
+  }
+
+  if (schemaEncoding === "*/*") {
+    return "application/octet-stream";
+  }
+
+  if (schemaEncoding.startsWith("text/")) {
+    if (!schemaEncoding.includes("*")) {
+      return `${schemaEncoding};charset=UTF-8`;
+    }
+    return "text/plain;charset=UTF-8";
+  }
+
+  if (!schemaEncoding.includes("*")) {
+    return schemaEncoding;
+  }
+
+  if (
+    isBlobLike(body) &&
+    body.type.length > 0 &&
+    matchesEncoding(schemaEncoding, body.type)
+  ) {
+    return body.type;
+  }
+
+  if (schemaEncoding.startsWith("application/")) {
+    return "application/octet-stream";
+  }
+
+  throw new XRPCError(
+    ResponseType.InvalidRequest,
+    undefined,
+    `Unable to determine payload encoding for ${schemaEncoding}`,
+  );
+}
+
+function inferEncoding(body: unknown): string | undefined {
+  if (
+    body instanceof ArrayBuffer ||
+    ArrayBuffer.isView(body) ||
+    isReadableStreamLike(body)
+  ) {
+    return "application/octet-stream";
+  }
+
+  if (isFormDataLike(body)) {
+    return "multipart/form-data";
+  }
+
+  if (isURLSearchParamsLike(body)) {
+    return "application/x-www-form-urlencoded;charset=UTF-8";
+  }
+
+  if (isBlobLike(body)) {
+    return body.type || "application/octet-stream";
+  }
+
+  if (typeof body === "string") {
+    return "text/plain;charset=UTF-8";
+  }
+
+  if (isIterable(body)) {
+    return "application/octet-stream";
+  }
+
+  if (
+    typeof body === "boolean" ||
+    typeof body === "number" ||
+    typeof body === "object"
+  ) {
+    return "application/json";
+  }
+
+  return undefined;
+}
+
+function matchesEncoding(pattern: string, value: string): boolean {
+  const normalizedPattern = normalizeEncoding(pattern);
+  const normalizedValue = normalizeEncoding(value);
+
+  if (normalizedPattern === "*/*") {
+    return true;
+  }
+
+  const [patternType, patternSubtype] = normalizedPattern.split("/");
+  const [valueType, valueSubtype] = normalizedValue.split("/");
+
+  if (
+    patternType == null ||
+    patternSubtype == null ||
+    valueType == null ||
+    valueSubtype == null
+  ) {
+    return false;
+  }
+
+  if (patternType !== "*" && patternType !== valueType) {
+    return false;
+  }
+
+  if (patternSubtype !== "*" && patternSubtype !== valueSubtype) {
+    return false;
+  }
+
+  return true;
+}
+
+function normalizeEncoding(encoding: string): string {
+  return encoding.split(";", 1)[0].trim().toLowerCase();
+}
+
+function isBlobLike(value: unknown): value is Blob {
+  if (value == null) return false;
+  if (typeof value !== "object") return false;
+  if (typeof Blob === "function" && value instanceof Blob) return true;
+
+  const tag = (value as Record<string | symbol, unknown>)[Symbol.toStringTag];
+  if (tag === "Blob" || tag === "File") {
+    return "stream" in value && typeof value.stream === "function";
+  }
+
+  return false;
+}
+
+function isReadableStreamLike(value: unknown): value is ReadableStream {
+  return typeof ReadableStream === "function" &&
+    value instanceof ReadableStream;
+}
+
+function isFormDataLike(value: unknown): value is FormData {
+  return typeof FormData === "function" && value instanceof FormData;
+}
+
+function isURLSearchParamsLike(value: unknown): value is URLSearchParams {
+  return typeof URLSearchParams === "function" &&
+    value instanceof URLSearchParams;
+}
+
+function isIterable(
+  value: unknown,
+): value is Iterable<unknown> | AsyncIterable<unknown> {
+  return value != null &&
+    typeof value === "object" &&
+    (Symbol.iterator in value || Symbol.asyncIterator in value);
 }

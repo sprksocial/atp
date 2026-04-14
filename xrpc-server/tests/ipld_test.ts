@@ -1,6 +1,6 @@
 import { CID } from "multiformats/cid";
 import type { LexiconDoc } from "@atp/lexicon";
-import { XrpcClient } from "@atp/xrpc";
+import { XrpcClient } from "./_xrpc-client.ts";
 import * as xrpcServer from "../mod.ts";
 import { closeServer, createServer } from "./_util.ts";
 import { assertEquals, assertExists } from "@std/assert";

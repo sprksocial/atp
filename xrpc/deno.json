@@ -1,6 +1,6 @@
 {
   "name": "@atp/xrpc",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "exports": "./mod.ts",
   "license": "MIT",
   "imports": {
@@ -8,9 +8,7 @@
   },
   "lint": {
     "rules": {
-      "exclude": [
-        "no-explicit-any"
-      ]
+      "exclude": ["no-explicit-any"]
     }
   }
 }

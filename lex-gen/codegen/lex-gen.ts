@@ -8,6 +8,7 @@ import type {
   Lexicons,
   LexIpldType,
   LexObject,
+  LexPermissionSet,
   LexPrimitive,
   LexToken,
 } from "@atp/lexicon";
@@ -392,6 +393,9 @@ export function genUserType(
     case "token":
       genToken(file, lexUri, def);
       break;
+    case "permission-set":
+      genPermissionSet(file, lexUri, def);
+      break;
     case "object": {
       const ifaceName: string = toTitleCase(getHash(lexUri));
       genObject(file, imports, lexUri, def, ifaceName, {
@@ -638,6 +642,27 @@ export function genPrimitiveOrBlob(
   );
 }
 
+export function genPermissionSet(
+  file: SourceFile,
+  lexUri: string,
+  def: LexPermissionSet,
+) {
+  file.addImportDeclaration({
+    isTypeOnly: true,
+    moduleSpecifier: "@atp/lexicon",
+    namedImports: [{ name: "LexPermissionSet", isTypeOnly: true }],
+  });
+
+  genComment(
+    file.addTypeAlias({
+      name: toTitleCase(getHash(lexUri)),
+      type: "LexPermissionSet",
+      isExported: true,
+    }),
+    def,
+  );
+}
+
 export function genXrpcParams(
   file: SourceFile,
   lexicons: Lexicons,
@@ -739,10 +764,21 @@ export function genXrpcInput(
         isExported: true,
       });
     } else {
-      //= export interface InputSchema {...}
-      genObject(file, imports, lexUri, def.input.schema, `InputSchema`, {
-        defaultsArePresent,
-      }, options);
+      const isEmpty = !def.input.schema.properties ||
+        Object.keys(def.input.schema.properties).length === 0;
+      if (isEmpty) {
+        //= export type InputSchema = Record<PropertyKey, never>
+        file.addTypeAlias({
+          name: "InputSchema",
+          type: "globalThis.Record<PropertyKey, never>",
+          isExported: true,
+        });
+      } else {
+        //= export interface InputSchema {...}
+        genObject(file, imports, lexUri, def.input.schema, `InputSchema`, {
+          defaultsArePresent,
+        }, options);
+      }
     }
   } else if (def.type === "procedure" && def.input?.encoding) {
     //= export type InputSchema = string | Uint8Array | Blob

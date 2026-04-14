@@ -1,4 +1,4 @@
-import { XRPCError } from "@atp/xrpc";
+import { XRPCError } from "./_xrpc-client.ts";
 import {
   byFrame,
   byMessage,
@@ -11,6 +11,29 @@ import {
 import { assertEquals, assertInstanceOf } from "@std/assert";
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+function waitForSocketClose(ws: WebSocket, timeoutMs: number): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    if (ws.readyState === WebSocket.CLOSED) {
+      resolve();
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      ws.removeEventListener("close", onClose);
+      reject(
+        new Error(`Timed out waiting for socket close after ${timeoutMs}ms`),
+      );
+    }, timeoutMs);
+
+    const onClose = () => {
+      clearTimeout(timeoutId);
+      resolve();
+    };
+
+    ws.addEventListener("close", onClose, { once: true });
+  });
+}
 
 // Helper to create a test server
 function createTestServer(
@@ -110,47 +133,43 @@ Deno.test("kills handler and closes on error frame", async () => {
   await close();
 });
 
-Deno.test("kills handler and closes client disconnect", async () => {
-  let i = 1;
-  const { url, close } = createTestServer(async function* () {
-    while (true) {
-      await wait(0);
-      yield new MessageFrame(i++);
+Deno.test({
+  name: "kills handler and closes client disconnect",
+  async fn() {
+    let i = 1;
+    const { url, close } = createTestServer(async function* () {
+      while (true) {
+        await wait(0);
+        yield new MessageFrame(i++);
+      }
+    });
+    const ws = new WebSocket(url);
+    const frames: Frame[] = [];
+
+    // Wait for WebSocket to open
+    await new Promise<void>((resolve) => {
+      ws.onopen = () => resolve();
+    });
+
+    for await (const frame of byFrame(ws)) {
+      frames.push(frame);
+      if (frames.length === 3) {
+        ws.close();
+        break;
+      }
     }
-  });
-  const ws = new WebSocket(url);
-  const frames: Frame[] = [];
 
-  // Wait for WebSocket to open
-  await new Promise<void>((resolve) => {
-    ws.onopen = () => resolve();
-  });
+    await waitForSocketClose(ws, 1000);
 
-  for await (const frame of byFrame(ws)) {
-    frames.push(frame);
-    if (frame.body === 3) {
-      ws.close();
-      break;
-    }
-  }
+    // Grace period to let close take place on the server
+    await wait(1);
+    // Ensure handler hasn't kept running
+    const currentCount = i;
+    await wait(1);
+    assertEquals(i, currentCount);
 
-  // Wait for WebSocket to close
-  await new Promise<void>((resolve) => {
-    if (ws.readyState === WebSocket.CLOSED) {
-      resolve();
-    } else {
-      ws.onclose = () => resolve();
-    }
-  });
-
-  // Grace period to let close take place on the server
-  await wait(1);
-  // Ensure handler hasn't kept running
-  const currentCount = i;
-  await wait(1);
-  assertEquals(i, currentCount);
-
-  await close();
+    await close();
+  },
 });
 
 Deno.test("kills handler and closes client disconnect on error frame", async () => {
