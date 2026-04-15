@@ -21,7 +21,7 @@ export class IssueCustom extends Issue {
     super("custom", path, input);
   }
 
-  toString() {
+  toString(): string {
     return `${this.message}${stringifyPath(this.path)}`;
   }
 }
@@ -36,7 +36,7 @@ export class IssueInvalidFormat extends Issue {
     super("invalid_format", path, input);
   }
 
-  toString() {
+  toString(): string {
     return `Invalid ${this.formatDescription} format${
       this.message ? ` (${this.message})` : ""
     }${stringifyPath(this.path)} (got ${stringifyValue(this.input)})`;
@@ -71,7 +71,7 @@ export class IssueInvalidType extends Issue {
     super("invalid_type", path, input);
   }
 
-  toString() {
+  toString(): string {
     return `Expected ${
       oneOf(this.expected.map(stringifyExpectedType))
     } value type${stringifyPath(this.path)} (got ${stringifyType(this.input)})`;
@@ -87,7 +87,7 @@ export class IssueInvalidValue extends Issue {
     super("invalid_value", path, input);
   }
 
-  toString() {
+  toString(): string {
     return `Expected ${oneOf(this.values.map(stringifyValue))}${
       stringifyPath(this.path)
     } (got ${stringifyValue(this.input)})`;
@@ -103,7 +103,7 @@ export class IssueRequiredKey extends Issue {
     super("required_key", path, input);
   }
 
-  toString() {
+  toString(): string {
     return `Missing required key "${String(this.key)}"${
       stringifyPath(this.path)
     }`;
@@ -129,7 +129,7 @@ export class IssueTooBig extends Issue {
     super("too_big", path, input);
   }
 
-  toString() {
+  toString(): string {
     return `${this.type} too big (maximum ${this.maximum})${
       stringifyPath(this.path)
     } (got ${this.actual})`;
@@ -147,7 +147,7 @@ export class IssueTooSmall extends Issue {
     super("too_small", path, input);
   }
 
-  toString() {
+  toString(): string {
     return `${this.type} too small (minimum ${this.minimum})${
       stringifyPath(this.path)
     } (got ${this.actual})`;

@@ -142,15 +142,15 @@ export type InferMethodError<
   M extends Procedure | Query | Subscription = Procedure | Query | Subscription,
 > = M extends { errors: readonly (infer E extends string)[] } ? E : never;
 
-export function never() {
+export function never(): NeverSchema {
   return new NeverSchema();
 }
 
-export function unknown() {
+export function unknown(): UnknownSchema {
   return new UnknownSchema();
 }
 
-function _null() {
+function _null(): NullSchema {
   return new NullSchema();
 }
 export { _null as null };
@@ -158,47 +158,49 @@ export { _null as null };
 export function literal<const V extends null | string | number | boolean>(
   value: V,
   options?: LiteralSchemaOptions<V>,
-) {
+): LiteralSchema<V> {
   return new LiteralSchema<V>(value, options);
 }
 
 function _enum<const V extends null | string | number | boolean>(
   values: readonly V[],
   options?: EnumSchemaOptions<V>,
-) {
+): EnumSchema<V> {
   return new EnumSchema<V>(values, options);
 }
 export { _enum as enum };
 
-export function boolean(options?: BooleanSchemaOptions) {
+export function boolean(options?: BooleanSchemaOptions): BooleanSchema {
   return new BooleanSchema(options ?? {});
 }
 
-export function integer(options?: IntegerSchemaOptions) {
+export function integer(options?: IntegerSchemaOptions): IntegerSchema {
   return new IntegerSchema(options ?? {});
 }
 
-export function cidLink(options?: CidSchemaOptions) {
+export function cidLink(options?: CidSchemaOptions): CidSchema {
   return new CidSchema(options ?? {});
 }
 
-export function bytes(options?: BytesSchemaOptions) {
+export function bytes(options?: BytesSchemaOptions): BytesSchema {
   return new BytesSchema(options ?? {});
 }
 
 export function blob<O extends BlobSchemaOptions = NonNullable<unknown>>(
   options: O = {} as O,
-) {
+): BlobSchema<O> {
   return new BlobSchema(options);
 }
 
 export function string<
   const O extends StringSchemaOptions = NonNullable<unknown>,
->(options: StringSchemaOptions & O = {} as O) {
+>(options: StringSchemaOptions & O = {} as O): StringSchema<O> {
   return new StringSchema<O>(options);
 }
 
-export function regexp<T extends string = string>(pattern: RegExp) {
+export function regexp<T extends string = string>(
+  pattern: RegExp,
+): RegexpSchema<T> {
   return new RegexpSchema<T>(pattern);
 }
 
@@ -213,28 +215,30 @@ export function array<T, const S extends Validator<T> = Validator<T>>(
 export function array<const S extends Validator>(
   items: S,
   options?: ArraySchemaOptions,
-) {
+): ArraySchema<S> {
   return new ArraySchema<S>(items, options ?? {});
 }
 
-export function object<const P extends ObjectSchemaShape>(properties: P) {
+export function object<const P extends ObjectSchemaShape>(
+  properties: P,
+): ObjectSchema<P> {
   return new ObjectSchema<P>(properties);
 }
 
 export function dict<
   const K extends Validator<string>,
   const V extends Validator,
->(key: K, value: V) {
+>(key: K, value: V): DictSchema<K, V> {
   return new DictSchema<K, V>(key, value);
 }
 
 export type { UnknownObjectOutput as UnknownObject };
 
-export function unknownObject() {
+export function unknownObject(): UnknownObjectSchema {
   return new UnknownObjectSchema();
 }
 
-export function ref<T>(get: RefSchemaGetter<T>) {
+export function ref<T>(get: RefSchemaGetter<T>): RefSchema<T> {
   return new RefSchema<T>(get);
 }
 
@@ -242,33 +246,42 @@ export function custom<T>(
   assertion: CustomAssertion<T>,
   message: string,
   path?: PropertyKey | readonly PropertyKey[],
-) {
+): CustomSchema<T> {
   return new CustomSchema<T>(assertion, message, path);
 }
 
-export function nullable<const S extends Validator>(schema: S) {
+export function nullable<const S extends Validator>(
+  schema: S,
+): NullableSchema<Infer<S>> {
   return new NullableSchema<Infer<S>>(schema);
 }
 
-export function optional<const S extends Validator>(schema: S) {
+export function optional<const S extends Validator>(
+  schema: S,
+): OptionalSchema<Infer<S>> {
   return new OptionalSchema<Infer<S>>(schema);
 }
 
-export function union<const V extends UnionSchemaValidators>(validators: V) {
+export function union<const V extends UnionSchemaValidators>(
+  validators: V,
+): UnionSchema<V> {
   return new UnionSchema<V>(validators);
 }
 
 export function intersection<
   const Left extends ObjectSchema,
   const Right extends DictSchema,
->(left: Left, right: Right) {
+>(left: Left, right: Right): IntersectionSchema<Left, Right> {
   return new IntersectionSchema<Left, Right>(left, right);
 }
 
 export function discriminatedUnion<
   const Discriminator extends string,
   const Options extends DiscriminatedUnionVariants<Discriminator>,
->(discriminator: Discriminator, variants: Options) {
+>(
+  discriminator: Discriminator,
+  variants: Options,
+): DiscriminatedUnionSchema<Discriminator, Options> {
   return new DiscriminatedUnionSchema<Discriminator, Options>(
     discriminator,
     variants,
@@ -278,20 +291,20 @@ export function discriminatedUnion<
 export function token<const N extends NsidString, const H extends string>(
   nsid: N,
   hash: H,
-) {
+): TokenSchema<$Type<N, H>> {
   return new TokenSchema($type(nsid, hash));
 }
 
 export function typedRef<const V extends { $type?: string }>(
   get: TypedRefGetter<V>,
-) {
+): TypedRefSchema<V> {
   return new TypedRefSchema<V>(get);
 }
 
 export function typedUnion<
   const R extends readonly TypedRefSchema[],
   const C extends boolean,
->(refs: R, closed: C) {
+>(refs: R, closed: C): TypedUnionSchema<R, C> {
   return new TypedUnionSchema<R, C>(refs, closed);
 }
 
@@ -342,20 +355,25 @@ export function record<
 
 export function params<
   const P extends ParamsSchemaShape = NonNullable<unknown>,
->(properties: P = {} as P) {
+>(properties: P = {} as P): ParamsSchema<P> {
   return new ParamsSchema<P>(properties);
 }
 
-export const paramsSchema = new ParamsSchema({});
+export const paramsSchema: ParamsSchema<{}> = new ParamsSchema({});
 
 export function payload<
   const E extends string | undefined = undefined,
   const S extends PayloadBody<E> = undefined,
->(encoding: E = undefined as E, schema: S = undefined as S) {
+>(
+  encoding: E = undefined as E,
+  schema: S = undefined as S,
+): Payload<E, S> {
   return new Payload<E, S>(encoding, schema);
 }
 
-export function jsonPayload<const P extends ObjectSchemaShape>(properties: P) {
+export function jsonPayload<const P extends ObjectSchemaShape>(
+  properties: P,
+): Payload<"application/json", ObjectSchema<P>> {
   return payload("application/json", object(properties));
 }
 
@@ -364,7 +382,12 @@ export function query<
   const P extends ParamsSchema,
   const O extends Payload,
   const E extends undefined | readonly string[] = undefined,
->(nsid: N, parameters: P, output: O, errors: E = undefined as E) {
+>(
+  nsid: N,
+  parameters: P,
+  output: O,
+  errors: E = undefined as E,
+): Query<N, P, O, E> {
   return new Query<N, P, O, E>(nsid, parameters, output, errors);
 }
 
@@ -380,7 +403,7 @@ export function procedure<
   input: I,
   output: O,
   errors: E = undefined as E,
-) {
+): Procedure<N, P, I, O, E> {
   return new Procedure<N, P, I, O, E>(nsid, parameters, input, output, errors);
 }
 
@@ -393,20 +416,32 @@ export function subscription<
     | TypedUnionSchema
     | ObjectSchema,
   const E extends undefined | readonly string[] = undefined,
->(nsid: N, parameters: P, message: M, errors: E = undefined as E) {
+>(
+  nsid: N,
+  parameters: P,
+  message: M,
+  errors: E = undefined as E,
+): Subscription<N, P, M, E> {
   return new Subscription<N, P, M, E>(nsid, parameters, message, errors);
 }
 
 export function permission<
   const R extends string,
   const O extends PermissionOptions,
->(resource: R, options: PermissionOptions & O = {} as O) {
+>(
+  resource: R,
+  options: PermissionOptions & O = {} as O,
+): Permission<R, O> {
   return new Permission<R, O>(resource, options);
 }
 
 export function permissionSet<
   const N extends NsidString,
   const P extends readonly Permission[],
->(nsid: N, permissions: P, options?: PermissionSetOptions) {
+>(
+  nsid: N,
+  permissions: P,
+  options?: PermissionSetOptions,
+): PermissionSet<N, P> {
   return new PermissionSet<N, P>(nsid, permissions, options);
 }
