@@ -359,7 +359,8 @@ export function params<
   return new ParamsSchema<P>(properties);
 }
 
-export const paramsSchema: ParamsSchema<{}> = new ParamsSchema({});
+export const paramsSchema: ParamsSchema<Record<PropertyKey, never>> =
+  new ParamsSchema({});
 
 export function payload<
   const E extends string | undefined = undefined,
