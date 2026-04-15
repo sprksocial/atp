@@ -61,11 +61,11 @@ export class ValidatorContext {
     this.currentPath = options?.path != null ? Array.from(options.path) : [];
   }
 
-  get path() {
+  get path(): PropertyKey[] {
     return Array.from(this.currentPath);
   }
 
-  concatPath(path?: PropertyKey | readonly PropertyKey[]) {
+  concatPath(path?: PropertyKey | readonly PropertyKey[]): PropertyKey[] {
     if (path == null) return this.path;
     return this.currentPath.concat(path);
   }
@@ -114,19 +114,26 @@ export class ValidatorContext {
     return failure(new ValidationError([...this.issues, issue]));
   }
 
-  issueInvalidValue(input: unknown, values: readonly unknown[]) {
+  issueInvalidValue(
+    input: unknown,
+    values: readonly unknown[],
+  ): ValidationFailure {
     return this.failure(new IssueInvalidValue(this.path, input, values));
   }
 
-  issueInvalidType(input: unknown, expected: string) {
+  issueInvalidType(input: unknown, expected: string): ValidationFailure {
     return this.failure(new IssueInvalidType(this.path, input, [expected]));
   }
 
-  issueRequiredKey(input: object, key: PropertyKey) {
+  issueRequiredKey(input: object, key: PropertyKey): ValidationFailure {
     return this.failure(new IssueRequiredKey(this.path, input, key));
   }
 
-  issueInvalidFormat(input: unknown, format: string, msg?: string) {
+  issueInvalidFormat(
+    input: unknown,
+    format: string,
+    msg?: string,
+  ): ValidationFailure {
     return this.failure(
       new IssueInvalidFormat(this.path, input, format, msg),
     );
@@ -137,7 +144,7 @@ export class ValidatorContext {
     type: MeasurableType,
     max: number,
     actual: number,
-  ) {
+  ): ValidationFailure {
     return this.failure(new IssueTooBig(this.path, input, max, type, actual));
   }
 
@@ -146,7 +153,7 @@ export class ValidatorContext {
     type: MeasurableType,
     min: number,
     actual: number,
-  ) {
+  ): ValidationFailure {
     return this.failure(
       new IssueTooSmall(this.path, input, min, type, actual),
     );
@@ -156,7 +163,7 @@ export class ValidatorContext {
     input: I,
     property: keyof I & PropertyKey,
     values: readonly unknown[],
-  ) {
+  ): ValidationFailure {
     const value = input[property];
     const path = this.concatPath(property);
     return this.failure(new IssueInvalidValue(path, value, values));
@@ -166,7 +173,7 @@ export class ValidatorContext {
     input: I,
     property: keyof I & PropertyKey,
     expected: string,
-  ) {
+  ): ValidationFailure {
     const value = input[property];
     const path = this.concatPath(property);
     return this.failure(new IssueInvalidType(path, value, [expected]));

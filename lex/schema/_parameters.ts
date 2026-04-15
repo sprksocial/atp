@@ -7,20 +7,34 @@ import { UnionSchema } from "./union.ts";
 import type { Infer, Validator } from "../validation.ts";
 
 export type ParamScalar = Infer<typeof paramScalarSchema>;
-const paramScalarSchema = new UnionSchema([
+const paramScalarSchema: UnionSchema<
+  readonly [
+    BooleanSchema,
+    IntegerSchema,
+    StringSchema<NonNullable<unknown>>,
+  ]
+> = new UnionSchema([
   new BooleanSchema({}),
   new IntegerSchema({}),
   new StringSchema({}),
 ]);
 
 export type Param = Infer<typeof paramSchema>;
-export const paramSchema = new UnionSchema([
+export const paramSchema: UnionSchema<
+  readonly [
+    typeof paramScalarSchema,
+    ArraySchema<typeof paramScalarSchema>,
+  ]
+> = new UnionSchema([
   paramScalarSchema,
   new ArraySchema(paramScalarSchema, {}),
 ]);
 
 export type Params = { [_: string]: undefined | Param };
-export const paramsSchema = new DictSchema(
+export const paramsSchema: DictSchema<
+  StringSchema<NonNullable<unknown>>,
+  typeof paramSchema
+> = new DictSchema(
   new StringSchema({}),
   paramSchema,
 ) satisfies Validator<Params>;

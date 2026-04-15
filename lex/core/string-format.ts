@@ -24,7 +24,19 @@ export type DatetimeString = Brand<string, "datetime">;
 export type UriString = `${string}:${string}`;
 export type LanguageString = string;
 
-export const STRING_FORMATS = Object.freeze(
+export const STRING_FORMATS: readonly [
+  "datetime",
+  "uri",
+  "at-uri",
+  "did",
+  "handle",
+  "at-identifier",
+  "nsid",
+  "cid",
+  "language",
+  "tid",
+  "record-key",
+] = Object.freeze(
   [
     "datetime",
     "uri",

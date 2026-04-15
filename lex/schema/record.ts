@@ -51,11 +51,15 @@ export class RecordSchema<
     return { ...input, $type: this.$type };
   }
 
-  $isTypeOf<X extends { $type?: unknown }>(value: X) {
+  $isTypeOf<X extends { $type?: unknown }>(
+    value: X,
+  ): value is X extends { $type: T } ? X : X & { $type: T } {
     return this.isTypeOf(value);
   }
 
-  $build<X extends Omit<Infer<S>, "$type">>(input: X) {
+  $build<X extends Omit<Infer<S>, "$type">>(
+    input: X,
+  ): Simplify<Omit<X, "$type"> & { $type: T }> {
     return this.build(input);
   }
 

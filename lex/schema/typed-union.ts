@@ -44,7 +44,7 @@ export class TypedUnionSchema<
     return lazyProperty(this, "refsMap", map);
   }
 
-  get $types() {
+  get $types(): TypedRefs[number]["$type"][] {
     return Array.from(this.refsMap.keys());
   }
 

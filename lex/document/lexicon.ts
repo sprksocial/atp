@@ -1,16 +1,21 @@
 import { l } from "../mod.ts";
 
-const bool = l.boolean();
-const int = l.integer();
-const str = l.string();
+const bool: l.BooleanSchema = l.boolean();
+const int: l.IntegerSchema = l.integer();
+const str: l.StringSchema<NonNullable<unknown>> = l.string();
 
-const boolOpt = l.optional(bool);
-const intOpt = l.optional(int);
-const strOpt = l.optional(str);
+const boolOpt: l.OptionalSchema<boolean> = l.optional(bool);
+const intOpt: l.OptionalSchema<number> = l.optional(int);
+const strOpt: l.OptionalSchema<string> = l.optional(str);
 
-const strArrOpt = l.optional(l.array(str));
+const strArrOpt: l.OptionalSchema<string[]> = l.optional(l.array(str));
 
-export const lexiconBooleanSchema = l.object({
+export const lexiconBooleanSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"boolean">;
+  default: typeof boolOpt;
+  const: typeof boolOpt;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("boolean"),
   default: boolOpt,
   const: boolOpt,
@@ -18,7 +23,15 @@ export const lexiconBooleanSchema = l.object({
 });
 export type LexiconBoolean = l.Infer<typeof lexiconBooleanSchema>;
 
-export const lexiconIntegerSchema = l.object({
+export const lexiconIntegerSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"integer">;
+  default: typeof intOpt;
+  minimum: typeof intOpt;
+  maximum: typeof intOpt;
+  enum: l.OptionalSchema<l.Infer<typeof int>[]>;
+  const: typeof intOpt;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("integer"),
   default: intOpt,
   minimum: intOpt,
@@ -29,7 +42,19 @@ export const lexiconIntegerSchema = l.object({
 });
 export type LexiconInteger = l.Infer<typeof lexiconIntegerSchema>;
 
-export const lexiconStringSchema = l.object({
+export const lexiconStringSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"string">;
+  format: l.OptionalSchema<l.StringFormat>;
+  default: typeof strOpt;
+  minLength: typeof intOpt;
+  maxLength: typeof intOpt;
+  minGraphemes: typeof intOpt;
+  maxGraphemes: typeof intOpt;
+  enum: typeof strArrOpt;
+  const: typeof strOpt;
+  knownValues: typeof strArrOpt;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("string"),
   format: l.optional(l.enum<l.StringFormat>(l.STRING_FORMATS)),
   default: strOpt,
@@ -44,7 +69,12 @@ export const lexiconStringSchema = l.object({
 });
 export type LexiconString = l.Infer<typeof lexiconStringSchema>;
 
-export const lexiconBytesSchema = l.object({
+export const lexiconBytesSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"bytes">;
+  maxLength: typeof intOpt;
+  minLength: typeof intOpt;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("bytes"),
   maxLength: intOpt,
   minLength: intOpt,
@@ -52,13 +82,21 @@ export const lexiconBytesSchema = l.object({
 });
 export type LexiconBytes = l.Infer<typeof lexiconBytesSchema>;
 
-export const lexiconCidLinkSchema = l.object({
+export const lexiconCidLinkSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"cid-link">;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("cid-link"),
   description: strOpt,
 });
 export type LexiconCid = l.Infer<typeof lexiconCidLinkSchema>;
 
-export const lexiconBlobSchema = l.object({
+export const lexiconBlobSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"blob">;
+  accept: typeof strArrOpt;
+  maxSize: typeof intOpt;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("blob"),
   accept: strArrOpt,
   maxSize: intOpt,
@@ -75,26 +113,41 @@ const CONCRETE_TYPES = [
   lexiconBlobSchema,
 ] as const;
 
-export const lexiconUnknownSchema = l.object({
+export const lexiconUnknownSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"unknown">;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("unknown"),
   description: strOpt,
 });
 export type LexiconUnknown = l.Infer<typeof lexiconUnknownSchema>;
 
-export const lexiconTokenSchema = l.object({
+export const lexiconTokenSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"token">;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("token"),
   description: strOpt,
 });
 export type LexiconToken = l.Infer<typeof lexiconTokenSchema>;
 
-export const lexiconRefSchema = l.object({
+export const lexiconRefSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"ref">;
+  ref: typeof str;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("ref"),
   ref: str,
   description: strOpt,
 });
 export type LexiconRef = l.Infer<typeof lexiconRefSchema>;
 
-export const lexiconRefUnionSchema = l.object({
+export const lexiconRefUnionSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"union">;
+  refs: l.ArraySchema<typeof str>;
+  closed: typeof boolOpt;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("union"),
   refs: l.array(str),
   closed: boolOpt,
@@ -111,7 +164,13 @@ const ARRAY_ITEMS_SCHEMAS = [
 
 export type LexiconArrayItems = l.Infer<(typeof ARRAY_ITEMS_SCHEMAS)[number]>;
 
-export const lexiconArraySchema = l.object({
+export const lexiconArraySchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"array">;
+  items: l.DiscriminatedUnionSchema<"type", typeof ARRAY_ITEMS_SCHEMAS>;
+  minLength: typeof intOpt;
+  maxLength: typeof intOpt;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("array"),
   items: l.discriminatedUnion("type", ARRAY_ITEMS_SCHEMAS),
   minLength: intOpt,
@@ -129,7 +188,19 @@ const requirePropertiesRefinement: l.RefinementCheck<{
   path: "required",
 };
 
-export const lexiconObjectSchema = l.refine(
+export const lexiconObjectSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"object">;
+  properties: l.DictSchema<
+    typeof str,
+    l.DiscriminatedUnionSchema<
+      "type",
+      readonly [...typeof ARRAY_ITEMS_SCHEMAS, typeof lexiconArraySchema]
+    >
+  >;
+  required: typeof strArrOpt;
+  nullable: typeof strArrOpt;
+  description: typeof strOpt;
+}> = l.refine(
   l.object({
     type: l.literal("object"),
     properties: l.dict(
@@ -147,13 +218,19 @@ export const lexiconObjectSchema = l.refine(
 );
 export type LexiconObject = l.Infer<typeof lexiconObjectSchema>;
 
-export const lexiconRecordKeySchema = l.custom(
-  l.isLexiconRecordKey,
-  'Invalid record key definition (must be "any", "nsid", "tid", or "literal:<string>")',
-);
+export const lexiconRecordKeySchema: l.CustomSchema<l.LexiconRecordKey> = l
+  .custom(
+    l.isLexiconRecordKey,
+    'Invalid record key definition (must be "any", "nsid", "tid", or "literal:<string>")',
+  );
 export type LexiconRecordKey = l.LexiconRecordKey;
 
-export const lexiconRecordSchema = l.object({
+export const lexiconRecordSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"record">;
+  record: typeof lexiconObjectSchema;
+  description: typeof strOpt;
+  key: typeof lexiconRecordKeySchema;
+}> = l.object({
   type: l.literal("record"),
   record: lexiconObjectSchema,
   description: strOpt,
@@ -161,7 +238,36 @@ export const lexiconRecordSchema = l.object({
 });
 export type LexiconRecord = l.Infer<typeof lexiconRecordSchema>;
 
-export const lexiconParameters = l.refine(
+export const lexiconParameters: l.ObjectSchema<{
+  type: l.LiteralSchema<"params">;
+  properties: l.DictSchema<
+    typeof str,
+    l.DiscriminatedUnionSchema<
+      "type",
+      readonly [
+        typeof lexiconBooleanSchema,
+        typeof lexiconIntegerSchema,
+        typeof lexiconStringSchema,
+        l.ObjectSchema<{
+          type: l.LiteralSchema<"array">;
+          items: l.DiscriminatedUnionSchema<
+            "type",
+            readonly [
+              typeof lexiconBooleanSchema,
+              typeof lexiconIntegerSchema,
+              typeof lexiconStringSchema,
+            ]
+          >;
+          minLength: typeof intOpt;
+          maxLength: typeof intOpt;
+          description: typeof strOpt;
+        }>,
+      ]
+    >
+  >;
+  required: typeof strArrOpt;
+  description: typeof strOpt;
+}> = l.refine(
   l.object({
     type: l.literal("params"),
     properties: l.dict(
@@ -190,7 +296,22 @@ export const lexiconParameters = l.refine(
 );
 export type LexiconParameters = l.Infer<typeof lexiconParameters>;
 
-export const lexiconPayload = l.object({
+export const lexiconPayload: l.ObjectSchema<{
+  encoding: typeof str;
+  schema: l.OptionalSchema<
+    l.Infer<
+      l.DiscriminatedUnionSchema<
+        "type",
+        readonly [
+          typeof lexiconRefSchema,
+          typeof lexiconRefUnionSchema,
+          typeof lexiconObjectSchema,
+        ]
+      >
+    >
+  >;
+  description: typeof strOpt;
+}> = l.object({
   encoding: str,
   schema: l.optional(
     l.discriminatedUnion("type", [
@@ -203,7 +324,21 @@ export const lexiconPayload = l.object({
 });
 export type LexiconPayload = l.Infer<typeof lexiconPayload>;
 
-export const lexiconSubscriptionMessage = l.object({
+export const lexiconSubscriptionMessage: l.ObjectSchema<{
+  description: typeof strOpt;
+  schema: l.OptionalSchema<
+    l.Infer<
+      l.DiscriminatedUnionSchema<
+        "type",
+        readonly [
+          typeof lexiconRefSchema,
+          typeof lexiconRefUnionSchema,
+          typeof lexiconObjectSchema,
+        ]
+      >
+    >
+  >;
+}> = l.object({
   description: strOpt,
   schema: l.optional(
     l.discriminatedUnion("type", [
@@ -217,13 +352,22 @@ export type LexiconSubscriptionMessage = l.Infer<
   typeof lexiconSubscriptionMessage
 >;
 
-export const lexiconError = l.object({
+export const lexiconError: l.ObjectSchema<{
+  name: l.StringSchema<{ minLength: 1 }>;
+  description: typeof strOpt;
+}> = l.object({
   name: l.string({ minLength: 1 }),
   description: strOpt,
 });
 export type LexiconError = l.Infer<typeof lexiconError>;
 
-export const lexiconQuerySchema = l.object({
+export const lexiconQuerySchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"query">;
+  parameters: l.OptionalSchema<l.Infer<typeof lexiconParameters>>;
+  output: l.OptionalSchema<l.Infer<typeof lexiconPayload>>;
+  errors: l.OptionalSchema<l.Infer<typeof lexiconError>[]>;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("query"),
   parameters: l.optional(lexiconParameters),
   output: l.optional(lexiconPayload),
@@ -232,7 +376,14 @@ export const lexiconQuerySchema = l.object({
 });
 export type LexiconQuery = l.Infer<typeof lexiconQuerySchema>;
 
-export const lexiconProcedureSchema = l.object({
+export const lexiconProcedureSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"procedure">;
+  parameters: l.OptionalSchema<l.Infer<typeof lexiconParameters>>;
+  input: l.OptionalSchema<l.Infer<typeof lexiconPayload>>;
+  output: l.OptionalSchema<l.Infer<typeof lexiconPayload>>;
+  errors: l.OptionalSchema<l.Infer<typeof lexiconError>[]>;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("procedure"),
   parameters: l.optional(lexiconParameters),
   input: l.optional(lexiconPayload),
@@ -242,7 +393,13 @@ export const lexiconProcedureSchema = l.object({
 });
 export type LexiconProcedure = l.Infer<typeof lexiconProcedureSchema>;
 
-export const lexiconSubscriptionSchema = l.object({
+export const lexiconSubscriptionSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"subscription">;
+  description: typeof strOpt;
+  parameters: l.OptionalSchema<l.Infer<typeof lexiconParameters>>;
+  message: l.OptionalSchema<l.Infer<typeof lexiconSubscriptionMessage>>;
+  errors: l.OptionalSchema<l.Infer<typeof lexiconError>[]>;
+}> = l.object({
   type: l.literal("subscription"),
   description: strOpt,
   parameters: l.optional(lexiconParameters),
@@ -251,13 +408,24 @@ export const lexiconSubscriptionSchema = l.object({
 });
 export type LexiconSubscription = l.Infer<typeof lexiconSubscriptionSchema>;
 
-const lexiconLanguageSchema = l.string({ format: "language" });
+const lexiconLanguageSchema: l.StringSchema<{ format: "language" }> = l.string({
+  format: "language",
+});
 export type LexiconLanguage = l.Infer<typeof lexiconLanguageSchema>;
 
-const lexiconLanguageDict = l.dict(lexiconLanguageSchema, str);
+const lexiconLanguageDict: l.DictSchema<
+  typeof lexiconLanguageSchema,
+  typeof str
+> = l.dict(lexiconLanguageSchema, str);
 export type LexiconLanguageDict = l.Infer<typeof lexiconLanguageDict>;
 
-const lexiconPermissionSchema = l.intersection(
+const lexiconPermissionSchema: l.IntersectionSchema<
+  l.ObjectSchema<{
+    type: l.LiteralSchema<"permission">;
+    resource: l.StringSchema<{ minLength: 1 }>;
+  }>,
+  l.DictSchema<l.StringSchema<NonNullable<unknown>>, l.UnknownSchema>
+> = l.intersection(
   l.object({
     type: l.literal("permission"),
     resource: l.string({ minLength: 1 }),
@@ -266,7 +434,15 @@ const lexiconPermissionSchema = l.intersection(
 );
 export type LexiconPermission = l.Infer<typeof lexiconPermissionSchema>;
 
-const lexiconPermissionSetSchema = l.object({
+const lexiconPermissionSetSchema: l.ObjectSchema<{
+  type: l.LiteralSchema<"permission-set">;
+  permissions: l.ArraySchema<typeof lexiconPermissionSchema>;
+  title: typeof strOpt;
+  "title:lang": l.OptionalSchema<l.Infer<typeof lexiconLanguageDict>>;
+  detail: typeof strOpt;
+  "detail:lang": l.OptionalSchema<l.Infer<typeof lexiconLanguageDict>>;
+  description: typeof strOpt;
+}> = l.object({
   type: l.literal("permission-set"),
   permissions: l.array(lexiconPermissionSchema),
   title: strOpt,
@@ -301,10 +477,25 @@ export type MainLexiconDefinition = l.Infer<
   (typeof MAIN_LEXICON_SCHEMAS)[number]
 >;
 
-export const lexiconIdentifierSchema = l.string({ format: "nsid" });
+export const lexiconIdentifierSchema: l.StringSchema<{ format: "nsid" }> = l
+  .string({ format: "nsid" });
 export type LexiconIdentifier = l.Infer<typeof lexiconIdentifierSchema>;
 
-export const lexiconDocumentSchema = l.object({
+export const lexiconDocumentSchema: l.ObjectSchema<{
+  lexicon: l.LiteralSchema<1>;
+  id: typeof lexiconIdentifierSchema;
+  revision: typeof intOpt;
+  description: typeof strOpt;
+  defs: l.IntersectionSchema<
+    l.ObjectSchema<{
+      main: l.OptionalSchema<MainLexiconDefinition>;
+    }>,
+    l.DictSchema<
+      l.StringSchema<{ minLength: 1 }>,
+      l.DiscriminatedUnionSchema<"type", typeof NAMED_LEXICON_SCHEMAS>
+    >
+  >;
+}> = l.object({
   lexicon: l.literal(1),
   id: lexiconIdentifierSchema,
   revision: intOpt,

@@ -23,7 +23,9 @@ export function catchall(err: unknown): ResultFailure<Error> {
   return failure(new Error("Unknown error", { cause: err }));
 }
 
-export function createCatcher<T>(Ctor: new (...args: any[]) => T) {
+export function createCatcher<T>(
+  Ctor: new (...args: any[]) => T,
+): (err: unknown) => ResultFailure<T> {
   return (err: unknown): ResultFailure<T> => {
     if (err instanceof Ctor) return failure(err);
     throw err;
