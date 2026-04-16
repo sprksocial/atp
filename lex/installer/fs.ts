@@ -10,7 +10,7 @@ export async function writeJsonFile(
   data: unknown,
 ): Promise<void> {
   await Deno.mkdir(dirname(path), { recursive: true });
-  await Deno.writeTextFile(path, JSON.stringify(data, null, 2));
+  await Deno.writeTextFile(path, `${JSON.stringify(data, null, 2)}\n`);
 }
 
 export function isEnoentError(err: unknown): boolean {

@@ -11,6 +11,8 @@
   },
   "license": "MIT",
   "imports": {
+    "@dprint/formatter": "npm:@dprint/formatter@^0.5.1",
+    "@dprint/typescript": "npm:@dprint/typescript@^0.95.15",
     "@cliffy/command": "jsr:@cliffy/command@^1.0.0-rc.8",
     "cborg": "npm:cborg@^4.2.15",
     "multiformats/cid": "npm:multiformats@^13.4.1/cid",

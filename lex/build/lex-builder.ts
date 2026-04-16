@@ -5,6 +5,7 @@ import type { LexiconDocument, LexiconIndexer } from "../document/mod.ts";
 import { buildFilter, type BuildFilterOptions } from "./filter.ts";
 import { FilteredIndexer } from "./filtered-indexer.ts";
 import { LexDefBuilder, type LexDefBuilderOptions } from "./def-builder.ts";
+import { formatGeneratedText } from "./formatter.ts";
 import {
   LexiconDirectoryIndexer,
   type LexiconDirectoryIndexerOptions,
@@ -80,7 +81,7 @@ export class LexBuilder {
     await Promise.all(
       Array.from(files, async (file) => {
         const filePath = resolveOutputFilePath(destination, file.getFilePath());
-        const content = file.getFullText();
+        const content = await formatGeneratedText(filePath, file.getFullText());
         await mkdir(dirname(filePath), { recursive: true });
         await rm(filePath, { recursive: true, force: true });
         await writeFile(filePath, content, "utf8");

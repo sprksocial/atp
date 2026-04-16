@@ -82,21 +82,7 @@ const command = new Command()
       exclude: opts.exclude,
     });
 
-    await denoFmt(opts.out);
     console.log("Done.");
   });
-
-async function denoFmt(dir: string): Promise<void> {
-  const cmd = new Deno.Command("deno", {
-    args: ["fmt", dir],
-    cwd: Deno.cwd(),
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-  const { code } = await cmd.output();
-  if (code !== 0) {
-    console.warn(`Warning: deno fmt exited with code ${code}`);
-  }
-}
 
 export default command;

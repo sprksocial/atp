@@ -95,6 +95,7 @@ Deno.test("get resolves and fetches lexicons through xrpc", async () => {
       calls.url = url.toString();
       assertEquals(init?.method, "get");
       assertEquals(headers.get("accept"), "application/vnd.ipld.car");
+      assertEquals(headers.get("cache-control"), "no-cache");
       return Promise.resolve(
         new Response(toArrayBuffer(fixture.car), {
           headers: { "content-type": "application/vnd.ipld.car" },

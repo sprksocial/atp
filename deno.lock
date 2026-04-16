@@ -9,6 +9,7 @@
     "jsr:@david/code-block-writer@13": "13.0.3",
     "jsr:@hono/hono@^4.10.8": "4.10.8",
     "jsr:@logtape/file@^1.2.2": "1.2.2",
+    "jsr:@logtape/logtape@*": "1.2.2",
     "jsr:@logtape/logtape@^1.2.2": "1.2.2",
     "jsr:@noble/curves@^2.0.1": "2.0.1",
     "jsr:@noble/hashes@2": "2.0.1",
@@ -38,6 +39,8 @@
     "npm:@atproto/crypto@*": "0.1.0",
     "npm:@did-plc/lib@^0.0.4": "0.0.4",
     "npm:@did-plc/server@^0.0.1": "0.0.1_express@4.21.2",
+    "npm:@dprint/formatter@~0.5.1": "0.5.1",
+    "npm:@dprint/typescript@~0.95.15": "0.95.15",
     "npm:@ipld/dag-cbor@^9.2.5": "9.2.5",
     "npm:@opentelemetry/api@^1.9.0": "1.9.0",
     "npm:@types/node@*": "24.2.0",
@@ -97,7 +100,7 @@
     "@logtape/file@1.2.2": {
       "integrity": "a602f49148d0d5553dd3398506e9579e7294bab5706dff91f4c18abde53f1985",
       "dependencies": [
-        "jsr:@logtape/logtape"
+        "jsr:@logtape/logtape@^1.2.2"
       ]
     },
     "@logtape/logtape@1.2.2": {
@@ -253,6 +256,12 @@
         "pino",
         "pino-http"
       ]
+    },
+    "@dprint/formatter@0.5.1": {
+      "integrity": "sha512-cdZUrm0iv/FnnY3CKE2dEcVhNEzrC551aE2h2mTFwQCRBrqyARLDnb7D+3PlXTUVp3s34ftlnGOVCmhLT9DeKA=="
+    },
+    "@dprint/typescript@0.95.15": {
+      "integrity": "sha512-PQGYicsjlv7Eq+5BzpI04Ow2N9xeHkjr9O1TG3lDebK2B48IvXFQz0RwO4OhkKj22o7YLcjVIFM6WL7zVuM2ng=="
     },
     "@ipld/dag-cbor@7.0.3": {
       "integrity": "sha512-1VVh2huHsuohdXC1bGJNE8WR72slZ9XE2T3wbBBq31dm7ZBatmKLLxrB+XAqafxfRFjv08RZmj/W/ZqaM13AuA==",
@@ -1144,6 +1153,8 @@
         "dependencies": [
           "jsr:@cliffy/command@^1.0.0-rc.8",
           "jsr:@ts-morph/ts-morph@26",
+          "npm:@dprint/formatter@~0.5.1",
+          "npm:@dprint/typescript@~0.95.15",
           "npm:cborg@^4.2.15",
           "npm:multiformats@^13.4.1"
         ]
