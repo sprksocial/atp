@@ -3,7 +3,7 @@ import {
   type LexiconDocument,
   lexiconDocumentSchema,
   LexiconIterableIndexer,
-} from "@atp/lex/document";
+} from "../document/mod.ts";
 
 export type LexiconDirectoryIndexerOptions = {
   lexicons: string;

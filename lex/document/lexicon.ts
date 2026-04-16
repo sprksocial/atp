@@ -1,4 +1,4 @@
-import { l } from "../mod.ts";
+import * as l from "../external.ts";
 
 const bool: l.BooleanSchema = l.boolean();
 const int: l.IntegerSchema = l.integer();
@@ -183,7 +183,11 @@ const requirePropertiesRefinement: l.RefinementCheck<{
   required?: string[];
   properties: Record<string, unknown>;
 }> = {
-  check: (v) => !v.required || v.required.every((k) => k in v.properties),
+  check: (
+    value: { required?: string[]; properties: Record<string, unknown> },
+  ) =>
+    !value.required ||
+    value.required.every((key: string) => key in value.properties),
   message: "All required parameters must be defined in properties",
   path: "required",
 };

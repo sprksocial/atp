@@ -1,7 +1,7 @@
 import { mkdir, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { IndentationText, Project } from "ts-morph";
-import type { LexiconDocument, LexiconIndexer } from "@atp/lex/document";
+import type { LexiconDocument, LexiconIndexer } from "../document/mod.ts";
 import { buildFilter, type BuildFilterOptions } from "./filter.ts";
 import { FilteredIndexer } from "./filtered-indexer.ts";
 import { LexDefBuilder, type LexDefBuilderOptions } from "./def-builder.ts";

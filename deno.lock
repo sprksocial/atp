@@ -1142,6 +1142,8 @@
       },
       "lex": {
         "dependencies": [
+          "jsr:@cliffy/command@^1.0.0-rc.8",
+          "jsr:@ts-morph/ts-morph@26",
           "npm:cborg@^4.2.15",
           "npm:multiformats@^13.4.1"
         ]

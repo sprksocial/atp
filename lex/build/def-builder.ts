@@ -25,7 +25,7 @@ import type {
   LexiconUnknown,
   MainLexiconDefinition,
   NamedLexiconDefinition,
-} from "@atp/lex/document";
+} from "../document/mod.ts";
 
 import {
   getPublicIdentifiers,
@@ -753,7 +753,7 @@ export class LexDefBuilder {
 
     if (def.knownValues?.length) {
       return (
-        def.knownValues.map((v) => JSON.stringify(v)).join(" | ") +
+        def.knownValues.map((v: string) => JSON.stringify(v)).join(" | ") +
         " | l.UnknownString"
       );
     }
@@ -813,7 +813,7 @@ export class LexDefBuilder {
     }
 
     const refs = await Promise.all(
-      def.refs.map(async (ref) => {
+      def.refs.map(async (ref: string) => {
         const { varName, typeName } = await this.refResolver.resolve(ref);
         return this.pure(
           `l.typedRef<${typeName}>(() => ${varName})`,
@@ -828,7 +828,7 @@ export class LexDefBuilder {
 
   private async compileRefUnionType(def: LexiconRefUnion): Promise<string> {
     const types = await Promise.all(
-      def.refs.map(async (ref) => {
+      def.refs.map(async (ref: string) => {
         const { typeName } = await this.refResolver.resolve(ref);
         return `l.TypedRef<${typeName}>`;
       }),

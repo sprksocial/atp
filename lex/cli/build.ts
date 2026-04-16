@@ -1,5 +1,5 @@
 import { Command } from "@cliffy/command";
-import { build } from "../builder/mod.ts";
+import { build } from "../build/mod.ts";
 
 const command = new Command()
   .description(

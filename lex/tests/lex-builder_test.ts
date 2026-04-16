@@ -1,6 +1,6 @@
 import { assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "node:path";
-import { LexBuilder } from "../builder/lex-builder.ts";
+import { LexBuilder } from "../build/lex-builder.ts";
 
 Deno.test({
   name: "save writes files under output directory and rejects existing files",

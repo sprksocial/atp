@@ -1,8 +1,8 @@
-import type { LexiconDocument, LexiconIndexer } from "@atp/lex/document";
+import type { LexiconDocument, LexiconIndexer } from "../document/mod.ts";
 import type { Filter } from "./filter.ts";
 
 export class FilteredIndexer implements LexiconIndexer, AsyncDisposable {
-  protected readonly returned = new Set<string>();
+  protected readonly returned: Set<string> = new Set<string>();
 
   constructor(
     readonly indexer: LexiconIndexer & AsyncIterable<LexiconDocument>,

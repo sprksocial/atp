@@ -1,7 +1,7 @@
 import assert from "node:assert";
 import { join } from "node:path";
 import type { SourceFile } from "ts-morph";
-import type { LexiconDocument, LexiconIndexer } from "@atp/lex/document";
+import type { LexiconDocument, LexiconIndexer } from "../document/mod.ts";
 import { isReservedWord, isSafeIdentifier } from "./ts-lang.ts";
 import {
   asRelativePath,

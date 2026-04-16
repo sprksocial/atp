@@ -5,7 +5,7 @@ import {
   lexiconDocumentSchema,
   type LexiconIndexer,
 } from "@atp/lex/document";
-import { LexDefBuilder } from "../builder/def-builder.ts";
+import { LexDefBuilder } from "../build/def-builder.ts";
 
 class DummyIndexer implements LexiconIndexer, AsyncIterable<LexiconDocument> {
   readonly #docs: Map<string, LexiconDocument>;
