@@ -70,11 +70,11 @@ const indexTs = (
   gen(project, "/index.ts", (file) => {
     const importExtension = options?.importSuffix ??
       (options?.useJsExtension ? ".js" : ".ts");
-    //= import { XrpcClient, type FetchHandler, type FetchHandlerOptions } from '@atp/xrpc'
+    //= import { Client, type FetchHandler, type FetchHandlerOptions } from '@atp/xrpc'
     file.addImportDeclaration({
       moduleSpecifier: "@atp/xrpc",
       namedImports: [
-        { name: "XrpcClient" },
+        { name: "Client" },
         { name: "FetchHandler", isTypeOnly: true },
         { name: "FetchHandlerOptions", isTypeOnly: true },
       ],
@@ -187,7 +187,7 @@ const indexTs = (
     const clientCls = file.addClass({
       name: "AtpBaseClient",
       isExported: true,
-      extends: "XrpcClient",
+      extends: "Client",
     });
 
     for (const ns of nsidTree) {
@@ -215,13 +215,13 @@ const indexTs = (
     });
 
     //= /** @deprecated use `this` instead */
-    //= get xrpc(): XrpcClient {
+    //= get xrpc(): Client {
     //=   return this
     //= }
     clientCls
       .addGetAccessor({
         name: "xrpc",
-        returnType: "XrpcClient",
+        returnType: "Client",
         statements: ["return this"],
       })
       .addJsDoc("@deprecated use `this` instead");
@@ -238,10 +238,10 @@ function genNamespaceCls(file: SourceFile, ns: DefTreeNode) {
     name: ns.className,
     isExported: true,
   });
-  //= _client: XrpcClient
+  //= _client: Client
   cls.addProperty({
     name: "_client",
-    type: "XrpcClient",
+    type: "Client",
   });
 
   for (const userType of ns.userTypes) {
@@ -267,7 +267,7 @@ function genNamespaceCls(file: SourceFile, ns: DefTreeNode) {
     genNamespaceCls(file, child);
   }
 
-  //= constructor(public client: XrpcClient) {
+  //= constructor(public client: Client) {
   //=  this._client = client
   //=  {child namespace prop declarations}
   //=  {record prop declarations}
@@ -276,7 +276,7 @@ function genNamespaceCls(file: SourceFile, ns: DefTreeNode) {
     parameters: [
       {
         name: "client",
-        type: "XrpcClient",
+        type: "Client",
       },
     ],
     statements: [
@@ -353,19 +353,19 @@ function genRecordCls(file: SourceFile, nsid: string, lexRecord: LexRecord) {
     name: `${toTitleCase(nsid)}Record`,
     isExported: true,
   });
-  //= _client: XrpcClient
+  //= _client: Client
   cls.addProperty({
     name: "_client",
-    type: "XrpcClient",
+    type: "Client",
   });
 
-  //= constructor(client: XrpcClient) {
+  //= constructor(client: Client) {
   //=  this._client = client
   //= }
   const cons = cls.addConstructor();
   cons.addParameter({
     name: "client",
-    type: "XrpcClient",
+    type: "Client",
   });
   cons.setBodyText(`this._client = client`);
 

@@ -1,4 +1,4 @@
-import { Procedure, type Query } from "@atp/lex";
+import { Procedure, Query } from "@atp/lex";
 import {
   type Agent,
   type AgentOptions,
@@ -9,9 +9,12 @@ import {
   type Gettable,
   httpResponseCodeToEnum,
   ResponseType,
+  type XrpcCallCompatibleOptions,
   type XrpcCallOptions,
   XRPCError,
   XRPCInvalidResponseError,
+  type XrpcMethod,
+  type XrpcMethodLike,
   XRPCResponse,
 } from "./types.ts";
 import {
@@ -22,9 +25,7 @@ import {
 } from "./util.ts";
 import type { DidString } from "@atp/lex";
 
-type XrpcMethod = Query | Procedure;
-
-export class XrpcClient {
+export class Client {
   readonly agent: Agent;
   readonly fetchHandler: FetchHandler;
   readonly headers: Map<string, Gettable<null | string>> = new Map<
@@ -55,10 +56,18 @@ export class XrpcClient {
     this.headers.clear();
   }
 
-  async call<const M extends XrpcMethod>(
-    method: M,
+  call<const M extends XrpcMethodLike>(
+    input: M,
+  ): Promise<XRPCResponse>;
+  call<const M extends XrpcMethodLike, const O>(
+    input: M,
+    options: O & XrpcCallCompatibleOptions<M, O>,
+  ): Promise<XRPCResponse>;
+  async call<const M extends XrpcMethodLike>(
+    input: M,
     options: XrpcCallOptions<M> = {} as XrpcCallOptions<M>,
   ): Promise<XRPCResponse> {
+    const method = getXrpcMethod(input);
     const params = this.getValidatedParams(method, options);
     const reqUrl = this.constructMethodCallUrl(method, params);
     const reqHeaders = this.constructMethodCallHeaders(method, options);
@@ -265,6 +274,24 @@ export class XrpcClient {
       );
     }
   }
+}
+
+export { Client as XrpcClient };
+
+function getXrpcMethod(input: XrpcMethodLike): XrpcMethod {
+  if (isXrpcMethod(input)) {
+    return input;
+  }
+
+  if ("main" in input && isXrpcMethod(input.main)) {
+    return input.main;
+  }
+
+  throw new TypeError("Expected an XRPC method or a namespace with main");
+}
+
+function isXrpcMethod(value: unknown): value is XrpcMethod {
+  return value instanceof Query || value instanceof Procedure;
 }
 
 function resolveProcedurePayload(

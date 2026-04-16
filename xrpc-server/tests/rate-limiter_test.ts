@@ -1,6 +1,6 @@
 import { MINUTE } from "@atp/common";
 import type { LexiconDoc } from "@atp/lexicon";
-import { XrpcClient } from "./_xrpc-client.ts";
+import { Client } from "./_xrpc-client.ts";
 import * as xrpcServer from "../mod.ts";
 import { closeServer, createServer } from "./_util.ts";
 import { assertRejects } from "@std/assert";
@@ -239,7 +239,7 @@ async function setupServer(testName: string = "test") {
 
   const s = await createServer(server);
   const port = (s as Deno.HttpServer & { port: number }).port;
-  const client = new XrpcClient(`http://localhost:${port}`, LEXICONS);
+  const client = new Client(`http://localhost:${port}`, LEXICONS);
 
   return { server: s, client };
 }

@@ -1,13 +1,359 @@
 import { z } from "zod";
 import type {
+  AtIdentifierString,
+  AtUriString,
+  CidString,
+  DatetimeString,
+  DidString,
+  HandleString,
   InferMethodInputBody,
   InferMethodParams,
   Procedure,
   Query,
+  RecordKeyString,
+  TidString,
 } from "@atp/lex";
 
 export type QueryParams = Record<string, unknown>;
 export type HeadersMap = Record<string, string | undefined>;
+export type XrpcMethod = Query | Procedure;
+export type XrpcMethodNamespace<M extends XrpcMethod = XrpcMethod> =
+  | { readonly main: M }
+  | { readonly Main: M };
+export type XrpcMethodLike<M extends XrpcMethod = XrpcMethod> =
+  | M
+  | XrpcMethodNamespace<M>;
+
+type InferXrpcMethod<M extends XrpcMethodLike> = M extends XrpcMethod ? M
+  : M extends { readonly main: infer Inner } ? Inner extends XrpcMethod ? Inner
+    : never
+  : M extends { readonly Main: infer Inner } ? Inner extends XrpcMethod ? Inner
+    : never
+  : never;
+
+type Digit =
+  | "0"
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "8"
+  | "9";
+type LowerAlpha =
+  | "a"
+  | "b"
+  | "c"
+  | "d"
+  | "e"
+  | "f"
+  | "g"
+  | "h"
+  | "i"
+  | "j"
+  | "k"
+  | "l"
+  | "m"
+  | "n"
+  | "o"
+  | "p"
+  | "q"
+  | "r"
+  | "s"
+  | "t"
+  | "u"
+  | "v"
+  | "w"
+  | "x"
+  | "y"
+  | "z";
+type UpperAlpha = Uppercase<LowerAlpha>;
+type Alpha = LowerAlpha | UpperAlpha;
+type DidChar = Alpha | Digit | "." | "_" | ":" | "%" | "-";
+type DidEndChar = Alpha | Digit | "." | "_" | "-";
+type HandleChar = Alpha | Digit | "-";
+type RecordKeyChar = Alpha | Digit | "_" | "~" | "." | ":" | "-";
+type TidInitialChar =
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "a"
+  | "b"
+  | "c"
+  | "d"
+  | "e"
+  | "f"
+  | "g"
+  | "h"
+  | "i"
+  | "j";
+type TidChar =
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | LowerAlpha;
+type Base32Char = LowerAlpha | "2" | "3" | "4" | "5" | "6" | "7";
+type Base58Char =
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "7"
+  | "8"
+  | "9"
+  | "A"
+  | "B"
+  | "C"
+  | "D"
+  | "E"
+  | "F"
+  | "G"
+  | "H"
+  | "J"
+  | "K"
+  | "L"
+  | "M"
+  | "N"
+  | "P"
+  | "Q"
+  | "R"
+  | "S"
+  | "T"
+  | "U"
+  | "V"
+  | "W"
+  | "X"
+  | "Y"
+  | "Z"
+  | "a"
+  | "b"
+  | "c"
+  | "d"
+  | "e"
+  | "f"
+  | "g"
+  | "h"
+  | "i"
+  | "j"
+  | "k"
+  | "m"
+  | "n"
+  | "o"
+  | "p"
+  | "q"
+  | "r"
+  | "s"
+  | "t"
+  | "u"
+  | "v"
+  | "w"
+  | "x"
+  | "y"
+  | "z";
+
+type IsLiteralString<S extends string> = string extends S ? false : true;
+
+type IsChars<S extends string, Allowed extends string> =
+  IsLiteralString<S> extends false ? false
+    : S extends "" ? true
+    : S extends `${infer First}${infer Rest}`
+      ? First extends Allowed ? IsChars<Rest, Allowed>
+      : false
+    : false;
+
+type IsDidMethod<S extends string> = IsLiteralString<S> extends false ? false
+  : S extends `${infer First}${infer Rest}`
+    ? First extends LowerAlpha
+      ? Rest extends "" ? true : IsChars<Rest, LowerAlpha>
+    : false
+  : false;
+
+type IsDidIdentifier<S extends string> = IsLiteralString<S> extends false
+  ? false
+  : S extends `${infer First}${infer Rest}`
+    ? Rest extends "" ? First extends DidEndChar ? true : false
+    : First extends DidChar ? IsDidIdentifier<Rest>
+    : false
+  : false;
+
+type IsDidLiteral<S extends string> = S extends
+  `did:${infer Method}:${infer Id}`
+  ? IsDidMethod<Method> extends true ? IsDidIdentifier<Id>
+  : false
+  : false;
+
+type IsHandleLabel<S extends string> = IsLiteralString<S> extends false ? false
+  : S extends `${infer First}${infer Rest}`
+    ? First extends Alpha | Digit
+      ? Rest extends "" ? true : IsHandleLabelTail<Rest>
+    : false
+  : false;
+
+type IsHandleLabelTail<S extends string> = S extends
+  `${infer First}${infer Rest}`
+  ? Rest extends "" ? First extends Alpha | Digit ? true : false
+  : First extends HandleChar ? IsHandleLabelTail<Rest>
+  : false
+  : false;
+
+type IsFinalHandleLabel<S extends string> = IsLiteralString<S> extends false
+  ? false
+  : S extends `${infer First}${infer Rest}`
+    ? First extends Alpha ? Rest extends "" ? true : IsHandleLabelTail<Rest>
+    : false
+  : false;
+
+type IsHandleParts<S extends string> = S extends `${infer Label}.${infer Rest}`
+  ? IsHandleLabel<Label> extends true ? IsHandleParts<Rest> : false
+  : IsFinalHandleLabel<S>;
+
+type IsHandleLiteral<S extends string> = S extends `${string}.${string}`
+  ? IsHandleParts<S>
+  : false;
+
+type IsAtIdentifierLiteral<S extends string> = IsDidLiteral<S> extends true
+  ? true
+  : IsHandleLiteral<S>;
+
+type IsRecordKeyLiteral<S extends string> = IsLiteralString<S> extends false
+  ? false
+  : S extends "." | ".." ? false
+  : S extends `${infer _First}${infer _Rest}` ? IsChars<S, RecordKeyChar>
+  : false;
+
+type IsExactChars<
+  S extends string,
+  Allowed extends string,
+  Length extends number,
+  Count extends unknown[] = [],
+> = Count["length"] extends Length ? (S extends "" ? true : false)
+  : S extends `${infer First}${infer Rest}`
+    ? First extends Allowed
+      ? IsExactChars<Rest, Allowed, Length, [...Count, unknown]>
+    : false
+  : false;
+
+type IsTidLiteral<S extends string> = S extends `${infer First}${infer Rest}`
+  ? First extends TidInitialChar ? IsExactChars<Rest, TidChar, 12> : false
+  : false;
+
+type IsDatetimeDate<S extends string> = S extends
+  `${infer Year}-${infer Month}-${infer Day}`
+  ? IsExactChars<Year, Digit, 4> extends true
+    ? IsExactChars<Month, Digit, 2> extends true ? IsExactChars<Day, Digit, 2>
+    : false
+  : false
+  : false;
+
+type IsDatetimeTime<S extends string> = S extends
+  `${infer Hour}:${infer Minute}:${infer Second}`
+  ? IsExactChars<Hour, Digit, 2> extends true
+    ? IsExactChars<Minute, Digit, 2> extends true
+      ? IsExactChars<Second, Digit, 2>
+    : false
+  : false
+  : false;
+
+type IsDatetimeOffset<S extends string> = S extends
+  `${infer Hour}:${infer Minute}`
+  ? IsExactChars<Hour, Digit, 2> extends true ? IsExactChars<Minute, Digit, 2>
+  : false
+  : false;
+
+type IsDatetimeTail<S extends string> = S extends
+  `${infer Time}.${infer Fraction}Z`
+  ? IsDatetimeTime<Time> extends true ? IsChars<Fraction, Digit> : false
+  : S extends `${infer Time}Z` ? IsDatetimeTime<Time>
+  : S extends `${infer Time}+${infer Offset}`
+    ? IsDatetimeTime<Time> extends true ? IsDatetimeOffset<Offset> : false
+  : S extends `${infer Time}-${infer Offset}`
+    ? IsDatetimeTime<Time> extends true ? IsDatetimeOffset<Offset> : false
+  : S extends `${infer Time}.${infer Fraction}+${infer Offset}`
+    ? IsDatetimeTime<Time> extends true
+      ? IsChars<Fraction, Digit> extends true ? IsDatetimeOffset<Offset> : false
+    : false
+  : S extends `${infer Time}.${infer Fraction}-${infer Offset}`
+    ? IsDatetimeTime<Time> extends true
+      ? IsChars<Fraction, Digit> extends true ? IsDatetimeOffset<Offset> : false
+    : false
+  : false;
+
+type IsDatetimeLiteral<S extends string> = S extends
+  `${infer Date}T${infer Tail}`
+  ? IsDatetimeDate<Date> extends true ? IsDatetimeTail<Tail> : false
+  : false;
+
+type AtUriHost<S extends string> = S extends `at://${infer Host}/${string}`
+  ? Host
+  : S extends `at://${infer Host}?${string}` ? Host
+  : S extends `at://${infer Host}#${string}` ? Host
+  : S extends `at://${infer Host}` ? Host
+  : never;
+
+type IsAtUriLiteral<S extends string> = [AtUriHost<S>] extends [never] ? false
+  : AtUriHost<S> extends infer Host extends string
+    ? Host extends "" ? false : IsAtIdentifierLiteral<Host>
+  : false;
+
+type IsCidLiteral<S extends string> = S extends `b${infer Rest}`
+  ? IsChars<Rest, Base32Char>
+  : S extends `z${infer Rest}` ? IsChars<Rest, Base58Char>
+  : S extends `Qm${infer Rest}` ? IsChars<Rest, Base58Char>
+  : false;
+
+type ValidateStringLiteral<Actual, Expected> = Actual extends string
+  ? IsLiteralString<Actual> extends false ? never
+  : [Expected] extends [DidString] ? IsDidLiteral<Actual> extends true ? Actual
+    : never
+  : [Expected] extends [HandleString]
+    ? IsHandleLiteral<Actual> extends true ? Actual : never
+  : [Expected] extends [AtIdentifierString]
+    ? IsAtIdentifierLiteral<Actual> extends true ? Actual : never
+  : [Expected] extends [RecordKeyString]
+    ? IsRecordKeyLiteral<Actual> extends true ? Actual : never
+  : [Expected] extends [TidString] ? IsTidLiteral<Actual> extends true ? Actual
+    : never
+  : [Expected] extends [DatetimeString]
+    ? IsDatetimeLiteral<Actual> extends true ? Actual : never
+  : [Expected] extends [AtUriString]
+    ? IsAtUriLiteral<Actual> extends true ? Actual : never
+  : [Expected] extends [CidString] ? IsCidLiteral<Actual> extends true ? Actual
+    : never
+  : never
+  : never;
+
+type ValidateCallValue<Actual, Expected> = [Actual] extends [Expected] ? Actual
+  : undefined extends Expected
+    ? ValidateCallValue<Actual, Exclude<Expected, undefined>>
+  : Expected extends string ? ValidateStringLiteral<Actual, Expected>
+  : Expected extends readonly (infer Value)[]
+    ? Actual extends readonly unknown[]
+      ? { [K in keyof Actual]: ValidateCallValue<Actual[K], Value> }
+    : never
+  : Expected extends object
+    ? Actual extends object ? ValidateCallObject<Actual, Expected>
+    : never
+  : never;
+
+type ValidateCallObject<Actual, Expected> =
+  & {
+    [K in keyof Expected]: K extends keyof Actual
+      ? ValidateCallValue<Actual[K], Expected[K]>
+      : Expected[K];
+  }
+  & {
+    [K in Exclude<keyof Actual, keyof Expected>]: never;
+  };
 
 export type {
   /**
@@ -35,14 +381,20 @@ export type BinaryBodyInit =
   | string;
 
 export interface XrpcCallOptions<
-  M extends Query | Procedure = Query | Procedure,
+  M extends XrpcMethodLike = XrpcMethod,
 > extends CallOptions {
-  params?: InferMethodParams<M>;
-  body?: M extends Procedure ? InferMethodInputBody<M, BinaryBodyInit>
+  params?: InferMethodParams<InferXrpcMethod<M>>;
+  body?: InferXrpcMethod<M> extends Procedure
+    ? InferMethodInputBody<InferXrpcMethod<M>, BinaryBodyInit>
     : undefined;
   validateRequest?: boolean;
   validateResponse?: boolean;
 }
+
+export type XrpcCallCompatibleOptions<
+  M extends XrpcMethodLike = XrpcMethod,
+  O = XrpcCallOptions<M>,
+> = ValidateCallValue<O, XrpcCallOptions<M>>;
 
 export const errorResponseBody: z.ZodObject<{
   error: z.ZodOptional<z.ZodString>;

@@ -1,6 +1,6 @@
 import { CID } from "multiformats/cid";
 import type { LexiconDoc } from "@atp/lexicon";
-import { XrpcClient } from "./_xrpc-client.ts";
+import { Client } from "./_xrpc-client.ts";
 import * as xrpcServer from "../mod.ts";
 import { closeServer, createServer } from "./_util.ts";
 import { assertEquals, assertExists } from "@std/assert";
@@ -47,7 +47,7 @@ const LEXICONS: LexiconDoc[] = [
 
 let server: ReturnType<typeof xrpcServer.createServer>;
 let s: Deno.HttpServer;
-let client: XrpcClient;
+let client: Client;
 
 Deno.test.beforeAll(async () => {
   server = xrpcServer.createServer(LEXICONS);
@@ -75,7 +75,7 @@ Deno.test.beforeAll(async () => {
   );
 
   const port = (s as Deno.HttpServer & { port: number }).port;
-  client = new XrpcClient(`http://localhost:${port}`, LEXICONS);
+  client = new Client(`http://localhost:${port}`, LEXICONS);
 });
 
 Deno.test.afterAll(async () => {

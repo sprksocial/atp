@@ -3,9 +3,9 @@ import type { LexiconDoc } from "@atp/lexicon";
 import {
   type Agent,
   type AgentOptions,
+  Client as ModernClient,
   ResponseType,
   type XrpcCallOptions,
-  XrpcClient as ModernXrpcClient,
   XRPCError,
   XRPCInvalidResponseError,
   type XRPCResponse,
@@ -25,12 +25,12 @@ type LexRecord = Record<string, unknown>;
 
 export { ResponseType, XRPCError, XRPCInvalidResponseError };
 
-export class XrpcClient {
-  readonly #client: ModernXrpcClient;
+export class Client {
+  readonly #client: ModernClient;
   readonly #methods: Map<string, Method>;
 
   constructor(agentOpts: Agent | AgentOptions, lexicons: LexiconDoc[] = []) {
-    this.#client = new ModernXrpcClient(agentOpts);
+    this.#client = new ModernClient(agentOpts);
     this.#methods = buildMethodMap(lexicons);
   }
 
@@ -93,6 +93,8 @@ export class XrpcClient {
     );
   }
 }
+
+export { Client as XrpcClient };
 
 function buildMethodMap(lexicons: LexiconDoc[]): Map<string, Method> {
   const methods = new Map<string, Method>();

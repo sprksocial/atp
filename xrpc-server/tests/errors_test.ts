@@ -1,9 +1,5 @@
 import type { LexiconDoc } from "@atp/lexicon";
-import {
-  XrpcClient,
-  XRPCError,
-  XRPCInvalidResponseError,
-} from "./_xrpc-client.ts";
+import { Client, XRPCError, XRPCInvalidResponseError } from "./_xrpc-client.ts";
 import * as xrpcServer from "../mod.ts";
 import { closeServer, createServer } from "./_util.ts";
 import {
@@ -141,11 +137,11 @@ const MISMATCHED_LEXICONS: LexiconDoc[] = [
 
 let upstreamServer: ReturnType<typeof xrpcServer.createServer>;
 let upstreamS: Deno.HttpServer;
-let upstreamClient: XrpcClient;
+let upstreamClient: Client;
 let server: ReturnType<typeof xrpcServer.createServer>;
 let s: Deno.HttpServer;
-let client: XrpcClient;
-let badClient: XrpcClient;
+let client: Client;
+let badClient: Client;
 
 Deno.test.beforeAll(async () => {
   // Setup upstream server
@@ -157,7 +153,7 @@ Deno.test.beforeAll(async () => {
   });
   upstreamS = await createServer(upstreamServer);
   const upstreamPort = (upstreamS as Deno.HttpServer & { port: number }).port;
-  upstreamClient = new XrpcClient(
+  upstreamClient = new Client(
     `http://localhost:${upstreamPort}`,
     UPSTREAM_LEXICONS,
   );
@@ -199,8 +195,8 @@ Deno.test.beforeAll(async () => {
     return undefined;
   });
 
-  client = new XrpcClient(`http://localhost:${port}`, LEXICONS);
-  badClient = new XrpcClient(
+  client = new Client(`http://localhost:${port}`, LEXICONS);
+  badClient = new Client(
     `http://localhost:${port}`,
     MISMATCHED_LEXICONS,
   );

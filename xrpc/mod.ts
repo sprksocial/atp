@@ -7,7 +7,7 @@
  * @example Fetching an XRPC endpoint
  * ```typescript
  * import { LexiconDoc } from '@atp/lexicon'
- * import { XrpcClient } from '@atp/xrpc'
+ * import { Client } from '@atp/xrpc'
  *
  * const pingLexicon = {
  *  lexicon: 1,
@@ -32,11 +32,11 @@
  *  },
  * } satisfies LexiconDoc
  *
- * const xrpc = new XrpcClient('https://ping.example.com', [
+ * const client = new Client('https://ping.example.com', [
  *   pingLexicon,
  * ])
  *
- * const res1 = await xrpc.call('io.example.ping', {
+ * const res1 = await client.call('io.example.ping', {
  *   message: 'hello world',
  * })
  * res1.body // => {message: 'hello world'}

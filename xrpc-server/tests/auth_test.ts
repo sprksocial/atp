@@ -1,7 +1,7 @@
 import { MINUTE } from "@atp/common";
 import { Secp256k1Keypair } from "@atp/crypto";
 import type { LexiconDoc } from "@atp/lexicon";
-import { XrpcClient, XRPCError } from "./_xrpc-client.ts";
+import { Client, XRPCError } from "./_xrpc-client.ts";
 import * as xrpcServer from "../mod.ts";
 
 import {
@@ -50,7 +50,7 @@ const LEXICONS: LexiconDoc[] = [
 
 let server: ReturnType<typeof xrpcServer.createServer>;
 let s: Deno.HttpServer;
-let client: XrpcClient;
+let client: Client;
 
 type AuthTestResponse = {
   username: string | undefined;
@@ -82,7 +82,7 @@ Deno.test.beforeAll(async () => {
 
   s = await createServer(server);
   const port = (s as Deno.HttpServer & { port: number }).port;
-  client = new XrpcClient(`http://localhost:${port}`, LEXICONS);
+  client = new Client(`http://localhost:${port}`, LEXICONS);
 });
 
 Deno.test.afterAll(async () => {
