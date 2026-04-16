@@ -29,7 +29,7 @@ Deno.test("subsystemLogger defers env access until a log method is called", asyn
   await withPatchedEnvGet((name) => {
     calls.push(name);
     return undefined;
-  }, async () => {
+  }, () => {
     _resetLoggerStateForTest();
     const logger = subsystemLogger("repo");
 
@@ -49,7 +49,7 @@ Deno.test("subsystemLogger defers env access until a log method is called", asyn
 Deno.test("subsystemLogger treats env permission errors as unset", async () => {
   await withPatchedEnvGet(() => {
     throw new Deno.errors.PermissionDenied("env denied");
-  }, async () => {
+  }, () => {
     _resetLoggerStateForTest();
     const logger = subsystemLogger("repo");
 

@@ -348,7 +348,9 @@ async function fetchGetRecord(
   const expected = getRecordQuery.output.encoding;
   if (expected !== undefined && !matchesEncoding(expected, contentType)) {
     throw new TypeError(
-      `Unexpected content-type ${contentType ?? "null"} for ${getRecordQuery.nsid}`,
+      `Unexpected content-type ${
+        contentType ?? "null"
+      } for ${getRecordQuery.nsid}`,
     );
   }
 
