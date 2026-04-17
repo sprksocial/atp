@@ -27,6 +27,72 @@ Deno.test("calls query with lex method and params", async () => {
   assertEquals(result.data, { value: "ok" });
 });
 
+Deno.test("calls query with xrpc", async () => {
+  const method = l.query(
+    "io.example.query",
+    l.params({ limit: l.optional(l.integer()) }),
+    l.jsonPayload({ value: l.string() }),
+  );
+
+  const client = new Client((url, init) => {
+    assertEquals(url, "/xrpc/io.example.query?limit=9");
+    assertEquals(init.method, "get");
+    return Promise.resolve(Response.json({ value: "ok" }));
+  });
+
+  const result = await client.xrpc(method, {
+    params: { limit: 9 },
+  });
+
+  assertEquals(result.data, { value: "ok" });
+});
+
+Deno.test("narrows xrpcSafe success results on success flag", async () => {
+  const method = l.query(
+    "io.example.query",
+    l.params({ limit: l.optional(l.integer()) }),
+    l.jsonPayload({ value: l.string() }),
+  );
+
+  const client = new Client((url, init) => {
+    assertEquals(url, "/xrpc/io.example.query?limit=8");
+    assertEquals(init.method, "get");
+    return Promise.resolve(Response.json({ value: "ok" }));
+  });
+
+  const result = await client.xrpcSafe(method, {
+    params: { limit: 8 },
+  });
+
+  assertEquals(result.success, true);
+
+  if (result.success) {
+    assertEquals(result.data, { value: "ok" });
+  } else {
+    throw new Error(result.error);
+  }
+});
+
+Deno.test("keeps call as a compatibility alias for xrpc", async () => {
+  const method = l.query(
+    "io.example.query",
+    l.params({ limit: l.optional(l.integer()) }),
+    l.jsonPayload({ value: l.string() }),
+  );
+
+  const client = new Client((url, init) => {
+    assertEquals(url, "/xrpc/io.example.query?limit=4");
+    assertEquals(init.method, "get");
+    return Promise.resolve(Response.json({ value: "ok" }));
+  });
+
+  const result = await client.call(method, {
+    params: { limit: 4 },
+  });
+
+  assertEquals(result.data, { value: "ok" });
+});
+
 Deno.test("serializes params using schema transforms", async () => {
   const method = l.query(
     "io.example.query",
@@ -199,6 +265,37 @@ Deno.test("validates request and response when enabled", async () => {
     },
     XRPCInvalidResponseError,
   );
+});
+
+Deno.test("returns xrpc errors from xrpcSafe", async () => {
+  const method = l.query(
+    "io.example.query",
+    l.params({ limit: l.optional(l.integer()) }),
+    l.jsonPayload({ value: l.string() }),
+  );
+
+  const client = new Client(() =>
+    Promise.resolve(
+      Response.json(
+        { error: "BadRequest", message: "nope" },
+        { status: 400 },
+      ),
+    )
+  );
+
+  const result = await client.xrpcSafe(method, {
+    params: { limit: 1 },
+  });
+
+  assertEquals(result.success, false);
+
+  if (!result.success) {
+    assertEquals(result.success, false);
+    assertEquals(result.error, "BadRequest");
+    assertEquals(result.message, "nope");
+  } else {
+    throw new Error(JSON.stringify(result.data));
+  }
 });
 
 Deno.test("accepts formatted strings in json request bodies", async () => {

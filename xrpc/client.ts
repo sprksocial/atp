@@ -56,6 +56,38 @@ export class Client {
     this.headers.clear();
   }
 
+  xrpc<const M extends XrpcMethodLike>(
+    input: M,
+  ): Promise<XRPCResponse>;
+  xrpc<const M extends XrpcMethodLike, const O>(
+    input: M,
+    options: O & XrpcCallCompatibleOptions<M, O>,
+  ): Promise<XRPCResponse>;
+  async xrpc<const M extends XrpcMethodLike>(
+    input: M,
+    options: XrpcCallOptions<M> = {} as XrpcCallOptions<M>,
+  ): Promise<XRPCResponse> {
+    return await this.performXrpc(input, options);
+  }
+
+  xrpcSafe<const M extends XrpcMethodLike>(
+    input: M,
+  ): Promise<XRPCError | XRPCResponse>;
+  xrpcSafe<const M extends XrpcMethodLike, const O>(
+    input: M,
+    options: O & XrpcCallCompatibleOptions<M, O>,
+  ): Promise<XRPCError | XRPCResponse>;
+  async xrpcSafe<const M extends XrpcMethodLike>(
+    input: M,
+    options: XrpcCallOptions<M> = {} as XrpcCallOptions<M>,
+  ): Promise<XRPCError | XRPCResponse> {
+    try {
+      return await this.performXrpc(input, options);
+    } catch (err) {
+      return XRPCError.from(err);
+    }
+  }
+
   call<const M extends XrpcMethodLike>(
     input: M,
   ): Promise<XRPCResponse>;
@@ -66,6 +98,13 @@ export class Client {
   async call<const M extends XrpcMethodLike>(
     input: M,
     options: XrpcCallOptions<M> = {} as XrpcCallOptions<M>,
+  ): Promise<XRPCResponse> {
+    return await this.xrpc(input, options);
+  }
+
+  private async performXrpc<const M extends XrpcMethodLike>(
+    input: M,
+    options: XrpcCallOptions<M>,
   ): Promise<XRPCResponse> {
     const method = getXrpcMethod(input);
     const params = this.getValidatedParams(method, options);

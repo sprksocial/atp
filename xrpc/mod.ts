@@ -36,7 +36,7 @@
  *   pingLexicon,
  * ])
  *
- * const res1 = await client.call('io.example.ping', {
+ * const res1 = await client.xrpc('io.example.ping', {
  *   message: 'hello world',
  * })
  * res1.body // => {message: 'hello world'}

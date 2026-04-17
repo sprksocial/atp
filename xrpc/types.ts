@@ -480,7 +480,7 @@ export function httpResponseCodeToString(status: number): string {
  * Response type of a successful XRPC request.
  */
 export class XRPCResponse {
-  success = true;
+  readonly success: true = true;
 
   constructor(
     public data: any,
@@ -492,7 +492,7 @@ export class XRPCResponse {
  * Response type of a failed XRPC request with details of the error.
  */
 export class XRPCError extends Error {
-  success = false;
+  readonly success: false = false;
 
   public status: ResponseType;
 
