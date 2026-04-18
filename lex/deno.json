@@ -1,9 +1,11 @@
 {
   "name": "@atp/lex",
-  "version": "0.1.0-alpha.3",
+  "version": "0.1.0-alpha.4",
   "exports": {
     ".": "./mod.ts",
     "./cbor": "./cbor/mod.ts",
+    "./data": "./data/mod.ts",
+    "./json": "./json/mod.ts",
     "./document": "./document/mod.ts",
     "./build": "./build/mod.ts",
     "./installer": "./installer/mod.ts",

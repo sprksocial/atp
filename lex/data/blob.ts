@@ -5,7 +5,7 @@ import { isPlainObject } from "./object.ts";
 export type BlobRef = {
   $type: "blob";
   mimeType: string;
-  ref: { toString(): string; equals(other: unknown): boolean };
+  ref: import("./cid.ts").Cid;
   size: number;
 };
 

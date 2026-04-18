@@ -1,4 +1,4 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "../data/mod.ts";
 import { resolveTxt as resolveTxtWithNode } from "node:dns/promises";
 import { type AtprotoData, type DidCache, DidResolver } from "@atp/identity";
 import {
@@ -38,12 +38,12 @@ type MaybePromise<T> = Promise<T> | T;
 
 export type LexResolverResult = {
   uri: AtUri;
-  cid: CID;
+  cid: Cid;
   lexicon: LexiconDocument;
 };
 
 export type LexResolverFetchResult = {
-  cid: CID;
+  cid: Cid;
   lexicon: LexiconDocument;
 };
 
@@ -58,7 +58,7 @@ export type LexResolverHooks = {
   onFetch?(data: { uri: AtUri }): MaybePromise<LexResolverFetchResult | void>;
   onFetchResult?(data: {
     uri: AtUri;
-    cid: CID;
+    cid: Cid;
     lexicon: LexiconDocument;
   }): MaybePromise<void>;
   onFetchError?(data: { uri: AtUri; err: unknown }): MaybePromise<void>;
@@ -100,7 +100,7 @@ export type DefaultTxtResolverOptions = {
 };
 
 export { AtUri, NSID };
-export type { CID, LexiconDocument };
+export type { Cid as CID, LexiconDocument };
 
 export class LexResolver {
   protected readonly didResolver: LexResolverDidResolver;
@@ -429,7 +429,7 @@ async function verifyRecordProof(
     throw new Error(`Invalid signature on commit: ${root.toString()}`);
   }
 
-  const mst = MST.load(blockstore, (commit as { data: CID }).data);
+  const mst = MST.load(blockstore, (commit as { data: Cid }).data);
   const cid = await mst.get(`${collection}/${rkey}`);
   if (!cid) {
     throw new Error("Record not found in proof");

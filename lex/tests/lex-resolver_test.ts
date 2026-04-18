@@ -1,6 +1,12 @@
 import { cidForCbor, streamToBuffer } from "@atp/common";
 import * as crypto from "@atp/crypto";
-import { getRecords, MemoryBlockstore, Repo, WriteOpAction } from "@atp/repo";
+import {
+  getRecords,
+  MemoryBlockstore,
+  Repo,
+  type RepoInputRecord,
+  WriteOpAction,
+} from "@atp/repo";
 import { AtUri } from "@atp/syntax";
 import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
 import { LexResolver, LexResolverError } from "../resolver/mod.ts";
@@ -26,7 +32,7 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
 
 const createLexiconRecord = (
   id: string,
-): Record<string, unknown> => ({
+): RepoInputRecord => ({
   $type: collection,
   lexicon: 1,
   id,
