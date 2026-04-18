@@ -19,9 +19,9 @@ const command = new Command()
     default: false,
   })
   .option(
-    "--override",
+    "--override [override:boolean]",
     "override existing files (no effect when --clear is set)",
-    { default: false },
+    { default: true },
   )
   .option("--js", "use .js extension for imports and generated files", {
     default: false,
