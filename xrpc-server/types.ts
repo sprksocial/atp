@@ -1,4 +1,13 @@
 import type { Context, HonoRequest, Next } from "hono";
+import type {
+  InferMethodInput,
+  InferMethodMessage,
+  InferMethodOutput,
+  InferMethodParams,
+  Procedure,
+  Query,
+  Subscription,
+} from "@atp/lex";
 import { z } from "zod";
 import type { ErrorResult, XRPCError } from "./errors.ts";
 import type { CalcKeyFn, CalcPointsFn } from "./rate-limiter.ts";
@@ -277,6 +286,54 @@ export type StreamAuthVerifier<
   A extends AuthResult = AuthResult,
   P extends Params = Params,
 > = AuthVerifier<StreamAuthContext<P>, A>;
+
+export type LexMethod = Procedure | Query | Subscription;
+export type LexMethodNamespace<M extends LexMethod = LexMethod> =
+  | { readonly main: M }
+  | { readonly Main: M };
+export type LexMethodLike<M extends LexMethod = LexMethod> =
+  | M
+  | LexMethodNamespace<M>;
+
+export type LexMethodParams<M extends Procedure | Query | Subscription> =
+  InferMethodParams<M>;
+
+export type LexMethodInput<M extends Procedure | Query> = InferMethodInput<
+  M,
+  ReadableStream<Uint8Array>
+>;
+
+export type LexMethodOutput<M extends Procedure | Query> =
+  InferMethodOutput<M, Uint8Array | ReadableStream<Uint8Array>> extends
+    undefined
+    ? InferMethodOutput<M, Uint8Array | ReadableStream<Uint8Array>> | void
+    : InferMethodOutput<M, Uint8Array | ReadableStream<Uint8Array>>;
+
+export type LexMethodMessage<M extends Subscription> = InferMethodMessage<M>;
+
+export type LexMethodHandler<
+  M extends Procedure | Query,
+  A extends Auth = Auth,
+> = MethodHandler<A, LexMethodParams<M>, LexMethodInput<M>, LexMethodOutput<M>>;
+
+export type LexMethodConfig<
+  M extends Procedure | Query,
+  A extends Auth = Auth,
+> = MethodConfig<A, LexMethodParams<M>, LexMethodInput<M>, LexMethodOutput<M>>;
+
+export type LexSubscriptionHandler<
+  M extends Subscription,
+  A extends Auth = Auth,
+> = StreamHandler<
+  A,
+  LexMethodParams<M>,
+  LexMethodMessage<M>
+>;
+
+export type LexSubscriptionConfig<
+  M extends Subscription,
+  A extends Auth = Auth,
+> = StreamConfig<A, LexMethodParams<M>, LexMethodMessage<M>>;
 
 /**
  * Configuration for server-level rate limits.

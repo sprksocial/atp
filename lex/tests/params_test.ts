@@ -34,3 +34,22 @@ Deno.test("serializes transformed params to URLSearchParams", () => {
     "since=2024-01-02T03%3A04%3A05.000Z",
   );
 });
+
+Deno.test("preserves undeclared params from URLSearchParams", () => {
+  const params = l.params({
+    name: l.string(),
+  });
+
+  const result = params.fromURLSearchParams(
+    new URLSearchParams("name=Alice&num=1&num=2&foo=3"),
+  ) as Record<string, unknown>;
+
+  assertEquals(
+    result,
+    {
+      name: "Alice",
+      num: ["1", "2"],
+      foo: "3",
+    },
+  );
+});

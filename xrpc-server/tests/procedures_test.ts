@@ -117,7 +117,6 @@ Deno.test.beforeAll(async () => {
       };
     },
   );
-
   s = await createServer(server);
   const port = (s as Deno.HttpServer & { port: number }).port;
   client = new Client(`http://localhost:${port}`, LEXICONS);

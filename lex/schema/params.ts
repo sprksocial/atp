@@ -50,7 +50,10 @@ export class ParamsSchema<
     for (const key in input) {
       if (this.validatorsMap.has(key)) continue;
 
-      const result = ctx.validateChild(input, key, paramSchema);
+      const result = paramSchema.safeParse(input[key], {
+        allowTransform: false,
+        path: ctx.concatPath(key),
+      });
       if (!result.success) return result;
 
       if (result.value !== input[key]) {

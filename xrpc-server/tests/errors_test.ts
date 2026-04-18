@@ -207,6 +207,41 @@ Deno.test.afterAll(async () => {
   await closeServer(upstreamS);
 });
 
+Deno.test("validates responses by default on the server", {
+  sanitizeOps: false,
+  sanitizeResources: false,
+}, async () => {
+  const validatingServer = xrpcServer.createServer(LEXICONS);
+  validatingServer.method("io.example.invalidResponse", () => {
+    return { encoding: "application/json", body: { something: "else" } };
+  });
+
+  const validatingHttpServer = await createServer(validatingServer);
+
+  try {
+    const port = (validatingHttpServer as Deno.HttpServer & { port: number })
+      .port;
+    const validatingClient = new Client(`http://localhost:${port}`, LEXICONS);
+
+    await assertRejects(
+      async () => {
+        await validatingClient.call("io.example.invalidResponse");
+      },
+      XRPCError,
+      "Internal Server Error",
+    );
+
+    const error = await validatingClient.call("io.example.invalidResponse")
+      .catch((err) => err);
+    assert(error instanceof XRPCError);
+    assert(!(error instanceof XRPCInvalidResponseError));
+    assertEquals(error.status, 500);
+    assertEquals(error.error, "InternalServerError");
+  } finally {
+    await closeServer(validatingHttpServer);
+  }
+});
+
 Deno.test("throws XRPCError for foo error", {
   sanitizeOps: false,
   sanitizeResources: false,

@@ -130,7 +130,10 @@ async function consumeInput(
       }
       return result;
     } catch (err) {
-      if (err instanceof XRPCError) {
+      if (
+        err instanceof XRPCError ||
+        err instanceof xrpcServer.XRPCError
+      ) {
         throw err;
       } else {
         throw new XRPCError(
@@ -296,8 +299,8 @@ Deno.test({
 
       await assertRejects(
         () => client.call("io.example.validationTestTwo"),
-        Error,
-        "The server gave an invalid response and may be out of date.",
+        XRPCError,
+        "Internal Server Error",
       );
     });
 
@@ -542,7 +545,6 @@ Deno.test({
 
     await t.step({
       name: "supports max blob size (based on content-length)",
-      ignore: true,
       async fn() {
         const bytes = randomBytes(BLOB_LIMIT + 1);
 
@@ -568,7 +570,6 @@ Deno.test({
 
     await t.step({
       name: "supports max blob size (missing content-length)",
-      ignore: true,
       async fn() {
         const bytes = randomBytes(BLOB_LIMIT + 1);
 
