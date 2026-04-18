@@ -1,6 +1,6 @@
 import { l } from "@atp/lex";
 import { assertEquals, assertRejects } from "@std/assert";
-import { Client } from "../mod.ts";
+import { Client, xrpc, xrpcSafe } from "../mod.ts";
 import type { XrpcCallCompatibleOptions } from "../types.ts";
 import { XRPCError, XRPCInvalidResponseError } from "../types.ts";
 
@@ -47,6 +47,28 @@ Deno.test("calls query with xrpc", async () => {
   assertEquals(result.data, { value: "ok" });
 });
 
+Deno.test("calls top-level xrpc", async () => {
+  const method = l.query(
+    "io.example.query",
+    l.params({ limit: l.optional(l.integer()) }),
+    l.jsonPayload({ value: l.string() }),
+  );
+
+  const result = await xrpc(
+    (url, init) => {
+      assertEquals(url, "/xrpc/io.example.query?limit=6");
+      assertEquals(init.method, "get");
+      return Promise.resolve(Response.json({ value: "ok" }));
+    },
+    method,
+    {
+      params: { limit: 6 },
+    },
+  );
+
+  assertEquals(result.data, { value: "ok" });
+});
+
 Deno.test("narrows xrpcSafe success results on success flag", async () => {
   const method = l.query(
     "io.example.query",
@@ -70,6 +92,37 @@ Deno.test("narrows xrpcSafe success results on success flag", async () => {
     assertEquals(result.data, { value: "ok" });
   } else {
     throw new Error(result.error);
+  }
+});
+
+Deno.test("calls top-level xrpcSafe", async () => {
+  const method = l.query(
+    "io.example.query",
+    l.params({ limit: l.optional(l.integer()) }),
+    l.jsonPayload({ value: l.string() }),
+  );
+
+  const result = await xrpcSafe(
+    () =>
+      Promise.resolve(
+        Response.json(
+          { error: "BadRequest", message: "nope" },
+          { status: 400 },
+        ),
+      ),
+    method,
+    {
+      params: { limit: 2 },
+    },
+  );
+
+  assertEquals(result.success, false);
+
+  if (!result.success) {
+    assertEquals(result.error, "BadRequest");
+    assertEquals(result.message, "nope");
+  } else {
+    throw new Error(JSON.stringify(result.data));
   }
 });
 

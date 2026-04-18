@@ -25,6 +25,40 @@ import {
 } from "./util.ts";
 import type { DidString } from "@atp/lex";
 
+export function xrpc<const M extends XrpcMethodLike>(
+  agentOpts: Agent | AgentOptions,
+  input: M,
+): Promise<XRPCResponse>;
+export function xrpc<const M extends XrpcMethodLike, const O>(
+  agentOpts: Agent | AgentOptions,
+  input: M,
+  options: O & XrpcCallCompatibleOptions<M, O>,
+): Promise<XRPCResponse>;
+export async function xrpc<const M extends XrpcMethodLike>(
+  agentOpts: Agent | AgentOptions,
+  input: M,
+  options: XrpcCallOptions<M> = {} as XrpcCallOptions<M>,
+): Promise<XRPCResponse> {
+  return await new Client(agentOpts).xrpc(input, options);
+}
+
+export function xrpcSafe<const M extends XrpcMethodLike>(
+  agentOpts: Agent | AgentOptions,
+  input: M,
+): Promise<XRPCError | XRPCResponse>;
+export function xrpcSafe<const M extends XrpcMethodLike, const O>(
+  agentOpts: Agent | AgentOptions,
+  input: M,
+  options: O & XrpcCallCompatibleOptions<M, O>,
+): Promise<XRPCError | XRPCResponse>;
+export async function xrpcSafe<const M extends XrpcMethodLike>(
+  agentOpts: Agent | AgentOptions,
+  input: M,
+  options: XrpcCallOptions<M> = {} as XrpcCallOptions<M>,
+): Promise<XRPCError | XRPCResponse> {
+  return await new Client(agentOpts).xrpcSafe(input, options);
+}
+
 export class Client {
   readonly agent: Agent;
   readonly fetchHandler: FetchHandler;
@@ -324,6 +358,10 @@ function getXrpcMethod(input: XrpcMethodLike): XrpcMethod {
 
   if ("main" in input && isXrpcMethod(input.main)) {
     return input.main;
+  }
+
+  if ("Main" in input && isXrpcMethod(input.Main)) {
+    return input.Main;
   }
 
   throw new TypeError("Expected an XRPC method or a namespace with main");
