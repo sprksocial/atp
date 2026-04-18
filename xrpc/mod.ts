@@ -6,40 +6,28 @@
  *
  * @example Fetching an XRPC endpoint
  * ```typescript
- * import { LexiconDoc } from '@atp/lexicon'
+ * import { l } from '@atp/lex'
  * import { Client } from '@atp/xrpc'
  *
- * const pingLexicon = {
- *  lexicon: 1,
- *  id: 'io.example.ping',
- *  defs: {
- *    main: {
- *      type: 'query',
- *      description: 'Ping the server',
- *      parameters: {
- *        type: 'params',
- *        properties: { message: { type: 'string' } },
- *      },
- *      output: {
- *        encoding: 'application/json',
- *        schema: {
- *          type: 'object',
- *          required: ['message'],
- *          properties: { message: { type: 'string' } },
- *        },
- *      },
- *    },
- *  },
- * } satisfies LexiconDoc
+ * const ping = l.query(
+ *   'io.example.ping',
+ *   l.params({
+ *     message: l.string(),
+ *   }),
+ *   l.jsonPayload({
+ *     message: l.string(),
+ *   }),
+ * )
  *
- * const client = new Client('https://ping.example.com', [
- *   pingLexicon,
- * ])
+ * const client = new Client('https://ping.example.com')
  *
- * const res1 = await client.xrpc('io.example.ping', {
- *   message: 'hello world',
+ * const res = await client.xrpc(ping, {
+ *   params: {
+ *     message: 'hello world',
+ *   },
  * })
- * res1.body // => {message: 'hello world'}
+ *
+ * res.data // => { message: 'hello world' }
  * ```
  * @module
  */
