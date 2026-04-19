@@ -1,71 +1,151 @@
-import type { CID } from "multiformats";
+import { asCid, type Cid } from "@atp/lex/data";
 import { z } from "zod";
-import { schema as common } from "@atp/common";
 import { def as commonDef } from "@atp/common";
-import type { RepoRecord } from "@atp/lexicon";
+import type { BlobRef, LegacyBlobRef } from "@atp/lex";
+import type { BlobRef as LexiconBlobRef } from "@atp/lexicon";
 import type { BlockMap } from "./block-map.ts";
 import type { CidSet } from "./cid-set.ts";
 
-// Repo nodes
-// ---------------
+export type LexScalar =
+  | number
+  | string
+  | boolean
+  | null
+  | Cid
+  | Uint8Array
+  | BlobRef
+  | LegacyBlobRef;
 
-type UnsignedCommitType = z.ZodObject<{
+export type LexValue =
+  | LexScalar
+  | LexValue[]
+  | { [key: string]: LexValue | undefined };
+
+export interface RepoRecord {
+  [key: string]: LexValue | undefined;
+}
+
+export type RepoInputScalar = LexScalar | LexiconBlobRef;
+
+export type RepoInputValue =
+  | RepoInputScalar
+  | RepoInputValue[]
+  | { [key: string]: RepoInputValue | undefined };
+
+export interface RepoInputRecord {
+  [key: string]: RepoInputValue | undefined;
+}
+
+type CidSchema = z.ZodPipe<z.ZodUnknown, z.ZodTransform<Cid, unknown>>;
+type BytesSchema = z.ZodCustom<
+  Uint8Array<ArrayBufferLike>,
+  Uint8Array<ArrayBufferLike>
+>;
+type NullableCidSchema = z.ZodNullable<CidSchema>;
+type CommitShape<
+  Version extends 2 | 3,
+  Rev extends z.ZodString | z.ZodOptional<z.ZodString>,
+> = {
   did: z.ZodString;
-  version: z.ZodLiteral<3>;
-  data: typeof common.cid;
-  rev: z.ZodString;
-  prev: z.ZodNullable<typeof common.cid>;
-}, z.core.$strip>;
-export type UnsignedCommit = z.infer<UnsignedCommitType> & { sig?: never };
-
-const commit: CommitType = z.object({
-  did: z.string(),
-  version: z.literal(3),
-  data: common.cid,
-  rev: z.string(),
-  prev: z.nullable(common.cid),
-  sig: common.bytes,
-});
-type CommitType = z.ZodObject<{
-  did: z.ZodString;
-  version: z.ZodLiteral<3>;
-  data: typeof common.cid;
-  rev: z.ZodString;
-  prev: z.ZodNullable<typeof common.cid>;
-  sig: typeof common.bytes;
-}, z.core.$strip>;
-export type Commit = z.infer<CommitType>;
-
-const legacyV2Commit: LegacyV2CommitType = z.object({
-  did: z.string(),
-  version: z.literal(2),
-  data: common.cid,
-  rev: z.string().optional(),
-  prev: z.nullable(common.cid),
-  sig: common.bytes,
-});
-type LegacyV2CommitType = z.ZodObject<{
-  did: z.ZodString;
-  version: z.ZodLiteral<2>;
-  data: typeof common.cid;
-  rev: z.ZodOptional<z.ZodString>;
-  prev: z.ZodNullable<typeof common.cid>;
-  sig: typeof common.bytes;
-}, z.core.$strip>;
-export type LegacyV2Commit = z.infer<LegacyV2CommitType>;
-
-const versionedCommit: VersionedCommitType = z.discriminatedUnion("version", [
-  commit,
-  legacyV2Commit,
-]);
-type VersionedCommitType = z.ZodDiscriminatedUnion<
-  [CommitType, LegacyV2CommitType],
+  version: z.ZodLiteral<Version>;
+  data: CidSchema;
+  rev: Rev;
+  prev: NullableCidSchema;
+};
+type UnsignedCommitSchema = z.ZodObject<
+  CommitShape<3, z.ZodString>,
+  z.core.$strip
+>;
+type CommitSchema = z.ZodObject<
+  CommitShape<3, z.ZodString> & { sig: BytesSchema },
+  z.core.$strip
+>;
+type LegacyV2CommitSchema = z.ZodObject<
+  CommitShape<2, z.ZodOptional<z.ZodString>> & { sig: BytesSchema },
+  z.core.$strip
+>;
+type VersionedCommitSchema = z.ZodDiscriminatedUnion<
+  readonly [CommitSchema, LegacyV2CommitSchema],
   "version"
 >;
-export type VersionedCommit = z.infer<VersionedCommitType>;
+
+const cidSchema: CidSchema = z
+  .unknown().transform((obj, ctx): Cid => {
+    const cid = asCid(obj);
+
+    if (cid == null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Not a valid CID",
+      });
+      return z.NEVER;
+    }
+
+    return cid;
+  });
+
+const bytesSchema: BytesSchema = z.custom<Uint8Array>((value) =>
+  value instanceof Uint8Array
+);
+const stringSchema: z.ZodString = z.string();
+const arraySchema: z.ZodArray<z.ZodUnknown> = z.array(z.unknown());
+const mapSchema: z.ZodRecord<z.ZodString, z.ZodUnknown> = z.record(
+  z.string(),
+  z.unknown(),
+);
+const unknownSchema: z.ZodUnknown = z.unknown();
+
+const unsignedCommit: UnsignedCommitSchema = z.object({
+  did: z.string(),
+  version: z.literal(3),
+  data: cidSchema,
+  rev: z.string(),
+  prev: z.nullable(cidSchema),
+});
+export type UnsignedCommit = z.infer<typeof unsignedCommit> & { sig?: never };
+
+const commit: CommitSchema = z.object({
+  did: z.string(),
+  version: z.literal(3),
+  data: cidSchema,
+  rev: z.string(),
+  prev: z.nullable(cidSchema),
+  sig: bytesSchema,
+});
+export type Commit = z.infer<typeof commit>;
+
+export type LegacyV2Commit = {
+  did: string;
+  version: 2;
+  data: Cid;
+  rev?: string | undefined;
+  prev: Cid | null;
+  sig: Uint8Array;
+};
+
+const legacyV2Commit: LegacyV2CommitSchema = z.object({
+  did: z.string(),
+  version: z.literal(2),
+  data: cidSchema,
+  rev: z.string().optional(),
+  prev: z.nullable(cidSchema),
+  sig: bytesSchema,
+});
+
+export type VersionedCommit = Commit | LegacyV2Commit;
+
+const versionedCommit: VersionedCommitSchema = z.discriminatedUnion(
+  "version",
+  [commit, legacyV2Commit],
+);
 
 export const schema = {
-  ...common,
+  cid: cidSchema,
+  bytes: bytesSchema,
+  string: stringSchema,
+  array: arraySchema,
+  map: mapSchema,
+  unknown: unknownSchema,
   commit,
   legacyV2Commit,
   versionedCommit,
@@ -73,6 +153,26 @@ export const schema = {
 
 export const def = {
   ...commonDef,
+  cid: {
+    name: "cid",
+    schema: schema.cid,
+  },
+  bytes: {
+    name: "bytes",
+    schema: schema.bytes,
+  },
+  string: {
+    name: "string",
+    schema: schema.string,
+  },
+  map: {
+    name: "map",
+    schema: schema.map,
+  },
+  unknown: {
+    name: "unknown",
+    schema: schema.unknown,
+  },
   commit: {
     name: "commit",
     schema: schema.commit,
@@ -96,14 +196,14 @@ export type RecordCreateOp = {
   action: WriteOpAction.Create;
   collection: string;
   rkey: string;
-  record: RepoRecord;
+  record: RepoInputRecord;
 };
 
 export type RecordUpdateOp = {
   action: WriteOpAction.Update;
   collection: string;
   rkey: string;
-  record: RepoRecord;
+  record: RepoInputRecord;
 };
 
 export type RecordDeleteOp = {
@@ -118,22 +218,22 @@ export type RecordCreateDescript = {
   action: WriteOpAction.Create;
   collection: string;
   rkey: string;
-  cid: CID;
+  cid: Cid;
 };
 
 export type RecordUpdateDescript = {
   action: WriteOpAction.Update;
   collection: string;
   rkey: string;
-  prev: CID;
-  cid: CID;
+  prev: Cid;
+  cid: Cid;
 };
 
 export type RecordDeleteDescript = {
   action: WriteOpAction.Delete;
   collection: string;
   rkey: string;
-  cid: CID;
+  cid: Cid;
 };
 
 export type RecordWriteDescript =
@@ -147,10 +247,10 @@ export type WriteLog = RecordWriteDescript[][];
 // ---------------
 
 export type CommitData = {
-  cid: CID;
+  cid: Cid;
   rev: string;
   since: string | null;
-  prev: CID | null;
+  prev: Cid | null;
   newBlocks: BlockMap;
   relevantBlocks: BlockMap;
   removedCids: CidSet;
@@ -163,11 +263,11 @@ export type RepoUpdate = CommitData & {
 export type CollectionContents = Record<string, RepoRecord>;
 export type RepoContents = Record<string, CollectionContents>;
 
-export type RepoRecordWithCid = { cid: CID; value: RepoRecord };
+export type RepoRecordWithCid = { cid: Cid; value: RepoRecord };
 export type CollectionContentsWithCids = Record<string, RepoRecordWithCid>;
 export type RepoContentsWithCids = Record<string, CollectionContentsWithCids>;
 
-export type DatastoreContents = Record<string, CID>;
+export type DatastoreContents = Record<string, Cid>;
 
 export type RecordPath = {
   collection: string;
@@ -177,7 +277,7 @@ export type RecordPath = {
 export type RecordCidClaim = {
   collection: string;
   rkey: string;
-  cid: CID | null;
+  cid: Cid | null;
 };
 
 export type RecordClaim = {
@@ -200,6 +300,6 @@ export type VerifiedRepo = {
 };
 
 export type CarBlock = {
-  cid: CID;
+  cid: Cid;
   bytes: Uint8Array;
 };

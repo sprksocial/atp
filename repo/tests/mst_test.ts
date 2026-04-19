@@ -1,4 +1,4 @@
-import { CID } from "multiformats";
+import { type Cid, parseCid } from "@atp/lex/data";
 import { assertEquals, assertRejects } from "@std/assert";
 import {
   type DataAdd,
@@ -13,8 +13,8 @@ import * as util from "./_util.ts";
 
 let blockstore: MemoryBlockstore;
 let mst: MST;
-let mapping: Record<string, CID>;
-let shuffled: [string, CID][];
+let mapping: Record<string, Cid>;
+let shuffled: [string, Cid][];
 
 // Setup for main MST tests
 Deno.test("MST setup", async () => {
@@ -41,7 +41,7 @@ Deno.test("MST edits records", async () => {
   let editedMst = mst;
   const toEdit = shuffled.slice(0, 100);
 
-  const edited: [string, CID][] = [];
+  const edited: [string, Cid][] = [];
   for (const entry of toEdit) {
     const newCid = await util.randomCid();
     editedMst = await editedMst.update(entry[0], newCid);
@@ -148,7 +148,7 @@ Deno.test("MST diffs", async () => {
 
   // ensure we correctly report all added CIDs
   for await (const entry of toDiff.walk()) {
-    let cid: CID;
+    let cid: Cid;
     if (entry.isTree()) {
       cid = await entry.getPointer();
     } else {
@@ -181,7 +181,7 @@ Deno.test("utils counts prefix length", () => {
 Deno.test("MST Allowable Keys rejects the empty key", async () => {
   const blockstore = new MemoryBlockstore();
   const mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -194,7 +194,7 @@ Deno.test("MST Allowable Keys rejects the empty key", async () => {
 Deno.test("MST Allowable Keys rejects a key with no collection", async () => {
   const blockstore = new MemoryBlockstore();
   const mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -207,7 +207,7 @@ Deno.test("MST Allowable Keys rejects a key with no collection", async () => {
 Deno.test("MST Allowable Keys rejects a key with a nested collection", async () => {
   const blockstore = new MemoryBlockstore();
   const mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -220,7 +220,7 @@ Deno.test("MST Allowable Keys rejects a key with a nested collection", async () 
 Deno.test("MST Allowable Keys rejects on empty coll or rkey", async () => {
   const blockstore = new MemoryBlockstore();
   const mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -237,7 +237,7 @@ Deno.test("MST Allowable Keys rejects on empty coll or rkey", async () => {
 Deno.test("MST Allowable Keys rejects non-ascii chars", async () => {
   const blockstore = new MemoryBlockstore();
   const mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -258,7 +258,7 @@ Deno.test("MST Allowable Keys rejects non-ascii chars", async () => {
 Deno.test("MST Allowable Keys rejects ascii that we dont support", async () => {
   const blockstore = new MemoryBlockstore();
   const mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -290,7 +290,7 @@ Deno.test("MST Allowable Keys rejects ascii that we dont support", async () => {
 Deno.test("MST Allowable Keys rejects keys over 1024 chars", async () => {
   const blockstore = new MemoryBlockstore();
   const mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -306,7 +306,7 @@ Deno.test("MST Allowable Keys rejects keys over 1024 chars", async () => {
 Deno.test("MST Allowable Keys allows valid keys", async () => {
   const blockstore = new MemoryBlockstore();
   let mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -327,7 +327,7 @@ Deno.test("MST Allowable Keys allows valid keys", async () => {
 });
 
 // MST Interop Known Maps tests
-Deno.test('MST Known Maps computes "empty" tree root CID', async () => {
+Deno.test('MST Known Maps computes "empty" tree root Cid', async () => {
   const blockstore = new MemoryBlockstore();
   const mst = await MST.create(blockstore);
 
@@ -338,10 +338,10 @@ Deno.test('MST Known Maps computes "empty" tree root CID', async () => {
   );
 });
 
-Deno.test('MST Known Maps computes "trivial" tree root CID', async () => {
+Deno.test('MST Known Maps computes "trivial" tree root Cid', async () => {
   const blockstore = new MemoryBlockstore();
   let mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -353,10 +353,10 @@ Deno.test('MST Known Maps computes "trivial" tree root CID', async () => {
   );
 });
 
-Deno.test('MST Known Maps computes "singlelayer2" tree root CID', async () => {
+Deno.test('MST Known Maps computes "singlelayer2" tree root Cid', async () => {
   const blockstore = new MemoryBlockstore();
   let mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -369,10 +369,10 @@ Deno.test('MST Known Maps computes "singlelayer2" tree root CID', async () => {
   );
 });
 
-Deno.test('MST Known Maps computes "simple" tree root CID', async () => {
+Deno.test('MST Known Maps computes "simple" tree root Cid', async () => {
   const blockstore = new MemoryBlockstore();
   let mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -392,7 +392,7 @@ Deno.test('MST Known Maps computes "simple" tree root CID', async () => {
 Deno.test("MST Edge Cases trims top of tree on delete", async () => {
   const blockstore = new MemoryBlockstore();
   let mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -419,7 +419,7 @@ Deno.test("MST Edge Cases trims top of tree on delete", async () => {
 Deno.test("MST Edge Cases handles insertion that splits two layers down", async () => {
   const blockstore = new MemoryBlockstore();
   let mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -459,7 +459,7 @@ Deno.test("MST Edge Cases handles insertion that splits two layers down", async 
 Deno.test("MST Edge Cases handles new layers that are two higher than existing", async () => {
   const blockstore = new MemoryBlockstore();
   let mst = await MST.create(blockstore);
-  const cid1 = CID.parse(
+  const cid1 = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 

@@ -1181,8 +1181,7 @@
         "dependencies": [
           "jsr:@std/encoding@^1.0.10",
           "jsr:@zod/zod@^4.1.13",
-          "npm:@ipld/dag-cbor@^9.2.5",
-          "npm:multiformats@^13.4.1"
+          "npm:@ipld/dag-cbor@^9.2.5"
         ]
       },
       "sync": {

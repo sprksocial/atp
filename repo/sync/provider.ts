@@ -1,4 +1,4 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import { writeCarStream } from "../car.ts";
 import { CidSet } from "../cid-set.ts";
 import { MissingBlocksError } from "../error.ts";
@@ -12,15 +12,15 @@ import * as util from "../util.ts";
 
 export const getFullRepo = (
   storage: RepoStorage,
-  commitCid: CID,
+  commitCid: Cid,
 ): AsyncIterable<Uint8Array> => {
   return writeCarStream(commitCid, iterateFullRepo(storage, commitCid));
 };
 
-async function* iterateFullRepo(storage: RepoStorage, commitCid: CID) {
+async function* iterateFullRepo(storage: RepoStorage, commitCid: Cid) {
   const commit = storage.readObjAndBytes(commitCid, def.commit);
   yield { cid: commitCid, bytes: commit.bytes };
-  const mst = MST.load(storage, commit.obj.data as CID);
+  const mst = MST.load(storage, commit.obj.data as Cid);
   for await (const block of mst.carBlockStream()) {
     yield block;
   }
@@ -31,7 +31,7 @@ async function* iterateFullRepo(storage: RepoStorage, commitCid: CID) {
 
 export const getRecords = (
   storage: ReadableBlockstore,
-  commitCid: CID,
+  commitCid: Cid,
   paths: RecordPath[],
 ): AsyncIterable<Uint8Array> => {
   return writeCarStream(
@@ -42,12 +42,12 @@ export const getRecords = (
 
 async function* iterateRecordBlocks(
   storage: ReadableBlockstore,
-  commitCid: CID,
+  commitCid: Cid,
   paths: RecordPath[],
 ) {
   const commit = storage.readObjAndBytes(commitCid, def.commit);
   yield { cid: commitCid, bytes: commit.bytes };
-  const mst = MST.load(storage, commit.obj.data as CID);
+  const mst = MST.load(storage, commit.obj.data as Cid);
   const cidsForPaths = await Promise.all(
     paths.map((p) => mst.cidsForPath(util.formatDataKey(p.collection, p.rkey))),
   );

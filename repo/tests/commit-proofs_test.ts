@@ -1,4 +1,4 @@
-import { CID } from "multiformats";
+import { parseCid } from "@atp/lex/data";
 import { MST } from "../mst/index.ts";
 import { BlockMap, MemoryBlockstore } from "../mod.ts";
 import fixtures from "./commit-proof-fixtures.json" with { type: "json" };
@@ -7,7 +7,7 @@ import { assert, assertEquals } from "@std/assert";
 for (const fixture of fixtures) {
   Deno.test(fixture.comment, async () => {
     const { leafValue, keys, adds, dels } = fixture;
-    const leaf = CID.parse(leafValue);
+    const leaf = parseCid(leafValue);
 
     const storage = new MemoryBlockstore();
     let mst = await MST.create(storage);
@@ -33,7 +33,7 @@ for (const fixture of fixtures) {
       (acc, cur) => acc.addMap(cur),
       new BlockMap(),
     );
-    const blocksInProof = fixture.blocksInProof.map((cid) => CID.parse(cid));
+    const blocksInProof = fixture.blocksInProof.map((cid) => parseCid(cid));
     for (const cid of blocksInProof) {
       assert(proof.has(cid));
     }

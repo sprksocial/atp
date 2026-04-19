@@ -1,6 +1,6 @@
-import type { CID } from "multiformats";
+import type { Cid } from "@atp/lex/data";
 import * as bytes from "@atp/bytes";
-import { cidForCbor } from "@atp/common";
+import { cidForLex, type LexValue as EncodableLexValue } from "@atp/lex/cbor";
 import { sha256 } from "@atp/crypto";
 import type { ReadableBlockstore } from "../storage/index.ts";
 import {
@@ -45,7 +45,7 @@ export const deserializeNodeData = (
   const entries: NodeEntry[] = [];
   if (data.l !== null) {
     entries.push(
-      MST.load(storage, data.l as CID, {
+      MST.load(storage, data.l as Cid, {
         layer: layer ? layer - 1 : undefined,
       }),
     );
@@ -55,11 +55,11 @@ export const deserializeNodeData = (
     const keyStr = bytes.toString(entry.k as Uint8Array, "ascii");
     const key = lastKey.slice(0, entry.p) + keyStr;
     ensureValidMstKey(key);
-    entries.push(new Leaf(key, entry.v as CID));
+    entries.push(new Leaf(key, entry.v as Cid));
     lastKey = key;
     if (entry.t !== null) {
       entries.push(
-        MST.load(storage, entry.t as CID, {
+        MST.load(storage, entry.t as Cid, {
           layer: layer ? layer - 1 : undefined,
         }),
       );
@@ -86,7 +86,7 @@ export const serializeNodeData = (entries: NodeEntry[]): NodeData => {
       throw new Error("Not a valid node: two subtrees next to each other");
     }
     i++;
-    let subtree: CID | null = null;
+    let subtree: Cid | null = null;
     if (next?.isTree()) {
       subtree = next.pointer;
       i++;
@@ -115,9 +115,9 @@ export const countPrefixLen = (a: string, b: string): number => {
   return i;
 };
 
-export const cidForEntries = (entries: NodeEntry[]): Promise<CID> => {
+export const cidForEntries = (entries: NodeEntry[]): Promise<Cid> => {
   const data = serializeNodeData(entries);
-  return cidForCbor(data);
+  return cidForLex(data as EncodableLexValue);
 };
 
 export const isValidMstKey = (str: string): boolean => {

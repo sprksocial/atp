@@ -1,20 +1,20 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import type { check } from "@atp/common";
-import type { RepoRecord } from "@atp/lexicon";
 import type { BlockMap } from "../block-map.ts";
 import { MissingBlockError } from "../error.ts";
 import * as parse from "../parse.ts";
+import type { RepoRecord } from "../types.ts";
 import { cborToLexRecord } from "../util.ts";
 
 export abstract class ReadableBlockstore {
-  abstract getBytes(cid: CID): Uint8Array | null;
-  abstract has(cid: CID): boolean;
+  abstract getBytes(cid: Cid): Uint8Array | null;
+  abstract has(cid: Cid): boolean;
   abstract getBlocks(
-    cids: CID[],
-  ): { blocks: BlockMap; missing: CID[] };
+    cids: Cid[],
+  ): { blocks: BlockMap; missing: Cid[] };
 
   attemptRead<T>(
-    cid: CID,
+    cid: Cid,
     def: check.Def<T>,
   ): { obj: T; bytes: Uint8Array } | null {
     const bytes = this.getBytes(cid);
@@ -23,7 +23,7 @@ export abstract class ReadableBlockstore {
   }
 
   readObjAndBytes<T>(
-    cid: CID,
+    cid: Cid,
     def: check.Def<T>,
   ): { obj: T; bytes: Uint8Array } {
     const read = this.attemptRead(cid, def);
@@ -33,12 +33,12 @@ export abstract class ReadableBlockstore {
     return read;
   }
 
-  readObj<T>(cid: CID, def: check.Def<T>): T {
+  readObj<T>(cid: Cid, def: check.Def<T>): T {
     const obj = this.readObjAndBytes(cid, def);
     return obj.obj;
   }
 
-  attemptReadRecord(cid: CID): RepoRecord | null {
+  attemptReadRecord(cid: Cid): RepoRecord | null {
     try {
       return this.readRecord(cid);
     } catch {
@@ -46,7 +46,7 @@ export abstract class ReadableBlockstore {
     }
   }
 
-  readRecord(cid: CID): RepoRecord {
+  readRecord(cid: Cid): RepoRecord {
     const bytes = this.getBytes(cid);
     if (!bytes) {
       throw new MissingBlockError(cid);

@@ -1,6 +1,7 @@
-import { cidForCbor, streamToBuffer, TID } from "@atp/common";
+import { streamToBuffer, TID } from "@atp/common";
 import * as crypto from "@atp/crypto";
 import {
+  cidForRecord,
   type RecordCidClaim,
   type RecordPath,
   Repo,
@@ -44,7 +45,7 @@ const contentsToClaims = async (
       claims.push({
         collection: coll,
         rkey: rkey,
-        cid: await cidForCbor(contents[coll][rkey]),
+        cid: await cidForRecord(contents[coll][rkey]),
       });
     }
   }
@@ -142,7 +143,7 @@ Deno.test("can determine record proofs from car file", async () => {
     }
     assertEquals(
       foundClaim.cid,
-      await cidForCbor(repoData[record.collection][record.rkey]),
+      await cidForRecord(repoData[record.collection][record.rkey]),
     );
   }
 });

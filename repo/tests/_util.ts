@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { CID } from "multiformats";
+import { type Cid, parseCid } from "@atp/lex/data";
 import { dataToCborBlock, TID } from "@atp/common";
 import type * as crypto from "@atp/crypto";
 import { type Keypair, randomBytes } from "@atp/crypto";
@@ -18,9 +18,9 @@ import type { MST } from "../mst/index.ts";
 import { Repo } from "../repo.ts";
 import type { RepoStorage } from "../storage/index.ts";
 
-type IdMapping = Record<string, CID>;
+type IdMapping = Record<string, Cid>;
 
-export const randomCid = async (storage?: RepoStorage): Promise<CID> => {
+export const randomCid = async (storage?: RepoStorage): Promise<Cid> => {
   const block = await dataToCborBlock({ test: randomStr(50) });
   if (storage) {
     // @ts-expect-error FIXME remove this comment (and fix the TS error)
@@ -173,7 +173,7 @@ export const formatEdit = async (
 export const pathsForOps = (ops: RecordWriteOp[]): RecordPath[] =>
   ops.map((op) => ({ collection: op.collection, rkey: op.rkey }));
 
-export const saveMst = async (storage: RepoStorage, mst: MST): Promise<CID> => {
+export const saveMst = async (storage: RepoStorage, mst: MST): Promise<Cid> => {
   const diff = await mst.getUnstoredBlocks();
   // @ts-expect-error FIXME remove this comment (and fix the TS error)
   await storage.putMany(diff.blocks);
@@ -239,15 +239,15 @@ export const writeMstLog = async (filename: string, tree: MST) => {
   fs.writeFileSync(filename, log);
 };
 
-export const saveMstEntries = (filename: string, entries: [string, CID][]) => {
+export const saveMstEntries = (filename: string, entries: [string, Cid][]) => {
   const writable = entries.map(([key, val]) => [key, val.toString()]);
   fs.writeFileSync(filename, JSON.stringify(writable));
 };
 
-export const loadMstEntries = (filename: string): [string, CID][] => {
+export const loadMstEntries = (filename: string): [string, Cid][] => {
   const contents = fs.readFileSync(filename);
   const parsed = JSON.parse(contents.toString());
   return parsed.map((
     [key, value]: [string, string],
-  ) => [key, CID.parse(value)]);
+  ) => [key, parseCid(value)]);
 };

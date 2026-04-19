@@ -1,7 +1,11 @@
-import type { CID } from "multiformats/cid";
-import { dataToCborBlock, TID } from "@atp/common";
+import type { Cid } from "@atp/lex/data";
+import {
+  cidForCbor,
+  encode as encodeLexCbor,
+  type LexValue as EncodableLexValue,
+} from "@atp/lex/cbor";
+import { TID } from "@atp/common";
 import type * as crypto from "@atp/crypto";
-import { lexToIpld } from "@atp/lexicon";
 import { BlockMap } from "./block-map.ts";
 import { CidSet } from "./cid-set.ts";
 import { DataDiff } from "./data-diff.ts";
@@ -18,13 +22,12 @@ import {
   WriteOpAction,
 } from "./types.ts";
 import * as util from "./util.ts";
-import type { Version } from "multiformats/link/interface";
 
 type Params = {
   storage: RepoStorage;
   data: MST;
   commit: Commit;
-  cid: CID;
+  cid: Cid;
 };
 
 export class Repo extends ReadableRepo {
@@ -100,13 +103,13 @@ export class Repo extends ReadableRepo {
     return Repo.createFromCommit(storage, commit);
   }
 
-  static override load(storage: RepoStorage, cid?: CID): Repo {
+  static override load(storage: RepoStorage, cid?: Cid): Repo {
     const commitCid = cid || (storage.getRoot());
     if (!commitCid) {
       throw new Error("No cid provided and none in storage");
     }
     const commit = storage.readObj(commitCid, def.versionedCommit);
-    const data = MST.load(storage, (commit as { data: CID }).data);
+    const data = MST.load(storage, (commit as { data: Cid }).data);
     log.info("loaded repo for", { did: commit.did });
     return new Repo({
       storage,
@@ -170,15 +173,18 @@ export class Repo extends ReadableRepo {
       },
       keypair,
     );
-    const commitBlock = await dataToCborBlock(lexToIpld(commit));
-    if (!commitBlock.cid.equals(this.cid)) {
-      newBlocks.set(commitBlock.cid, commitBlock.bytes);
-      relevantBlocks.set(commitBlock.cid, commitBlock.bytes);
+    const commitBytes = encodeLexCbor(
+      util.lexToCborValue(commit) as EncodableLexValue,
+    );
+    const commitCid = await cidForCbor(commitBytes);
+    if (!commitCid.equals(this.cid)) {
+      newBlocks.set(commitCid, commitBytes);
+      relevantBlocks.set(commitCid, commitBytes);
       removedCids.add(this.cid);
     }
 
     return {
-      cid: commitBlock.cid,
+      cid: commitCid,
       rev,
       since: this.commit.rev,
       prev: this.cid,
@@ -202,7 +208,7 @@ export class Repo extends ReadableRepo {
   }
 
   async formatResignCommit(rev: string, keypair: crypto.Keypair): Promise<{
-    cid: CID<unknown, number, number, Version>;
+    cid: Cid;
     rev: string;
     since: null;
     prev: null;

@@ -1,4 +1,4 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import type { RepoEvent } from "../firehose/lexicons.ts";
 
 export interface MockFirehoseServerOptions {
@@ -167,12 +167,12 @@ export const createMockCommitEvent = (
     seq,
     time: new Date().toISOString(),
     repo,
-    commit: mockCID as unknown as CID,
+    commit: mockCID as unknown as Cid,
     rev: `rev-${seq}`,
     ops: [{
       action,
       path: `${collection}/${rkey}`,
-      cid: action === "delete" ? null : mockCID as unknown as CID,
+      cid: action === "delete" ? null : mockCID as unknown as Cid,
     }],
     blocks: new Uint8Array(
       JSON.stringify(record).split("").map((c) => c.charCodeAt(0)),

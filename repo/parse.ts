@@ -1,13 +1,14 @@
-import type { CID } from "multiformats/cid";
-import { cborDecode, type check } from "@atp/common";
-import type { RepoRecord } from "@atp/lexicon";
+import type { Cid } from "@atp/lex/data";
+import { decode as decodeLexCbor } from "@atp/lex/cbor";
+import type { check } from "@atp/common";
 import type { BlockMap } from "./block-map.ts";
 import { MissingBlockError, UnexpectedObjectError } from "./error.ts";
+import type { RepoRecord } from "./types.ts";
 import { cborToLexRecord } from "./util.ts";
 
 export const getAndParseRecord = (
   blocks: BlockMap,
-  cid: CID,
+  cid: Cid,
 ): { record: RepoRecord; bytes: Uint8Array } => {
   const bytes = blocks.get(cid);
   if (!bytes) {
@@ -19,7 +20,7 @@ export const getAndParseRecord = (
 
 export const getAndParseByDef = <T>(
   blocks: BlockMap,
-  cid: CID,
+  cid: Cid,
   def: check.Def<T>,
 ): { obj: T; bytes: Uint8Array } => {
   const bytes = blocks.get(cid);
@@ -31,10 +32,10 @@ export const getAndParseByDef = <T>(
 
 export const parseObjByDef = <T>(
   bytes: Uint8Array,
-  cid: CID,
+  cid: Cid,
   def: check.Def<T>,
 ): { obj: T; bytes: Uint8Array } => {
-  const obj = cborDecode(bytes);
+  const obj = decodeLexCbor(bytes);
   const res = def.schema.safeParse(obj);
   if (res.success) {
     return { obj: res.data, bytes };

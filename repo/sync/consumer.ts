@@ -1,4 +1,4 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import type { BlockMap } from "../block-map.ts";
 import { readCarWithRoot } from "../car.ts";
 import { DataDiff } from "../data-diff.ts";
@@ -29,7 +29,7 @@ export const verifyRepoCar = async (
 
 export const verifyRepo = async (
   blocks: BlockMap,
-  head: CID,
+  head: Cid,
   did?: string,
   signingKey?: string,
   opts?: { ensureLeaves?: boolean },
@@ -56,7 +56,7 @@ export const verifyDiffCar = async (
 export const verifyDiff = async (
   repo: ReadableRepo | null,
   updateBlocks: BlockMap,
-  updateRoot: CID,
+  updateRoot: Cid,
   did?: string,
   signingKey?: string,
   opts?: { ensureLeaves?: boolean },
@@ -107,7 +107,7 @@ export const verifyDiff = async (
 // @NOTE only verifies the root, not the repo contents
 const verifyRepoRoot = (
   storage: ReadableBlockstore,
-  head: CID,
+  head: Cid,
   did?: string,
   signingKey?: string,
 ): ReadableRepo => {
@@ -144,7 +144,7 @@ export const verifyProofs = async (
       `Invalid signature on commit: ${car.root.toString()}`,
     );
   }
-  const mst = MST.load(blockstore, (commit as { data: CID }).data);
+  const mst = MST.load(blockstore, (commit as { data: Cid }).data);
   const verified: RecordCidClaim[] = [];
   const unverified: RecordCidClaim[] = [];
   for (const claim of claims) {
@@ -186,7 +186,7 @@ export const verifyRecords = async (
       `Invalid signature on commit: ${car.root.toString()}`,
     );
   }
-  const mst = MST.load(blockstore, (commit as { data: CID }).data);
+  const mst = MST.load(blockstore, (commit as { data: Cid }).data);
 
   const records: RecordClaim[] = [];
   const leaves = await mst.reachableLeaves();

@@ -1,15 +1,9 @@
 import * as cbor from "@ipld/dag-cbor";
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
+import { parseCidFromBytes, verifyCidForBytes } from "@atp/lex/cbor";
 import * as ui8 from "@atp/bytes";
 import { encodeVarint } from "@std/encoding/varint";
-import {
-  type CarHeader,
-  check,
-  def,
-  parseCidFromBytes,
-  streamToBuffer,
-  verifyCidForBytes,
-} from "@atp/common";
+import { type CarHeader, check, def, streamToBuffer } from "@atp/common";
 import { BlockMap } from "./block-map.ts";
 import type { CarBlock } from "./types.ts";
 
@@ -34,7 +28,7 @@ const decodeVarintCustom = (bytes: Uint8Array): number => {
 };
 
 export async function* writeCarStream(
-  root: CID | null,
+  root: Cid | null,
   blocks: AsyncIterable<CarBlock>,
 ): AsyncIterable<Uint8Array> {
   const headerObj = {
@@ -56,7 +50,7 @@ export async function* writeCarStream(
 }
 
 export const blocksToCarFile = (
-  root: CID | null,
+  root: Cid | null,
   blocks: BlockMap,
 ): Promise<Uint8Array> => {
   const carStream = blocksToCarStream(root, blocks);
@@ -64,7 +58,7 @@ export const blocksToCarFile = (
 };
 
 export const blocksToCarStream = (
-  root: CID | null,
+  root: Cid | null,
   blocks: BlockMap,
 ): AsyncIterable<Uint8Array> => {
   return writeCarStream(root, iterateBlocks(blocks));
@@ -86,7 +80,7 @@ export type ReadCarOptions = {
 export const readCar = async (
   bytes: Uint8Array,
   opts?: ReadCarOptions,
-): Promise<{ roots: CID[]; blocks: BlockMap }> => {
+): Promise<{ roots: Cid[]; blocks: BlockMap }> => {
   const { roots, blocks } = await readCarStream([bytes], opts);
   const blockMap = new BlockMap();
   for await (const block of blocks) {
@@ -98,7 +92,7 @@ export const readCar = async (
 export const readCarWithRoot = async (
   bytes: Uint8Array,
   opts?: ReadCarOptions,
-): Promise<{ root: CID; blocks: BlockMap }> => {
+): Promise<{ root: Cid; blocks: BlockMap }> => {
   const { roots, blocks } = await readCar(bytes, opts);
   if (roots.length !== 1) {
     throw new Error(`Expected one root, got ${roots.length}`);
@@ -117,7 +111,7 @@ export const readCarStream = async (
   car: Iterable<Uint8Array> | AsyncIterable<Uint8Array>,
   opts?: ReadCarOptions,
 ): Promise<{
-  roots: CID[];
+  roots: Cid[];
   blocks: CarBlockIterable;
 }> => {
   const reader = new BufferedReader(car);
@@ -130,7 +124,7 @@ export const readCarStream = async (
     const headerData = cbor.decode(headerBytes);
     const header = check.assure(def.carHeader.schema, headerData) as CarHeader;
     return {
-      roots: header.roots as CID[],
+      roots: header.roots as Cid[],
       blocks: readCarBlocksIter(reader, opts),
     };
   } catch (err) {

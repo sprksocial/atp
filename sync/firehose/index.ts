@@ -1,4 +1,4 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import type { WebSocketOptions } from "@atp/xrpc-server";
 import { createDeferrable, type Deferrable, wait } from "@atp/common";
 import {
@@ -405,7 +405,7 @@ export const parseCommitAuthenticated = async (
     };
   });
   const key = await idResolver.did.resolveAtprotoKey(did, forceKeyRefresh);
-  const verifiedCids: Record<string, CID | null> = {};
+  const verifiedCids: Record<string, Cid | null> = {};
   try {
     const results = await verifyProofs(evt.blocks, claims, did, key);
     results.verified.forEach((op) => {

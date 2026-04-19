@@ -1,26 +1,30 @@
-import * as cbor from "@ipld/dag-cbor";
-import { cborDecode, check, cidForCbor, schema, TID } from "@atp/common";
+import {
+  cidForLex,
+  decode as decodeLexCbor,
+  encode as encodeLexCbor,
+  type LexValue as EncodableLexValue,
+} from "@atp/lex/cbor";
+import { asCid, type Cid } from "@atp/lex/data";
+import { check, schema, TID } from "@atp/common";
 import * as crypto from "@atp/crypto";
 import type { Keypair } from "@atp/crypto";
-import {
-  ipldToLex,
-  lexToIpld,
-  type LexValue,
-  type RepoRecord,
-} from "@atp/lexicon";
+import { BlobRef as LexiconBlobRef } from "@atp/lexicon";
 import type { DataDiff } from "./data-diff.ts";
 import {
   type Commit,
   type LegacyV2Commit,
+  type LexValue,
   type RecordCreateDescript,
   type RecordDeleteDescript,
   type RecordPath,
   type RecordUpdateDescript,
   type RecordWriteDescript,
+  type RepoInputRecord,
+  type RepoInputValue,
+  type RepoRecord,
   type UnsignedCommit,
   WriteOpAction,
 } from "./types.ts";
-import type { CID } from "multiformats/basics";
 
 /**
  * Converts a DataDiff of a repo three arrays of RecordWriteDescripts,
@@ -100,7 +104,9 @@ export const signCommit = (
   unsigned: UnsignedCommit,
   keypair: Keypair,
 ): Commit => {
-  const encoded = cbor.encode(unsigned);
+  const encoded = encodeLexCbor(
+    lexToCborValue(unsigned) as EncodableLexValue,
+  );
   const sig = keypair.sign(encoded);
   return {
     ...unsigned,
@@ -117,15 +123,39 @@ export const verifyCommitSig = (
   didKey: string,
 ): boolean => {
   const { sig, ...rest } = commit;
-  const encoded = cbor.encode(rest);
+  const encoded = encodeLexCbor(
+    lexToCborValue(rest) as EncodableLexValue,
+  );
   return crypto.verifySignature(didKey, encoded, sig as Uint8Array);
+};
+
+export const lexToCborValue = (value: RepoInputValue): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((item) => lexToCborValue(item));
+  }
+  if (value && typeof value === "object") {
+    if (value instanceof LexiconBlobRef) {
+      return value.original;
+    }
+    if (asCid(value) || value instanceof Uint8Array) {
+      return value;
+    }
+    const mapped: Record<string, unknown> = {};
+    for (const [key, item] of Object.entries(value)) {
+      if (item !== undefined) {
+        mapped[key] = lexToCborValue(item);
+      }
+    }
+    return mapped;
+  }
+  return value;
 };
 
 /**
  * Converts CBOR-encoded bytes to a LexValue using {@linkcode ipldToLex}.
  */
 export const cborToLex = (val: Uint8Array): LexValue => {
-  return ipldToLex(cborDecode(val));
+  return decodeLexCbor(val) as LexValue;
 };
 
 /**
@@ -140,8 +170,10 @@ export const cborToLexRecord = (val: Uint8Array): RepoRecord => {
   return parsed as RepoRecord;
 };
 
-export const cidForRecord = async (val: LexValue): Promise<CID> => {
-  return await cidForCbor(lexToIpld(val));
+export const cidForRecord = async (val: RepoInputRecord): Promise<Cid> => {
+  return await cidForLex(
+    lexToCborValue(val) as EncodableLexValue,
+  );
 };
 
 export const ensureV3Commit = (commit: LegacyV2Commit | Commit): Commit => {

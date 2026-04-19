@@ -1,4 +1,4 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import type { BlockMap } from "../block-map.ts";
 import { ReadableBlockstore } from "./readable-blockstore.ts";
 
@@ -10,13 +10,13 @@ export class SyncStorage extends ReadableBlockstore {
     super();
   }
 
-  getBytes(cid: CID): Uint8Array | null {
+  getBytes(cid: Cid): Uint8Array | null {
     const got = this.staged.getBytes(cid);
     if (got) return got;
     return this.saved.getBytes(cid);
   }
 
-  getBlocks(cids: CID[]): { blocks: BlockMap; missing: CID[] } {
+  getBlocks(cids: Cid[]): { blocks: BlockMap; missing: Cid[] } {
     const fromStaged = this.staged.getBlocks(cids);
     const fromSaved = this.saved.getBlocks(fromStaged.missing);
     const blocks = fromStaged.blocks;
@@ -27,7 +27,7 @@ export class SyncStorage extends ReadableBlockstore {
     };
   }
 
-  has(cid: CID): boolean {
+  has(cid: Cid): boolean {
     return (this.staged.has(cid)) || (this.saved.has(cid));
   }
 }

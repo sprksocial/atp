@@ -1,5 +1,5 @@
 import type { IncomingMessage } from "node:http";
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import { type LexiconDoc, Lexicons } from "@atp/lexicon";
 import type { Auth, ErrorFrame } from "@atp/xrpc-server";
 
@@ -51,9 +51,9 @@ export interface Commit {
   /** The repo this event comes from. */
   repo: string;
   /** Repo commit object CID. */
-  commit: CID;
+  commit: Cid;
   /** DEPRECATED -- unused. WARNING -- nullable and optional; stick with optional to ensure golang interoperability. */
-  prev?: CID | null;
+  prev?: Cid | null;
   /** The rev of the emitted commit. Note that this information is also in the commit object included in blocks, unless this is a tooBig event. */
   rev: string;
   /** The rev of the last emitted commit from this repo (if any). */
@@ -61,7 +61,7 @@ export interface Commit {
   /** CAR file containing relevant blocks, as a diff since the previous repo state. */
   blocks: Uint8Array;
   ops: RepoOp[];
-  blobs: CID[];
+  blobs: Cid[];
   /** Timestamp of when this message was originally broadcast. */
   time: string;
   [k: string]: unknown;
@@ -155,7 +155,7 @@ export interface RepoOp {
   action: "create" | "update" | "delete" | string;
   path: string;
   /** For creates and updates, the new record CID. For deletions, null. */
-  cid: CID | null;
+  cid: Cid | null;
   [k: string]: unknown;
 }
 

@@ -1,13 +1,34 @@
 import { TID } from "@atp/common";
+import { l } from "@atp/lex";
+import { BlobRef as LegacyBlobRef } from "@atp/lexicon";
 import { assertEquals } from "@std/assert";
 import type * as crypto from "@atp/crypto";
 import { Secp256k1Keypair } from "@atp/crypto";
-import { type RepoContents, verifyCommitSig, WriteOpAction } from "../mod.ts";
+import { type Cid, parseCid } from "@atp/lex/data";
+import {
+  BlockMap,
+  cidForRecord,
+  type RepoContents,
+  type RepoInputRecord,
+  verifyCommitSig,
+  WriteOpAction,
+} from "../mod.ts";
 import { Repo } from "../repo.ts";
 import { MemoryBlockstore } from "../storage/index.ts";
 import * as util from "./_util.ts";
 
 const collName = "com.example.posts";
+const lexRecordSchema = l.record(
+  "tid",
+  "com.example.lexRecord",
+  l.object({
+    text: l.string(),
+    note: l.optional(l.string()),
+    ref: l.cidLink(),
+    bytes: l.bytes(),
+    blob: l.optional(l.blob()),
+  }),
+);
 
 let storage: MemoryBlockstore;
 let keypair: crypto.Keypair;
@@ -102,4 +123,95 @@ Deno.test("repo loads from blockstore", async () => {
   assertEquals(contents, repoData);
   assertEquals(repo.did, keypair.did());
   assertEquals(repo.version, 3);
+});
+
+Deno.test("repo accepts records inferred from @atp/lex", async () => {
+  const storage = new MemoryBlockstore();
+  const keypair = Secp256k1Keypair.create();
+  const collection = "com.example.lexRecord";
+  const rkey = TID.nextStr();
+  const ref = parseCid(
+    "bafyreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku",
+  );
+  const record = lexRecordSchema.build({
+    text: "hello",
+    ref,
+    bytes: new Uint8Array([1, 2, 3]),
+    blob: {
+      $type: "blob",
+      mimeType: "image/png",
+      ref,
+      size: 3,
+    },
+  });
+
+  const cid = await cidForRecord(record);
+  const blocks = new BlockMap();
+
+  assertEquals((await blocks.add(record)).toString(), cid.toString());
+
+  const repo = await Repo.create(storage, keypair.did(), keypair, [{
+    action: WriteOpAction.Create,
+    collection,
+    rkey,
+    record,
+  }]);
+  const stored = await repo.getRecord(collection, rkey) as typeof record;
+
+  assertEquals(stored.$type, record.$type);
+  assertEquals(stored.text, record.text);
+  assertEquals(stored.ref.toString(), record.ref.toString());
+  assertEquals(stored.bytes, record.bytes);
+  assertEquals(stored.blob?.ref.toString(), record.blob?.ref.toString());
+  assertEquals(stored.blob?.mimeType, record.blob?.mimeType);
+  assertEquals(stored.blob?.size, record.blob?.size);
+  assertEquals("note" in stored, false);
+});
+
+Deno.test("repo accepts legacy lexicon blob refs in our compatibility layer", async () => {
+  const storage = new MemoryBlockstore();
+  const keypair = Secp256k1Keypair.create();
+  const collection = "com.example.legacyBlob";
+  const rkey = TID.nextStr();
+  const ref = parseCid(
+    "bafyreihdwdcefgh4dqkjv67uzcmw7ojee6xedzdetojuzjevtenxquvyku",
+  );
+  const record: RepoInputRecord = {
+    $type: collection,
+    text: "legacy",
+    blob: new LegacyBlobRef(
+      ref as unknown as ConstructorParameters<typeof LegacyBlobRef>[0],
+      "image/png",
+      7,
+    ),
+  };
+
+  const cid = await cidForRecord(record);
+  const blocks = new BlockMap();
+
+  assertEquals((await blocks.add(record)).toString(), cid.toString());
+
+  const repo = await Repo.create(storage, keypair.did(), keypair, [{
+    action: WriteOpAction.Create,
+    collection,
+    rkey,
+    record,
+  }]);
+  const stored = await repo.getRecord(collection, rkey) as {
+    $type: string;
+    text: string;
+    blob: {
+      $type: string;
+      ref: Cid;
+      mimeType: string;
+      size: number;
+    };
+  };
+
+  assertEquals(stored.$type, collection);
+  assertEquals(stored.text, "legacy");
+  assertEquals(stored.blob.$type, "blob");
+  assertEquals(stored.blob.ref.toString(), ref.toString());
+  assertEquals(stored.blob.mimeType, "image/png");
+  assertEquals(stored.blob.size, 7);
 });

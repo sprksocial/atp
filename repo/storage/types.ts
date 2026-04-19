@@ -1,46 +1,45 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import type { check } from "@atp/common";
-import type { RepoRecord } from "@atp/lexicon";
 import type { BlockMap } from "../block-map.ts";
-import type { CommitData } from "../types.ts";
+import type { CommitData, RepoRecord } from "../types.ts";
 
 export interface RepoStorage {
   // Writable
-  getRoot(): CID | null;
-  putBlock(cid: CID, block: Uint8Array, rev: string): void;
+  getRoot(): Cid | null;
+  putBlock(cid: Cid, block: Uint8Array, rev: string): void;
   putMany(blocks: BlockMap, rev: string): void;
-  updateRoot(cid: CID, rev: string): void;
+  updateRoot(cid: Cid, rev: string): void;
   applyCommit(commit: CommitData): void;
 
   // Readable
-  getBytes(cid: CID): Uint8Array | null;
-  has(cid: CID): boolean;
-  getBlocks(cids: CID[]): { blocks: BlockMap; missing: CID[] };
+  getBytes(cid: Cid): Uint8Array | null;
+  has(cid: Cid): boolean;
+  getBlocks(cids: Cid[]): { blocks: BlockMap; missing: Cid[] };
   attemptRead<T>(
-    cid: CID,
+    cid: Cid,
     def: check.Def<T>,
   ): { obj: T; bytes: Uint8Array } | null;
   readObjAndBytes<T>(
-    cid: CID,
+    cid: Cid,
     def: check.Def<T>,
   ): { obj: T; bytes: Uint8Array };
-  readObj<T>(cid: CID, def: check.Def<T>): T;
-  attemptReadRecord(cid: CID): RepoRecord | null;
-  readRecord(cid: CID): RepoRecord;
+  readObj<T>(cid: Cid, def: check.Def<T>): T;
+  attemptReadRecord(cid: Cid): RepoRecord | null;
+  readRecord(cid: Cid): RepoRecord;
 }
 
 export interface BlobStore {
   putTemp(bytes: Uint8Array | ReadableStream): Promise<string>;
-  makePermanent(key: string, cid: CID): Promise<void>;
-  putPermanent(cid: CID, bytes: Uint8Array | ReadableStream): Promise<void>;
-  quarantine(cid: CID): Promise<void>;
-  unquarantine(cid: CID): Promise<void>;
-  getBytes(cid: CID): Uint8Array;
-  getStream(cid: CID): Promise<ReadableStream>;
+  makePermanent(key: string, cid: Cid): Promise<void>;
+  putPermanent(cid: Cid, bytes: Uint8Array | ReadableStream): Promise<void>;
+  quarantine(cid: Cid): Promise<void>;
+  unquarantine(cid: Cid): Promise<void>;
+  getBytes(cid: Cid): Uint8Array;
+  getStream(cid: Cid): Promise<ReadableStream>;
   hasTemp(key: string): Promise<boolean>;
-  hasStored(cid: CID): Promise<boolean>;
-  delete(cid: CID): Promise<void>;
-  deleteMany(cid: CID[]): Promise<void>;
+  hasStored(cid: Cid): Promise<boolean>;
+  delete(cid: Cid): Promise<void>;
+  deleteMany(cid: Cid[]): Promise<void>;
 }
 
 export class BlobNotFoundError extends Error {}

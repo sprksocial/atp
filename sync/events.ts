@@ -1,7 +1,6 @@
-import type { CID } from "multiformats/cid";
 import type { DidDocument } from "@atp/identity";
-import type { RepoRecord } from "@atp/lexicon";
-import type { BlockMap } from "@atp/repo";
+import type { Cid } from "@atp/lex/data";
+import type { BlockMap, RepoRecord } from "@atp/repo";
 import type { AtUri } from "@atp/syntax";
 
 /** Broad sync event type for all sync events */
@@ -24,7 +23,7 @@ export type Event = CommitEvt | SyncEvt | IdentityEvt | AccountEvt;
 export type CommitMeta = {
   seq: number;
   time: string;
-  commit: CID;
+  commit: Cid;
   blocks: BlockMap;
   rev: string;
   uri: AtUri;
@@ -40,14 +39,14 @@ export type CommitEvt = Create | Update | Delete;
 export type Create = CommitMeta & {
   event: "create";
   record: RepoRecord;
-  cid: CID;
+  cid: Cid;
 };
 
 /** {@link CommitEvt} for record updates/edits */
 export type Update = CommitMeta & {
   event: "update";
   record: RepoRecord;
-  cid: CID;
+  cid: Cid;
 };
 
 /** {@link CommitEvt} for record deletions */
@@ -72,7 +71,7 @@ export type SyncEvt = {
   time: string;
   event: "sync";
   did: string;
-  cid: CID;
+  cid: Cid;
   rev: string;
   blocks: BlockMap;
 };

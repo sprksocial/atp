@@ -1,4 +1,4 @@
-import { CID } from "multiformats";
+import { parseCid } from "@atp/lex/data";
 import { BlockMap } from "../mod.ts";
 import { MST } from "../mst/index.ts";
 import { MemoryBlockstore } from "../storage/index.ts";
@@ -21,7 +21,7 @@ import { assert, assertEquals } from "@std/assert";
  */
 Deno.test("two deep split ", async () => {
   const storage = new MemoryBlockstore();
-  const cid = CID.parse(
+  const cid = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -57,7 +57,7 @@ Deno.test("two deep split ", async () => {
  */
 Deno.test("two deep leafless splits ", async () => {
   const storage = new MemoryBlockstore();
-  const cid = CID.parse(
+  const cid = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -89,7 +89,7 @@ Deno.test("two deep leafless splits ", async () => {
  */
 Deno.test("add on edge with neighbor two layers down", async () => {
   const storage = new MemoryBlockstore();
-  const cid = CID.parse(
+  const cid = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -120,7 +120,7 @@ Deno.test("add on edge with neighbor two layers down", async () => {
  */
 Deno.test("merge and split in multi op commit", async () => {
   const storage = new MemoryBlockstore();
-  const cid = CID.parse(
+  const cid = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 
@@ -182,7 +182,7 @@ Deno.test("merge and split in multi op commit", async () => {
  */
 Deno.test("complex multi-op commit", async () => {
   const storage = new MemoryBlockstore();
-  const cid = CID.parse(
+  const cid = parseCid(
     "bafyreie5cvv4h45feadgeuwhbcutmh6t2ceseocckahdoe6uat64zmz454",
   );
 

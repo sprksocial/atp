@@ -1,12 +1,16 @@
-import type { CID } from "multiformats";
+import type { Cid } from "@atp/lex/data";
 import { z } from "zod";
-import { cidForCbor, dataToCborBlock, schema as common } from "@atp/common";
+import {
+  cidForCbor,
+  encode as encodeLexCbor,
+  type LexValue as EncodableLexValue,
+} from "@atp/lex/cbor";
 import { BlockMap } from "../block-map.ts";
 import { CidSet } from "../cid-set.ts";
 import { MissingBlockError, MissingBlocksError } from "../error.ts";
 import * as parse from "../parse.ts";
 import type { ReadableBlockstore } from "../storage/index.ts";
-import type { CarBlock } from "../types.ts";
+import { type CarBlock, schema } from "../types.ts";
 import * as util from "./util.ts";
 
 /**
@@ -42,29 +46,35 @@ import * as util from "./util.ts";
  * Then the first will be described as `prefix: 0, key: 'bsky/posts/abcdefg'`,
  * and the second will be described as `prefix: 16, key: 'hi'.`
  */
-const subTreePointer: SubTreePointerType = z.nullable(common.cid);
-type SubTreePointerType = z.ZodNullable<typeof common.cid>;
-const treeEntry: TreeEntryType = z.object({
+const subTreePointer: z.ZodNullable<
+  z.ZodPipe<z.ZodUnknown, z.ZodTransform<Cid, unknown>>
+> = z.nullable(schema.cid);
+const treeEntry: z.ZodObject<{
+  p: z.ZodNumber;
+  k: z.ZodCustom<Uint8Array<ArrayBufferLike>, Uint8Array<ArrayBufferLike>>;
+  v: z.ZodPipe<z.ZodUnknown, z.ZodTransform<Cid, unknown>>;
+  t: z.ZodNullable<z.ZodPipe<z.ZodUnknown, z.ZodTransform<Cid, unknown>>>;
+}, z.core.$strip> = z.object({
   p: z.number(), // prefix count of ascii chars that this key shares with the prev key
-  k: common.bytes, // the rest of the key outside the shared prefix
-  v: common.cid, // value
+  k: schema.bytes, // the rest of the key outside the shared prefix
+  v: schema.cid, // value
   t: subTreePointer, // next subtree (to the right of leaf)
 });
-type TreeEntryType = z.ZodObject<{
-  p: z.ZodNumber;
-  k: typeof common.bytes;
-  v: typeof common.cid;
-  t: SubTreePointerType;
-}, z.core.$strip>;
-const nodeData: NodeDataType = z.object({
+const nodeData: z.ZodObject<{
+  l: z.ZodNullable<z.ZodPipe<z.ZodUnknown, z.ZodTransform<Cid, unknown>>>;
+  e: z.ZodArray<
+    z.ZodObject<{
+      p: z.ZodNumber;
+      k: z.ZodCustom<Uint8Array<ArrayBufferLike>, Uint8Array<ArrayBufferLike>>;
+      v: z.ZodPipe<z.ZodUnknown, z.ZodTransform<Cid, unknown>>;
+      t: z.ZodNullable<z.ZodPipe<z.ZodUnknown, z.ZodTransform<Cid, unknown>>>;
+    }, z.core.$strip>
+  >;
+}, z.core.$strip> = z.object({
   l: subTreePointer, // left-most subtree
   e: z.array(treeEntry), //entries
 });
-type NodeDataType = z.ZodObject<{
-  l: SubTreePointerType;
-  e: z.ZodArray<TreeEntryType>;
-}, z.core.$strip>;
-export type NodeData = z.infer<NodeDataType>;
+export type NodeData = z.infer<typeof nodeData>;
 
 export const nodeDataDef = {
   name: "mst node",
@@ -81,12 +91,12 @@ export class MST {
   storage: ReadableBlockstore;
   entries: NodeEntry[] | null;
   layer: number | null;
-  pointer: CID;
+  pointer: Cid;
   outdatedPointer = false;
 
   constructor(
     storage: ReadableBlockstore,
-    pointer: CID,
+    pointer: Cid,
     entries: NodeEntry[] | null,
     layer: number | null,
   ) {
@@ -113,14 +123,15 @@ export class MST {
   ): Promise<MST> {
     const { layer = null } = opts || {};
     const entries = util.deserializeNodeData(storage, data, opts);
-    const pointer = await cidForCbor(data);
+    const bytes = encodeLexCbor(data as EncodableLexValue);
+    const pointer = await cidForCbor(bytes);
     return new MST(storage, pointer, entries, layer);
   }
 
   // this is really a *lazy* load, doesn't actually touch storage
   static load(
     storage: ReadableBlockstore,
-    cid: CID,
+    cid: Cid,
     opts?: Partial<MstOpts>,
   ): MST {
     const { layer = null } = opts || {};
@@ -147,7 +158,7 @@ export class MST {
       const data = this.storage.readObj(this.pointer, nodeDataDef);
       const firstLeaf = data.e[0];
       const layer = firstLeaf !== undefined
-        ? util.leadingZerosOnHash(firstLeaf.k as Uint8Array)
+        ? util.leadingZerosOnHash(firstLeaf.k)
         : undefined;
       this.entries = util.deserializeNodeData(this.storage, data, {
         layer,
@@ -160,7 +171,7 @@ export class MST {
 
   // We don't hash the node on every mutation for performance reasons
   // Instead we keep track of whether the pointer is outdated and only (recursively) calculate when needed
-  async getPointer(): Promise<CID> {
+  async getPointer(): Promise<Cid> {
     if (!this.outdatedPointer) return this.pointer;
     const { cid } = await this.serialize();
     this.pointer = cid;
@@ -168,7 +179,7 @@ export class MST {
     return this.pointer;
   }
 
-  async serialize(): Promise<{ cid: CID; bytes: Uint8Array }> {
+  async serialize(): Promise<{ cid: Cid; bytes: Uint8Array }> {
     let entries = this.getEntries();
     const outdated = entries.filter(
       (e) => e.isTree() && e.outdatedPointer,
@@ -178,10 +189,11 @@ export class MST {
       entries = this.getEntries();
     }
     const data = util.serializeNodeData(entries);
-    const block = await dataToCborBlock(data);
+    const bytes = encodeLexCbor(data as EncodableLexValue);
+    const cid = await cidForCbor(bytes);
     return {
-      cid: block.cid,
-      bytes: block.bytes,
+      cid,
+      bytes,
     };
   }
 
@@ -218,7 +230,7 @@ export class MST {
   // -------------------
 
   // Return the necessary blocks to persist the MST to repo storage
-  async getUnstoredBlocks(): Promise<{ root: CID; blocks: BlockMap }> {
+  async getUnstoredBlocks(): Promise<{ root: Cid; blocks: BlockMap }> {
     const blocks = new BlockMap();
     const pointer = await this.getPointer();
     const alreadyHas = this.storage.has(pointer);
@@ -237,7 +249,7 @@ export class MST {
 
   // Adds a new leaf for the given key/value pair
   // Throws if a leaf with that key already exists
-  async add(key: string, value: CID, knownZeros?: number): Promise<MST> {
+  async add(key: string, value: Cid, knownZeros?: number): Promise<MST> {
     util.ensureValidMstKey(key);
     const keyZeros = knownZeros ?? (util.leadingZerosOnHash(key));
     const layer = await this.getLayer();
@@ -307,7 +319,7 @@ export class MST {
   }
 
   // Gets the value at the given key
-  get(key: string): CID | null {
+  get(key: string): Cid | null {
     const index = this.findGtOrEqualLeafIndex(key);
     const found = this.atIndex(index);
     if (found && found.isLeaf() && found.key === key) {
@@ -322,7 +334,7 @@ export class MST {
 
   // Edits the value at the given key
   // Throws if the given key does not exist
-  async update(key: string, value: CID): Promise<MST> {
+  async update(key: string, value: Cid): Promise<MST> {
     util.ensureValidMstKey(key);
     const index = this.findGtOrEqualLeafIndex(key);
     const found = this.atIndex(index);
@@ -775,8 +787,8 @@ export class MST {
     }
   }
 
-  async cidsForPath(key: string): Promise<CID[]> {
-    const cids: CID[] = [await this.getPointer()];
+  async cidsForPath(key: string): Promise<Cid[]> {
+    const cids: Cid[] = [await this.getPointer()];
     const index = this.findGtOrEqualLeafIndex(key);
     const found = this.atIndex(index);
     if (found && found.isLeaf() && found.key === key) {
@@ -882,7 +894,7 @@ export class MST {
 export class Leaf {
   constructor(
     public key: string,
-    public value: CID,
+    public value: Cid,
   ) {}
 
   isTree(): this is MST {

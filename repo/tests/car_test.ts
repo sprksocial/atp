@@ -1,4 +1,4 @@
-import { CID } from "multiformats/cid";
+import { parseCid } from "@atp/lex/data";
 import * as ui8 from "@atp/bytes";
 import { dataToCborBlock, streamToBytes, wait } from "@atp/common";
 import { type CarBlock, readCarStream, writeCarStream } from "../mod.ts";
@@ -7,10 +7,10 @@ import { assertEquals, assertRejects } from "@std/assert";
 
 for (const fixture of fixtures) {
   Deno.test("correctly writes car files", async () => {
-    const root = CID.parse(fixture.root);
+    const root = parseCid(fixture.root);
     async function* blockIter() {
       for (const block of fixture.blocks) {
-        const cid = CID.parse(block.cid);
+        const cid = parseCid(block.cid);
         const bytes = ui8.fromString(block.bytes, "base64");
         yield { cid, bytes };
       }
@@ -75,10 +75,10 @@ Deno.test("verifies CIDs", async () => {
     }
   };
   const badCar = await readCarStream(writeCarStream(block0.cid, blockIter()));
-  await assertRejects(() => flush(badCar.blocks), "Not a valid CID for bytes");
+  await assertRejects(() => flush(badCar.blocks), "Not a valid Cid for bytes");
 });
 
-Deno.test("skips CID verification", async () => {
+Deno.test("skips Cid verification", async () => {
   const block0 = await dataToCborBlock({ block: 0 });
   const block1 = await dataToCborBlock({ block: 1 });
   const block2 = await dataToCborBlock({ block: 2 });

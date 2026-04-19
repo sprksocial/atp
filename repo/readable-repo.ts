@@ -1,25 +1,29 @@
-import type { CID } from "multiformats/cid";
-import type { RepoRecord } from "@atp/lexicon";
+import type { Cid } from "@atp/lex/data";
 import { MissingBlocksError } from "./error.ts";
 import log from "./logger.ts";
 import { MST } from "./mst/index.ts";
 import * as parse from "./parse.ts";
 import type { ReadableBlockstore } from "./storage/index.ts";
-import { type Commit, def, type RepoContents } from "./types.ts";
+import {
+  type Commit,
+  def,
+  type RepoContents,
+  type RepoRecord,
+} from "./types.ts";
 import * as util from "./util.ts";
 
 type Params = {
   storage: ReadableBlockstore;
   data: MST;
   commit: Commit;
-  cid: CID;
+  cid: Cid;
 };
 
 export class ReadableRepo {
   storage: ReadableBlockstore;
   data: MST;
   commit: Commit;
-  cid: CID;
+  cid: Cid;
 
   constructor(params: Params) {
     this.storage = params.storage;
@@ -28,9 +32,9 @@ export class ReadableRepo {
     this.cid = params.cid;
   }
 
-  static load(storage: ReadableBlockstore, commitCid: CID): ReadableRepo {
+  static load(storage: ReadableBlockstore, commitCid: Cid): ReadableRepo {
     const commit = storage.readObj(commitCid, def.versionedCommit);
-    const data = MST.load(storage, (commit as { data: CID }).data);
+    const data = MST.load(storage, (commit as { data: Cid }).data);
     log.info("loaded repo for", { did: commit.did });
     return new ReadableRepo({
       storage,
@@ -51,7 +55,7 @@ export class ReadableRepo {
   async *walkRecords(from?: string): AsyncIterable<{
     collection: string;
     rkey: string;
-    cid: CID;
+    cid: Cid;
     record: RepoRecord;
   }> {
     for await (const leaf of this.data.walkLeavesFrom(from ?? "")) {
@@ -61,16 +65,19 @@ export class ReadableRepo {
     }
   }
 
-  async getRecord(collection: string, rkey: string): Promise<unknown | null> {
+  async getRecord(
+    collection: string,
+    rkey: string,
+  ): Promise<RepoRecord | null> {
     const dataKey = collection + "/" + rkey;
     const cid = await this.data.get(dataKey);
     if (!cid) return null;
-    return this.storage.readObj(cid, def.unknown);
+    return this.storage.readRecord(cid);
   }
 
   async getContents(): Promise<RepoContents> {
     const entries = await this.data.list();
-    const cids = entries.map((e: { key: string; value: CID }) => e.value);
+    const cids = entries.map((e: { key: string; value: Cid }) => e.value);
     const { blocks, missing } = await this.storage.getBlocks(cids);
     if (missing.length > 0) {
       throw new MissingBlocksError("getContents record", missing);

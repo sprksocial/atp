@@ -1,4 +1,4 @@
-import type { CID } from "multiformats/cid";
+import type { Cid } from "@atp/lex/data";
 import { BlockMap } from "../block-map.ts";
 import type { CommitData } from "../types.ts";
 import { ReadableBlockstore } from "./readable-blockstore.ts";
@@ -7,7 +7,7 @@ import type { RepoStorage } from "./types.ts";
 export class MemoryBlockstore extends ReadableBlockstore
   implements RepoStorage {
   blocks: BlockMap;
-  root: CID | null = null;
+  root: Cid | null = null;
   rev: string | null = null;
 
   constructor(blocks?: BlockMap) {
@@ -18,23 +18,23 @@ export class MemoryBlockstore extends ReadableBlockstore
     }
   }
 
-  getRoot(): CID | null {
+  getRoot(): Cid | null {
     return this.root;
   }
 
-  getBytes(cid: CID): Uint8Array | null {
+  getBytes(cid: Cid): Uint8Array | null {
     return this.blocks.get(cid) || null;
   }
 
-  has(cid: CID): boolean {
+  has(cid: Cid): boolean {
     return this.blocks.has(cid);
   }
 
-  getBlocks(cids: CID[]): { blocks: BlockMap; missing: CID[] } {
+  getBlocks(cids: Cid[]): { blocks: BlockMap; missing: Cid[] } {
     return this.blocks.getMany(cids);
   }
 
-  putBlock(cid: CID, block: Uint8Array): void {
+  putBlock(cid: Cid, block: Uint8Array): void {
     this.blocks.set(cid, block);
   }
 
@@ -42,7 +42,7 @@ export class MemoryBlockstore extends ReadableBlockstore
     this.blocks.addMap(blocks);
   }
 
-  updateRoot(cid: CID, rev: string): void {
+  updateRoot(cid: Cid, rev: string): void {
     this.root = cid;
     this.rev = rev;
   }
