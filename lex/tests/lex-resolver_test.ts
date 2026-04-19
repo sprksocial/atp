@@ -1,14 +1,8 @@
-import { cidForCbor, streamToBuffer } from "@atp/common";
 import * as crypto from "@atp/crypto";
-import {
-  getRecords,
-  MemoryBlockstore,
-  Repo,
-  type RepoInputRecord,
-  WriteOpAction,
-} from "@atp/repo";
 import { AtUri } from "@atp/syntax";
 import { assertEquals, assertInstanceOf, assertRejects } from "@std/assert";
+import { cidForCbor, encode } from "../cbor/mod.ts";
+import type { Cid, LexMap } from "../data/mod.ts";
 import { LexResolver, LexResolverError } from "../resolver/mod.ts";
 import { createDefaultResolveTxt } from "../resolver/lex-resolver.ts";
 
@@ -21,7 +15,20 @@ type ProofFixture = {
   did: string;
   pds: string;
   signingKey: string;
-  lexicon: Record<string, unknown>;
+  lexicon: LexMap;
+};
+
+type CarBlock = {
+  cid: Cid;
+  bytes: Uint8Array;
+};
+
+type Commit = {
+  did: string;
+  version: 3;
+  data: Cid;
+  rev: string;
+  prev: null;
 };
 
 const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
@@ -32,7 +39,7 @@ const toArrayBuffer = (bytes: Uint8Array): ArrayBuffer => {
 
 const createLexiconRecord = (
   id: string,
-): RepoInputRecord => ({
+): LexMap => ({
   $type: collection,
   lexicon: 1,
   id,
@@ -46,32 +53,96 @@ const createLexiconRecord = (
 const createProofFixture = async (
   record = createLexiconRecord(nsid),
 ): Promise<ProofFixture> => {
-  const storage = new MemoryBlockstore();
   const keypair = crypto.Secp256k1Keypair.create();
   const did = "did:plc:resolvertest";
-  const repo = await Repo.create(storage, did, keypair, [{
-    action: WriteOpAction.Create,
-    collection,
-    rkey: nsid,
-    record,
-  }]);
-  const car = await streamToBuffer(getRecords(storage, repo.cid, [{
-    collection,
-    rkey: nsid,
-  }]));
-  const fetched = await repo.data.get(`${collection}/${nsid}`);
-  if (!fetched) {
-    throw new Error("expected cid");
-  }
+  const key = `${collection}/${nsid}`;
+  const recordBytes = encode(record);
+  const recordCid = await cidForCbor(recordBytes);
+  const mstBytes = encode({
+    l: null,
+    e: [{
+      p: 0,
+      k: new TextEncoder().encode(key),
+      v: recordCid,
+      t: null,
+    }],
+  });
+  const mstCid = await cidForCbor(mstBytes);
+  const unsignedCommit: Commit = {
+    did,
+    version: 3,
+    data: mstCid,
+    rev: "rev-resolvertest",
+    prev: null,
+  };
+  const sig = keypair.sign(encode(unsignedCommit));
+  const commitBytes = encode({
+    ...unsignedCommit,
+    sig,
+  });
+  const commitCid = await cidForCbor(commitBytes);
+  const car = encodeCar(commitCid, [
+    { cid: commitCid, bytes: commitBytes },
+    { cid: mstCid, bytes: mstBytes },
+    { cid: recordCid, bytes: recordBytes },
+  ]);
+
   return {
     car,
-    cid: fetched.toString(),
+    cid: recordCid.toString(),
     did,
     pds: "https://pds.test",
     signingKey: keypair.did(),
     lexicon: record,
   };
 };
+
+function encodeCar(
+  root: Cid,
+  blocks: CarBlock[],
+): Uint8Array {
+  const header = encode({
+    version: 1,
+    roots: [root],
+  });
+  const chunks: Uint8Array[] = [encodeVarint(header.byteLength), header];
+
+  for (const block of blocks) {
+    const size = block.cid.bytes.byteLength + block.bytes.byteLength;
+    chunks.push(encodeVarint(size), block.cid.bytes, block.bytes);
+  }
+
+  return concatBytes(chunks);
+}
+
+function encodeVarint(value: number): Uint8Array {
+  const bytes: number[] = [];
+  let next = value;
+
+  do {
+    let byte = next & 0x7f;
+    next >>= 7;
+    if (next > 0) {
+      byte |= 0x80;
+    }
+    bytes.push(byte);
+  } while (next > 0);
+
+  return Uint8Array.from(bytes);
+}
+
+function concatBytes(chunks: Uint8Array[]): Uint8Array {
+  const length = chunks.reduce((total, chunk) => total + chunk.byteLength, 0);
+  const bytes = new Uint8Array(length);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return bytes;
+}
 
 Deno.test("get resolves and fetches lexicons through xrpc", async () => {
   const fixture = await createProofFixture();
@@ -141,7 +212,7 @@ Deno.test("get resolves and fetches lexicons through xrpc", async () => {
 
 Deno.test("resolve and fetch hooks can short-circuit the network path", async () => {
   const uri = AtUri.make("did:plc:hooked", collection, nsid);
-  const cid = await cidForCbor({ ok: true });
+  const cid = await cidForCbor(encode({ ok: true }));
   const lexicon = createLexiconRecord(nsid);
 
   const resolver = new LexResolver({

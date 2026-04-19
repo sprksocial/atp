@@ -1,4 +1,4 @@
-import type { Cid } from "../data/mod.ts";
+import * as crypto from "@atp/crypto";
 import { resolveTxt as resolveTxtWithNode } from "node:dns/promises";
 import { type AtprotoData, type DidCache, DidResolver } from "@atp/identity";
 import {
@@ -9,16 +9,16 @@ import {
 } from "../external.ts";
 import * as l from "../external.ts";
 import {
+  decode as decodeCbor,
+  encode as encodeCbor,
+  parseCidFromBytes,
+  verifyCidForBytes,
+} from "../cbor/mod.ts";
+import { asCid, type Cid } from "../data/mod.ts";
+import {
   type LexiconDocument,
   lexiconDocumentSchema,
 } from "../document/mod.ts";
-import {
-  def as repoDef,
-  MemoryBlockstore,
-  MST,
-  readCarWithRoot,
-  verifyCommitSig,
-} from "@atp/repo";
 import { AtUri, ensureValidDid, NSID } from "@atp/syntax";
 import { LexResolverError } from "./lex-resolver-error.ts";
 
@@ -417,9 +417,7 @@ async function verifyRecordProof(
   rkey: string,
 ): Promise<LexResolverFetchResult> {
   const { root, blocks } = await readCarWithRoot(car);
-  const blockstore = new MemoryBlockstore(blocks);
-
-  const commit = blockstore.readObj(root, repoDef.commit);
+  const commit = readCommitBlock(blocks, root);
   if (commit.did !== did) {
     throw new Error(`Invalid repo did: ${commit.did}`);
   }
@@ -429,13 +427,12 @@ async function verifyRecordProof(
     throw new Error(`Invalid signature on commit: ${root.toString()}`);
   }
 
-  const mst = MST.load(blockstore, (commit as { data: Cid }).data);
-  const cid = await mst.get(`${collection}/${rkey}`);
+  const cid = findRecordCid(blocks, commit.data, `${collection}/${rkey}`);
   if (!cid) {
     throw new Error("Record not found in proof");
   }
 
-  const record = blockstore.readRecord(cid);
+  const record = readRecordBlock(blocks, cid);
   if (record.$type !== collection) {
     throw new Error(
       `Invalid record type: expected ${collection}, got ${record.$type}`,
@@ -446,4 +443,270 @@ async function verifyRecordProof(
     cid,
     lexicon: record as LexiconDocument,
   };
+}
+
+type BlockStore = Map<string, Uint8Array>;
+
+type CarHeader = {
+  version: 1;
+  roots: Cid[];
+};
+
+type Commit = {
+  did: string;
+  version: 3;
+  data: Cid;
+  rev: string;
+  prev: Cid | null;
+  sig: Uint8Array;
+};
+
+type MstEntry = {
+  p: number;
+  k: Uint8Array;
+  v: Cid;
+  t: Cid | null;
+};
+
+type MstNode = {
+  l: Cid | null;
+  e: MstEntry[];
+};
+
+type LexRecord = {
+  [key: string]: unknown;
+  $type?: unknown;
+};
+
+const textDecoder = new TextDecoder();
+
+async function readCarWithRoot(
+  bytes: Uint8Array,
+): Promise<{ root: Cid; blocks: BlockStore }> {
+  const { header, blocks } = await readCar(bytes);
+  if (header.roots.length !== 1) {
+    throw new Error(`Expected one root, got ${header.roots.length}`);
+  }
+
+  return {
+    root: header.roots[0],
+    blocks,
+  };
+}
+
+async function readCar(
+  bytes: Uint8Array,
+): Promise<{ header: CarHeader; blocks: BlockStore }> {
+  let offset = 0;
+  const headerSize = readVarint(bytes, offset);
+  offset = headerSize.offset;
+
+  const header = parseCarHeader(readSlice(bytes, offset, headerSize.value));
+  offset += headerSize.value;
+
+  const blocks: BlockStore = new Map();
+  while (offset < bytes.byteLength) {
+    const blockSize = readVarint(bytes, offset);
+    offset = blockSize.offset;
+
+    const blockBytes = readSlice(bytes, offset, blockSize.value);
+    offset += blockSize.value;
+
+    const cid = parseCidFromBytes(blockBytes.subarray(0, 36));
+    const block = blockBytes.subarray(36);
+    await verifyCidForBytes(cid, block);
+    blocks.set(cid.toString(), block);
+  }
+
+  return {
+    header,
+    blocks,
+  };
+}
+
+function readVarint(
+  bytes: Uint8Array,
+  offset: number,
+): { value: number; offset: number } {
+  let value = 0;
+  let shift = 0;
+  let cursor = offset;
+
+  while (cursor < bytes.byteLength) {
+    const byte = bytes[cursor];
+    value |= (byte & 0x7f) << shift;
+    cursor += 1;
+
+    if ((byte & 0x80) === 0) {
+      return { value, offset: cursor };
+    }
+
+    shift += 7;
+  }
+
+  throw new Error("Invalid varint");
+}
+
+function readSlice(
+  bytes: Uint8Array,
+  offset: number,
+  length: number,
+): Uint8Array {
+  const end = offset + length;
+  if (end > bytes.byteLength) {
+    throw new Error("Unexpected end of CAR data");
+  }
+
+  return bytes.subarray(offset, end);
+}
+
+function parseCarHeader(bytes: Uint8Array): CarHeader {
+  const value = decodeCbor(bytes);
+  const record = asObject(value);
+  const version = record.version;
+  const rootsValue = record.roots;
+
+  if (version !== 1 || !Array.isArray(rootsValue)) {
+    throw new Error("Invalid CAR header");
+  }
+
+  const roots = rootsValue.map((root) => {
+    const cid = asCid(root);
+    if (cid == null) {
+      throw new Error("Invalid CAR root");
+    }
+    return cid;
+  });
+
+  return {
+    version: 1,
+    roots,
+  };
+}
+
+function readCommitBlock(blocks: BlockStore, cid: Cid): Commit {
+  return parseCommit(readDecodedBlock(blocks, cid));
+}
+
+function parseCommit(value: unknown): Commit {
+  const record = asObject(value);
+  const data = asCid(record.data);
+  const prev = record.prev === null ? null : asCid(record.prev);
+
+  if (
+    typeof record.did !== "string" ||
+    record.version !== 3 ||
+    data == null ||
+    typeof record.rev !== "string" ||
+    !(record.sig instanceof Uint8Array) ||
+    (record.prev !== null && prev == null)
+  ) {
+    throw new Error("Invalid repo commit");
+  }
+
+  return {
+    did: record.did,
+    version: 3,
+    data,
+    rev: record.rev,
+    prev,
+    sig: record.sig as Uint8Array,
+  };
+}
+
+function verifyCommitSig(commit: Commit, didKey: string): boolean {
+  const { sig, ...unsigned } = commit;
+  return crypto.verifySignature(
+    didKey,
+    encodeCbor(unsigned),
+    sig,
+  );
+}
+
+function findRecordCid(
+  blocks: BlockStore,
+  root: Cid,
+  key: string,
+): Cid | null {
+  const node = parseMstNode(readDecodedBlock(blocks, root));
+  let lastKey = "";
+  let subtree = node.l;
+
+  for (const entry of node.e) {
+    const entryKey = lastKey.slice(0, entry.p) + textDecoder.decode(entry.k);
+    if (key < entryKey) {
+      return subtree ? findRecordCid(blocks, subtree, key) : null;
+    }
+    if (key === entryKey) {
+      return entry.v;
+    }
+
+    subtree = entry.t;
+    lastKey = entryKey;
+  }
+
+  return subtree ? findRecordCid(blocks, subtree, key) : null;
+}
+
+function parseMstNode(value: unknown): MstNode {
+  const record = asObject(value);
+  const entriesValue = record.e;
+
+  if (!Array.isArray(entriesValue)) {
+    throw new Error("Invalid MST node");
+  }
+
+  const left = record.l === null ? null : asCid(record.l);
+  if (record.l !== null && left == null) {
+    throw new Error("Invalid MST node");
+  }
+
+  return {
+    l: left,
+    e: entriesValue.map(parseMstEntry),
+  };
+}
+
+function parseMstEntry(value: unknown): MstEntry {
+  const record = asObject(value);
+  const cid = asCid(record.v);
+  const subtree = record.t === null ? null : asCid(record.t);
+
+  if (
+    !Number.isInteger(record.p) ||
+    !(record.k instanceof Uint8Array) ||
+    cid == null ||
+    (record.t !== null && subtree == null)
+  ) {
+    throw new Error("Invalid MST entry");
+  }
+
+  return {
+    p: record.p as number,
+    k: record.k as Uint8Array,
+    v: cid,
+    t: subtree,
+  };
+}
+
+function readRecordBlock(blocks: BlockStore, cid: Cid): LexRecord {
+  const value = readDecodedBlock(blocks, cid);
+  return asObject(value) as LexRecord;
+}
+
+function readDecodedBlock(blocks: BlockStore, cid: Cid): unknown {
+  const bytes = blocks.get(cid.toString());
+  if (bytes == null) {
+    throw new Error(`Missing block: ${cid.toString()}`);
+  }
+
+  return decodeCbor(bytes);
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  if (value == null || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Expected object");
+  }
+
+  return value as Record<string, unknown>;
 }
