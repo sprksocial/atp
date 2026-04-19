@@ -1,7 +1,7 @@
 import * as plc from "@did-plc/lib";
 import { Database as DidPlcDb, PlcServer } from "@did-plc/server";
 import getPort from "get-port";
-import { wait } from "@atp/common";
+import { wait } from "@atp/common-web";
 // deno-lint-ignore no-import-prefix no-unversioned-import
 import { Secp256k1Keypair } from "npm:@atproto/crypto";
 import { DidResolver } from "../mod.ts";

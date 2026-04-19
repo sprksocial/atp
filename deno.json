@@ -1,5 +1,6 @@
 {
   "workspace": [
+    "common-web",
     "common",
     "bytes",
     "syntax",

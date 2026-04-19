@@ -1,0 +1,193 @@
+import { z } from "zod";
+
+export const isValidDidDoc = (doc: unknown): doc is DidDocument => {
+  return didDocument.safeParse(doc).success;
+};
+
+export const getDid = (doc: DidDocument): string => {
+  const id = doc.id;
+  if (typeof id !== "string") {
+    throw new Error("No `id` on document");
+  }
+  return id;
+};
+
+export const getHandle = (doc: DidDocument): string | undefined => {
+  const aka = doc.alsoKnownAs;
+  if (aka) {
+    for (let i = 0; i < aka.length; i++) {
+      const alias = aka[i];
+      if (alias.startsWith("at://")) {
+        return alias.slice(5);
+      }
+    }
+  }
+  return undefined;
+};
+
+export const getSigningKey = (
+  doc: DidDocument,
+): { type: string; publicKeyMultibase: string } | undefined => {
+  return getVerificationMaterial(doc, "atproto");
+};
+
+export const getVerificationMaterial = (
+  doc: DidDocument,
+  keyId: string,
+): { type: string; publicKeyMultibase: string } | undefined => {
+  const key = findItemById(doc, "verificationMethod", `#${keyId}`);
+  if (!key) {
+    return undefined;
+  }
+
+  if (!key.publicKeyMultibase) {
+    return undefined;
+  }
+
+  return {
+    type: key.type,
+    publicKeyMultibase: key.publicKeyMultibase,
+  };
+};
+
+export const getSigningDidKey = (doc: DidDocument): string | undefined => {
+  const parsed = getSigningKey(doc);
+  if (!parsed) return;
+  return `did:key:${parsed.publicKeyMultibase}`;
+};
+
+export const getPdsEndpoint = (doc: DidDocument): string | undefined => {
+  return getServiceEndpoint(doc, {
+    id: "#atproto_pds",
+    type: "AtprotoPersonalDataServer",
+  });
+};
+
+export const getFeedGenEndpoint = (doc: DidDocument): string | undefined => {
+  return getServiceEndpoint(doc, {
+    id: "#bsky_fg",
+    type: "BskyFeedGenerator",
+  });
+};
+
+export const getNotifEndpoint = (doc: DidDocument): string | undefined => {
+  return getServiceEndpoint(doc, {
+    id: "#bsky_notif",
+    type: "BskyNotificationService",
+  });
+};
+
+export const getServiceEndpoint = (
+  doc: DidDocument,
+  opts: { id: string; type?: string },
+): string | undefined => {
+  const service = findItemById(doc, "service", opts.id);
+  if (!service) {
+    return undefined;
+  }
+
+  if (opts.type && service.type !== opts.type) {
+    return undefined;
+  }
+
+  if (typeof service.serviceEndpoint !== "string") {
+    return undefined;
+  }
+
+  return validateUrl(service.serviceEndpoint);
+};
+
+function findItemById<
+  D extends DidDocument,
+  T extends "verificationMethod" | "service",
+>(doc: D, type: T, id: string): NonNullable<D[T]>[number] | undefined;
+function findItemById(
+  doc: DidDocument,
+  type: "verificationMethod" | "service",
+  id: string,
+) {
+  const items = doc[type];
+  if (items) {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      const itemId = item.id;
+
+      if (
+        itemId[0] === "#"
+          ? itemId === id
+          : itemId.length === doc.id.length + id.length &&
+            itemId[doc.id.length] === "#" &&
+            itemId.endsWith(id) &&
+            itemId.startsWith(doc.id)
+      ) {
+        return item;
+      }
+    }
+  }
+  return undefined;
+}
+
+const validateUrl = (urlStr: string): string | undefined => {
+  if (!urlStr.startsWith("http://") && !urlStr.startsWith("https://")) {
+    return undefined;
+  }
+
+  if (!canParseUrl(urlStr)) {
+    return undefined;
+  }
+
+  return urlStr;
+};
+
+const canParseUrl = URL.canParse ??
+  ((urlStr: string): boolean => {
+    try {
+      new URL(urlStr);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+const verificationMethod: VerificationMethod = z.object({
+  id: z.string(),
+  type: z.string(),
+  controller: z.string(),
+  publicKeyMultibase: z.string().optional(),
+});
+
+type VerificationMethod = z.ZodObject<{
+  id: z.ZodString;
+  type: z.ZodString;
+  controller: z.ZodString;
+  publicKeyMultibase: z.ZodOptional<z.ZodString>;
+}, z.core.$strip>;
+
+const service: Service = z.object({
+  id: z.string(),
+  type: z.string(),
+  serviceEndpoint: z.union([z.string(), z.record(z.string(), z.unknown())]),
+});
+
+type Service = z.ZodObject<{
+  id: z.ZodString;
+  type: z.ZodString;
+  serviceEndpoint: z.ZodUnion<
+    readonly [z.ZodString, z.ZodRecord<z.ZodString, z.ZodUnknown>]
+  >;
+}, z.core.$strip>;
+
+export const didDocument: DidDocumentType = z.object({
+  id: z.string(),
+  alsoKnownAs: z.array(z.string()).optional(),
+  verificationMethod: z.array(verificationMethod).optional(),
+  service: z.array(service).optional(),
+});
+type DidDocumentType = z.ZodObject<{
+  id: z.ZodString;
+  alsoKnownAs: z.ZodOptional<z.ZodArray<z.ZodString>>;
+  verificationMethod: z.ZodOptional<z.ZodArray<VerificationMethod>>;
+  service: z.ZodOptional<z.ZodArray<Service>>;
+}, z.core.$strip>;
+
+export type DidDocument = z.infer<DidDocumentType>;

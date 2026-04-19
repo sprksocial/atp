@@ -1,4 +1,4 @@
-import { DAY, HOUR } from "@atp/common";
+import { DAY, HOUR } from "@atp/common-web";
 import type { CacheResult, DidCache, DidDocument } from "../types.ts";
 
 /**

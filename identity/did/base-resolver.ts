@@ -1,4 +1,4 @@
-import { check } from "@atp/common";
+import { check } from "@atp/common-web";
 import * as crypto from "@atp/crypto";
 import {
   DidNotFoundError,

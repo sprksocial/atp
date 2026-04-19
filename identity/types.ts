@@ -1,7 +1,7 @@
-import type { DidDocument } from "@atp/common";
+import type { DidDocument } from "@atp/common-web";
 
-export { didDocument } from "@atp/common";
-export type { DidDocument } from "@atp/common";
+export { didDocument } from "@atp/common-web";
+export type { DidDocument } from "@atp/common-web";
 
 /**
  * Options for a combined handle and did resolver.

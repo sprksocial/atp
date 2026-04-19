@@ -1135,6 +1135,11 @@
           "npm:multiformats@^13.4.1"
         ]
       },
+      "common-web": {
+        "dependencies": [
+          "jsr:@zod/zod@^4.1.13"
+        ]
+      },
       "crypto": {
         "dependencies": [
           "jsr:@noble/curves@^2.0.1",

@@ -1,0 +1,19 @@
+{
+  "name": "@atp/common-web",
+  "version": "0.1.0-alpha.1",
+  "exports": {
+    ".": "./mod.ts",
+    "./async": "./async.ts",
+    "./check": "./check.ts",
+    "./dates": "./dates.ts",
+    "./did-doc": "./did-doc.ts",
+    "./retry": "./retry.ts",
+    "./strings": "./strings.ts",
+    "./tid": "./tid.ts",
+    "./util": "./util.ts"
+  },
+  "license": "MIT",
+  "imports": {
+    "zod": "jsr:@zod/zod@^4.1.13"
+  }
+}

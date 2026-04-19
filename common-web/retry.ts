@@ -1,0 +1,59 @@
+import { wait } from "./util.ts";
+
+export type RetryOptions = {
+  maxRetries?: number;
+  getWaitMs?: (n: number) => number | null;
+};
+
+export async function retry<T>(
+  fn: () => Promise<T> | T,
+  opts: RetryOptions & {
+    retryable?: (err: unknown) => boolean;
+  } = {},
+): Promise<T> {
+  const { maxRetries = 3, retryable = () => true, getWaitMs = backoffMs } =
+    opts;
+  let retries = 0;
+  let doneError: unknown;
+  while (!doneError) {
+    try {
+      return await fn();
+    } catch (err) {
+      const waitMs = getWaitMs(retries);
+      const willRetry = retries < maxRetries && waitMs !== null &&
+        retryable(err);
+      if (willRetry) {
+        retries += 1;
+        if (waitMs !== 0) {
+          await wait(waitMs);
+        }
+      } else {
+        doneError = err;
+      }
+    }
+  }
+  throw doneError;
+}
+
+export function createRetryable(retryable: (err: unknown) => boolean): {
+  <T>(fn: () => Promise<T>, opts?: RetryOptions): Promise<T>;
+} {
+  return <T>(fn: () => Promise<T>, opts?: RetryOptions) =>
+    retry(fn, { ...opts, retryable });
+}
+
+export function backoffMs(n: number, multiplier = 100, max = 1000): number {
+  const exponentialMs = Math.pow(2, n) * multiplier;
+  const ms = Math.min(exponentialMs, max);
+  return jitter(ms);
+}
+
+function jitter(value: number) {
+  const delta = value * 0.15;
+  return value + randomRange(-delta, delta);
+}
+
+function randomRange(from: number, to: number) {
+  const rand = Math.random() * (to - from);
+  return rand + from;
+}

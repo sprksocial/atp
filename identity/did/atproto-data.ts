@@ -5,7 +5,7 @@ import {
   getNotifEndpoint,
   getPdsEndpoint,
   getSigningKey,
-} from "@atp/common";
+} from "@atp/common-web";
 import * as crypto from "@atp/crypto";
 import type { AtprotoData, DidDocument } from "../types.ts";
 
