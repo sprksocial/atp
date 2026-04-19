@@ -14,6 +14,7 @@ import type {
   LexiconObject,
   LexiconParameters,
   LexiconPayload,
+  LexiconPermissionSet,
   LexiconProcedure,
   LexiconQuery,
   LexiconRecord,
@@ -135,6 +136,8 @@ export class LexDefBuilder {
     if (def == null) return;
 
     switch (def.type) {
+      case "permission-set":
+        return this.addPermissionSet(hash, def);
       case "procedure":
         return this.addProcedure(hash, def);
       case "query":
@@ -158,6 +161,38 @@ export class LexDefBuilder {
         });
       }
     }
+  }
+
+  private async addPermissionSet(
+    hash: string,
+    def: LexiconPermissionSet,
+  ): Promise<void> {
+    const permissions = def.permissions.map((permissionDef) => {
+      const options = stringifyOptions(
+        permissionDef,
+        undefined,
+        ["resource", "type"],
+      );
+      return this.pure(
+        `l.permission(${JSON.stringify(permissionDef.resource)}${
+          options ? `, ${options}` : ""
+        })`,
+      );
+    });
+    const options = stringifyOptions(def, [
+      "title",
+      "title:lang",
+      "detail",
+      "detail:lang",
+    ]);
+
+    await this.addSchema(hash, def, {
+      schema: this.pure(
+        `l.permissionSet($nsid, [${permissions.join(",")}]${
+          options ? `, ${options}` : ""
+        })`,
+      ),
+    });
   }
 
   private async addProcedure(
@@ -924,12 +959,14 @@ function compileJsDoc(description: string): string {
 function stringifyOptions<O extends Record<string, unknown>>(
   obj: O,
   include?: (keyof O)[],
+  exclude?: (keyof O)[],
 ): string {
   const filtered = Object.entries(obj).filter(
     ([k, v]) =>
       v !== undefined &&
       v !== null &&
-      (!include || include.includes(k as keyof O)),
+      (!include || include.includes(k as keyof O)) &&
+      (!exclude || !exclude.includes(k as keyof O)),
   );
   return filtered.length ? JSON.stringify(Object.fromEntries(filtered)) : "";
 }

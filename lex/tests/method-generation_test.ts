@@ -136,6 +136,51 @@ Deno.test("xrpc definitions must be named main", async () => {
   );
 });
 
+Deno.test("permission-set defs generate permissionSet schema", async () => {
+  const doc = lexiconDocumentSchema.parse({
+    lexicon: 1,
+    id: "com.example.auth.full",
+    defs: {
+      main: {
+        type: "permission-set",
+        permissions: [
+          {
+            type: "permission",
+            resource: "rpc",
+            aud: "did:web:example.com",
+          },
+        ],
+        title: "Full access",
+        detail: "Allows access to all RPC methods.",
+      },
+    },
+  });
+
+  const project = new Project({ useInMemoryFileSystem: true });
+  const file = project.createSourceFile("/com/example/auth/full.defs.ts");
+  const indexer = new DummyIndexer([doc]);
+  const builder = new LexDefBuilder({}, file, doc, indexer);
+  await builder.build();
+
+  const output = file.getFullText();
+  assertStringIncludes(output, "const main = l.permissionSet($nsid, [");
+  assertStringIncludes(
+    output,
+    'l.permission("rpc", {"aud":"did:web:example.com"})',
+  );
+  assertStringIncludes(
+    output,
+    '{"title":"Full access","detail":"Allows access to all RPC methods."}',
+  );
+  assert(!output.includes('"resource":"rpc"'));
+  assert(!output.includes('"type":"permission"'));
+  assert(!output.includes("main.assert.bind(main)"));
+  assert(!output.includes("main.ifMatches.bind(main)"));
+  assert(!output.includes("main.matches.bind(main)"));
+  assert(!output.includes("main.parse.bind(main)"));
+  assert(!output.includes("main.safeParse.bind(main)"));
+});
+
 Deno.test("object defs generate typedObject with $type metadata", async () => {
   const doc = lexiconDocumentSchema.parse({
     lexicon: 1,
