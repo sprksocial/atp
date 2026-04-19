@@ -1,9 +1,9 @@
-import { CID } from "multiformats/cid";
+import { asCid, type Cid } from "@atp/lex/data";
 import { z } from "zod";
 import type { Def } from "./check.ts";
 
-const cidSchema = z.unknown().transform((obj, ctx): CID => {
-  const cid = CID.asCID(obj);
+const cidSchema = z.unknown().transform((obj, ctx): Cid => {
+  const cid = asCid(obj);
 
   if (cid == null) {
     ctx.addIssue({
@@ -37,7 +37,7 @@ export const def = {
   cid: {
     name: "cid",
     schema: schema.cid,
-  } as Def<CID>,
+  } as Def<Cid>,
   carHeader: {
     name: "CAR header",
     schema: schema.carHeader,

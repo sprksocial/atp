@@ -41,9 +41,11 @@
     "npm:@did-plc/server@^0.0.1": "0.0.1_express@4.21.2",
     "npm:@dprint/formatter@~0.5.1": "0.5.1",
     "npm:@dprint/typescript@~0.95.15": "0.95.15",
+    "npm:@ipld/dag-cbor@*": "9.2.5",
     "npm:@ipld/dag-cbor@^9.2.5": "9.2.5",
     "npm:@opentelemetry/api@^1.9.0": "1.9.0",
     "npm:@types/node@*": "24.2.0",
+    "npm:cborg@*": "4.2.15",
     "npm:cborg@^4.2.15": "4.2.15",
     "npm:get-port@^7.1.0": "7.1.0",
     "npm:key-encoder@^2.0.3": "2.0.3",
@@ -1127,11 +1129,9 @@
         "dependencies": [
           "jsr:@logtape/file@^1.2.2",
           "jsr:@logtape/logtape@^1.2.2",
-          "jsr:@std/cbor@~0.1.9",
           "jsr:@std/encoding@^1.0.10",
           "jsr:@std/fs@^1.0.20",
           "jsr:@zod/zod@^4.1.13",
-          "npm:@ipld/dag-cbor@^9.2.5",
           "npm:multiformats@^13.4.1"
         ]
       },
