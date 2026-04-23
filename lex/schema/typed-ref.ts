@@ -1,3 +1,4 @@
+import type { $Typed } from "../core.ts";
 import {
   Schema,
   type ValidationResult,
@@ -14,7 +15,7 @@ export type TypedRefGetter<V extends { $type?: string } = any> = () =>
   TypedRefSchemaValidator<V>;
 
 export type TypedRefSchemaOutput<V extends { $type?: string } = any> = V extends
-  { $type?: infer T extends string } ? V & { $type: T } : never;
+  { $type?: infer T extends string } ? $Typed<V, T> : never;
 
 export class TypedRefSchema<V extends { $type?: string } = any> extends Schema<
   TypedRefSchemaOutput<V>

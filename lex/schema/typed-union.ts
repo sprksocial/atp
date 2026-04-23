@@ -1,8 +1,11 @@
+import { isCid } from "../data/cid.ts";
 import { isPlainObject } from "../data/object.ts";
-import type { Restricted, UnknownString } from "../core/types.ts";
+import type { Unknown$TypedObject } from "../core.ts";
 import { lazyProperty } from "../util/lazy-property.ts";
 import {
   type Infer,
+  IssueInvalidType,
+  type PropertyKey,
   Schema,
   type ValidationResult,
   type ValidatorContext,
@@ -11,11 +14,7 @@ import type { TypedRefSchema, TypedRefSchemaOutput } from "./typed-ref.ts";
 
 export type TypedRef<T extends { $type?: string }> = TypedRefSchemaOutput<T>;
 
-export type TypedObject =
-  & { $type: UnknownString }
-  & {
-    [K in string]: Restricted<"Unknown property">;
-  };
+export type TypedObject = Unknown$TypedObject;
 
 type TypedRefSchemasToUnion<T extends readonly TypedRefSchema[]> = {
   [K in keyof T]: Infer<T[K]>;
@@ -26,6 +25,17 @@ export type TypedUnionSchemaOutput<
   Closed extends boolean,
 > = Closed extends true ? TypedRefSchemasToUnion<TypedRefs>
   : TypedRefSchemasToUnion<TypedRefs> | TypedObject;
+
+const LEX_VALUE_TYPES = [
+  "integer",
+  "string",
+  "boolean",
+  "null",
+  "array",
+  "object",
+  "bytes",
+  "cid",
+] as const;
 
 export class TypedUnionSchema<
   TypedRefs extends readonly TypedRefSchema[] = any,
@@ -73,8 +83,56 @@ export class TypedUnionSchema<
       return ctx.issueInvalidPropertyType(input, "$type", "string");
     }
 
+    const invalidLexValue = findInvalidLexValue(input);
+    if (invalidLexValue) {
+      return ctx.failure(
+        new IssueInvalidType(
+          ctx.concatPath(invalidLexValue.path),
+          invalidLexValue.value,
+          LEX_VALUE_TYPES,
+        ),
+      );
+    }
+
     return ctx.success(
       input as TypedUnionSchemaOutput<TypedRefs, Closed>,
     );
+  }
+}
+
+function findInvalidLexValue(
+  value: unknown,
+  path: PropertyKey[] = [],
+): { path: PropertyKey[]; value: unknown } | undefined {
+  switch (typeof value) {
+    case "number":
+      return Number.isInteger(value) ? undefined : { path, value };
+    case "string":
+    case "boolean":
+      return undefined;
+    case "object":
+      if (value === null || value instanceof Uint8Array || isCid(value)) {
+        return undefined;
+      }
+      if (Array.isArray(value)) {
+        for (let i = 0; i < value.length; i++) {
+          const invalid = findInvalidLexValue(value[i], path.concat(i));
+          if (invalid) return invalid;
+        }
+        return undefined;
+      }
+      if (isPlainObject(value)) {
+        for (const key in value as Record<string, unknown>) {
+          const invalid = findInvalidLexValue(
+            (value as Record<string, unknown>)[key],
+            path.concat(key),
+          );
+          if (invalid) return invalid;
+        }
+        return undefined;
+      }
+      return { path, value };
+    default:
+      return { path, value };
   }
 }

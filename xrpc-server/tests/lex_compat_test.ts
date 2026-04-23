@@ -121,6 +121,14 @@ const defaultedQuery = l.query(
   }),
 );
 
+const inferredAuthQuery = l.query(
+  "io.example.inferredAuthQuery",
+  l.params(),
+  l.jsonPayload({
+    authenticated: l.boolean(),
+  }),
+);
+
 let server: xrpcServer.Server;
 let httpServer: Deno.HttpServer;
 let client: Client;
@@ -184,6 +192,16 @@ Deno.test.beforeAll(async () => {
     handler: () => ({
       encoding: "application/json",
       body: {} as unknown as { message: string },
+    }),
+  });
+
+  server.add(inferredAuthQuery, {
+    auth: () => ({
+      credentials: { type: "custom" as const },
+    }),
+    handler: ({ auth }) => ({
+      encoding: "application/json",
+      body: { authenticated: auth.credentials.type === "custom" },
     }),
   });
 
@@ -317,6 +335,15 @@ Deno.test("applies parsed lex sdk response bodies", {
   const response = await client.call(defaultedQuery);
 
   assertEquals(response.data, { message: "hello default" });
+});
+
+Deno.test("infers auth types for lex sdk methods", {
+  sanitizeOps: false,
+  sanitizeResources: false,
+}, async () => {
+  const response = await client.call(inferredAuthQuery);
+
+  assertEquals(response.data, { authenticated: true });
 });
 
 Deno.test("registers subscriptions from lex sdk methods", {

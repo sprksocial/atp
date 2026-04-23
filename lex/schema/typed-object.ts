@@ -1,5 +1,11 @@
 import { isPlainObject } from "../data/object.ts";
-import type { $Type, Simplify } from "../core.ts";
+import type {
+  $Type,
+  $Typed,
+  $TypedMaybe,
+  Un$Typed,
+} from "../core.ts";
+import { $typed } from "../core.ts";
 import {
   type Infer,
   Schema,
@@ -8,10 +14,16 @@ import {
   type ValidatorContext,
 } from "../validation.ts";
 
+export type MaybeTypedObject<
+  T extends $Type,
+  V extends { $type?: unknown } = { $type?: unknown },
+> = V extends { $type?: T } ? V
+  : $TypedMaybe<V, T>;
+
 export type TypedObjectSchemaOutput<
   T extends $Type,
   S extends Validator<{ [_ in string]?: unknown }>,
-> = Simplify<Infer<S> & { $type?: T }>;
+> = $TypedMaybe<Infer<S>, T>;
 
 export class TypedObjectSchema<
   const T extends $Type = any,
@@ -26,25 +38,25 @@ export class TypedObjectSchema<
 
   isTypeOf<X extends Record<string, unknown>>(
     value: X,
-  ): value is X extends { $type?: T } ? X : X & { $type?: T } {
+  ): value is MaybeTypedObject<T, X> {
     return value.$type === undefined || value.$type === this.$type;
   }
 
   build<X extends Omit<Infer<S>, "$type">>(
     input: X,
-  ): Simplify<Omit<X, "$type"> & { $type: T }> {
-    return { ...input, $type: this.$type };
+  ): $Typed<Un$Typed<X & { $type?: unknown }>, T> {
+    return $typed(input, this.$type);
   }
 
   $isTypeOf<X extends Record<string, unknown>>(
     value: X,
-  ): value is X extends { $type?: T } ? X : X & { $type?: T } {
+  ): value is MaybeTypedObject<T, X> {
     return this.isTypeOf(value);
   }
 
   $build<X extends Omit<Infer<S>, "$type">>(
     input: X,
-  ): Simplify<Omit<X, "$type"> & { $type: T }> {
+  ): $Typed<Un$Typed<X & { $type?: unknown }>, T> {
     return this.build<X>(input);
   }
 

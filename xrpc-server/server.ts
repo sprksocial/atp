@@ -79,10 +79,13 @@ import {
   type XrpcMux,
 } from "./stream/adapters.ts";
 
-type LexAddConfig<M extends Procedure | Query | Subscription> = M extends
-  Procedure | Query ? LexMethodConfig<M, Auth> | LexMethodHandler<M, void>
+type LexAddConfig<
+  M extends Procedure | Query | Subscription,
+  A extends Auth = Auth,
+> = M extends Procedure | Query
+  ? LexMethodConfig<M, A> | LexMethodHandler<M, void>
   : M extends Subscription
-    ? LexSubscriptionConfig<M, Auth> | LexSubscriptionHandler<M, void>
+    ? LexSubscriptionConfig<M, A> | LexSubscriptionHandler<M, void>
   : never;
 
 /**
@@ -213,9 +216,9 @@ export class Server {
 
   // handlers
 
-  add<M extends Procedure | Query | Subscription>(
+  add<M extends Procedure | Query | Subscription, A extends Auth = Auth>(
     method: LexMethodLike<M>,
-    configOrHandler: LexAddConfig<M>,
+    configOrHandler: LexAddConfig<M, A>,
   ): void {
     const schema = getLexMethod(method);
     const config = typeof configOrHandler === "function"
@@ -225,20 +228,20 @@ export class Server {
     if (schema instanceof Procedure) {
       return this.addProcedureSchema(
         schema,
-        config as LexMethodConfig<Procedure, Auth>,
+        config as LexMethodConfig<Procedure, A>,
       );
     }
 
     if (schema instanceof Query) {
       return this.addQuerySchema(
         schema,
-        config as LexMethodConfig<Query, Auth>,
+        config as LexMethodConfig<Query, A>,
       );
     }
 
     return this.addSubscriptionSchema(
       schema,
-      config as LexSubscriptionConfig<Subscription, Auth>,
+      config as LexSubscriptionConfig<Subscription, A>,
     );
   }
 
