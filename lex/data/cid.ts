@@ -20,12 +20,31 @@ export interface Cid {
   toString(): string;
 }
 
+export interface CidParseOptions {
+  strict?: boolean;
+}
+
 export function asCid(value: unknown): Cid | null {
   return CID.asCID(value) as Cid | null;
 }
 
-export function parseCid(input: string): Cid {
-  return CID.parse(input) as Cid;
+export function parseCid(input: string, options?: CidParseOptions): Cid {
+  const cid = CID.parse(input) as Cid;
+  if (!isCid(cid, options)) {
+    throw new Error(`Invalid CID string`);
+  }
+  return cid;
+}
+
+export function parseCidSafe(
+  input: string,
+  options?: CidParseOptions,
+): Cid | null {
+  try {
+    return parseCid(input, options);
+  } catch {
+    return null;
+  }
 }
 
 export function decodeCid(bytes: Uint8Array): Cid {
@@ -38,7 +57,7 @@ export function createCid(code: number, digest: MultihashDigest): Cid {
 
 export function isCid(
   value: unknown,
-  options?: { strict?: boolean },
+  options?: CidParseOptions,
 ): value is Cid {
   const cid = asCid(value);
   if (!cid) return false;
@@ -54,16 +73,18 @@ export function isCid(
   return true;
 }
 
-export function validateCidString(input: string): boolean {
-  try {
-    return parseCid(input).toString() === input;
-  } catch {
-    return false;
-  }
+export function validateCidString(
+  input: string,
+  options?: CidParseOptions,
+): boolean {
+  return parseCidSafe(input, options)?.toString() === input;
 }
 
-export function ensureValidCidString(input: string): void {
-  if (!validateCidString(input)) {
+export function ensureValidCidString(
+  input: string,
+  options?: CidParseOptions,
+): void {
+  if (!validateCidString(input, options)) {
     throw new Error(`Invalid CID string`);
   }
 }
