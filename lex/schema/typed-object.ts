@@ -1,10 +1,5 @@
 import { isPlainObject } from "../data/object.ts";
-import type {
-  $Type,
-  $Typed,
-  $TypedMaybe,
-  Un$Typed,
-} from "../core.ts";
+import type { $Type, $Typed, $TypedMaybe, Un$Typed } from "../core.ts";
 import { $typed } from "../core.ts";
 import {
   type Infer,
