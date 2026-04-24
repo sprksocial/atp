@@ -25,6 +25,7 @@ export type LexBuilderSaveOptions = {
   out: string;
   clear?: boolean;
   override?: boolean;
+  format?: boolean;
 };
 
 export class LexBuilder {
@@ -81,7 +82,9 @@ export class LexBuilder {
     await Promise.all(
       Array.from(files, async (file) => {
         const filePath = resolveOutputFilePath(destination, file.getFilePath());
-        const content = await formatGeneratedText(filePath, file.getFullText());
+        const content = options.format === false
+          ? file.getFullText()
+          : await formatGeneratedText(filePath, file.getFullText());
         await mkdir(dirname(filePath), { recursive: true });
         await rm(filePath, { recursive: true, force: true });
         await writeFile(filePath, content, "utf8");

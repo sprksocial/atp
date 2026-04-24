@@ -6,15 +6,31 @@ type DprintFormatter = ReturnType<typeof createFromBuffer>;
 
 let formatterPromise: Promise<DprintFormatter> | undefined;
 
+export class GeneratedTextFormatError extends Error {
+  constructor(readonly filePath: string, cause: unknown) {
+    super(
+      `Failed to format generated TypeScript file ${filePath}: ${
+        describeError(cause)
+      }`,
+      { cause },
+    );
+    this.name = "GeneratedTextFormatError";
+  }
+}
+
 export async function formatGeneratedText(
   filePath: string,
   text: string,
 ): Promise<string> {
-  const formatter = await getFormatter();
-  return formatter.formatText({
-    filePath,
-    fileText: text,
-  });
+  try {
+    const formatter = await getFormatter();
+    return formatter.formatText({
+      filePath,
+      fileText: text,
+    });
+  } catch (err) {
+    throw new GeneratedTextFormatError(filePath, err);
+  }
 }
 
 async function getFormatter(): Promise<DprintFormatter> {
@@ -65,4 +81,16 @@ function toBufferSource(value: unknown): BufferSource {
   }
 
   throw new TypeError("Could not load @dprint/typescript plugin");
+}
+
+function describeError(err: unknown): string {
+  if (err instanceof Error && err.message.length > 0) {
+    return err.message;
+  }
+
+  if (typeof err === "string" && err.length > 0) {
+    return err;
+  }
+
+  return String(err);
 }

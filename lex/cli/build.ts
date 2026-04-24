@@ -50,6 +50,11 @@ const command = new Command()
     { default: false },
   )
   .option(
+    "--skip-fmt",
+    "write generated files without running dprint formatting",
+    { default: false },
+  )
+  .option(
     "--ignore-invalid-lexicons",
     "skip invalid lexicon files instead of exiting with an error",
     { default: false },
@@ -77,6 +82,7 @@ const command = new Command()
       lib: opts.lib,
       allowLegacyBlobs: opts.allowLegacyBlobs,
       pureAnnotations: opts.pureAnnotations,
+      format: !opts.skipFmt,
       ignoreInvalidLexicons: opts.ignoreInvalidLexicons,
       include: opts.include,
       exclude: opts.exclude,

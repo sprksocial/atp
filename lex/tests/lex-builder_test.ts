@@ -58,3 +58,47 @@ Deno.test({
     }
   },
 });
+
+Deno.test({
+  name: "save can write files without formatting generated text",
+  async fn() {
+    const root = await Deno.makeTempDir({ prefix: "lex-builder-" });
+
+    try {
+      const lexicons = join(root, "lexicons");
+      const out = join(root, "out");
+
+      await Deno.mkdir(lexicons, { recursive: true });
+      await Deno.writeTextFile(
+        join(lexicons, "com.example.echo.json"),
+        JSON.stringify({
+          lexicon: 1,
+          id: "com.example.echo",
+          defs: {
+            main: {
+              type: "query",
+              output: {
+                encoding: "application/json",
+                schema: {
+                  type: "object",
+                  properties: {},
+                },
+              },
+            },
+          },
+        }),
+      );
+
+      const builder = new LexBuilder();
+      await builder.load({ lexicons });
+      await builder.save({ out, format: false });
+
+      assertStringIncludes(
+        await Deno.readTextFile(join(out, "com", "example", "echo.defs.ts")),
+        'const $nsid = "com.example.echo";',
+      );
+    } finally {
+      await Deno.remove(root, { recursive: true });
+    }
+  },
+});
