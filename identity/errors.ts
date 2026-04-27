@@ -7,6 +7,15 @@ export class DidNotFoundError extends Error {
   }
 }
 
+/** Error thrown when DID resolution exceeds its configured timeout.
+ * @param ms Timeout in milliseconds.
+ */
+export class IdentityResolutionTimeoutError extends Error {
+  constructor(public ms: number, options?: ErrorOptions) {
+    super(`DID resolution timed out after ${ms}ms`, options);
+  }
+}
+
 /**
  * Error thrown when a DID is not formatted correctly.
  * Most commonly, a DID missing `did:` at the beginning

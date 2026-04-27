@@ -105,6 +105,25 @@ Deno.test({
 });
 
 Deno.test({
+  name: "returns stale dids when refresh fails",
+  async fn() {
+    const didCache = new MemoryCache(1);
+    const shortCacheResolver = new DidResolver({ plcUrl, didCache });
+    const doc = await shortCacheResolver.resolve(did);
+    didCache.cacheDid(did, { ...doc, id: "did:example:alice" });
+    shortCacheResolver.resolveNoCheck = () => {
+      throw new Error("refresh failed");
+    };
+    await wait(5);
+
+    const staleGet = await shortCacheResolver.resolve(did);
+    assertEquals(staleGet?.id, "did:example:alice");
+  },
+  sanitizeResources: false,
+  sanitizeOps: false,
+});
+
+Deno.test({
   name: "does not return expired dids & refreshes the cache",
   async fn() {
     const didCache = new MemoryCache(0, 1);

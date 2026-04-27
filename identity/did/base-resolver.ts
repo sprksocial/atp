@@ -55,7 +55,7 @@ export abstract class BaseResolver {
       fromCache = await this.cache.checkCache(did);
       if (fromCache && !fromCache.expired) {
         if (fromCache?.stale) {
-          await this.refreshCache(did, fromCache);
+          await this.refreshCache(did, fromCache).catch(() => undefined);
         }
         return fromCache.doc;
       }
