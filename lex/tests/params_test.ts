@@ -20,6 +20,25 @@ Deno.test("parses wrapped string params from URLSearchParams", () => {
   );
 });
 
+Deno.test("parses single URLSearchParams value for declared array param", () => {
+  const params = l.params({
+    feeds: l.array(l.string({ format: "at-uri" })),
+  });
+
+  assertEquals(
+    params.fromURLSearchParams(
+      new URLSearchParams(
+        "feeds=at%3A%2F%2Fdid%3Aplc%3Acveom2iroj3mt747sd4qqnr2%2Fso.sprk.feed.generator%2Fdiscover",
+      ),
+    ),
+    {
+      feeds: [
+        "at://did:plc:cveom2iroj3mt747sd4qqnr2/so.sprk.feed.generator/discover",
+      ],
+    },
+  );
+});
+
 Deno.test("serializes transformed params to URLSearchParams", () => {
   const params = l.params({
     since: l.optional(l.string({ format: "datetime" })),

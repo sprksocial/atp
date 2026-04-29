@@ -1,6 +1,8 @@
 import { isPlainObject } from "../data/object.ts";
 import type { WithOptionalProperties } from "../core/types.ts";
 import { lazyProperty } from "../util/lazy-property.ts";
+import { ArraySchema } from "./array.ts";
+import { OptionalSchema } from "./optional.ts";
 import {
   type Infer,
   Schema,
@@ -90,8 +92,11 @@ export class ParamsSchema<
     const params: Record<string, Param> = {};
 
     for (const [key, value] of urlSearchParams.entries()) {
+      const validator = unwrapParamValidator(this.validatorsMap.get(key));
+      const expectsArray = validator instanceof ArraySchema;
+
       if (params[key] === undefined) {
-        params[key] = value;
+        params[key] = expectsArray ? [value] : value;
       } else if (Array.isArray(params[key])) {
         (params[key] as ParamScalar[]).push(value);
       } else {
@@ -117,6 +122,18 @@ export class ParamsSchema<
 
     return urlSearchParams;
   }
+}
+
+function unwrapParamValidator(
+  validator: Validator<Param | undefined> | undefined,
+): Validator<Param | undefined> | undefined {
+  if (validator instanceof OptionalSchema) {
+    return unwrapParamValidator(
+      validator.schema as Validator<Param | undefined>,
+    );
+  }
+
+  return validator;
 }
 
 function normalizeParamValue(

@@ -26,6 +26,16 @@ const passthroughExtraQuery = l.query(
   }),
 );
 
+const feedGeneratorsQuery = l.query(
+  "io.example.feedGeneratorsQuery",
+  l.params({
+    feeds: l.array(l.string({ format: "at-uri" })),
+  }),
+  l.jsonPayload({
+    feeds: l.array(l.string({ format: "at-uri" })),
+  }),
+);
+
 const echoProcedure = l.procedure(
   "io.example.echoProcedure",
   l.params(),
@@ -205,6 +215,13 @@ Deno.test.beforeAll(async () => {
     }),
   });
 
+  server.add(feedGeneratorsQuery, {
+    handler: ({ params }) => ({
+      encoding: "application/json",
+      body: { feeds: params.feeds },
+    }),
+  });
+
   httpServer = await createServer(server);
   const port = (httpServer as Deno.HttpServer & { port: number }).port;
   baseUrl = `http://localhost:${port}`;
@@ -238,6 +255,21 @@ Deno.test("preserves undeclared query params for lex sdk methods", {
     message: "hello",
     extra: "world",
   });
+});
+
+Deno.test("coerces single URL query value for lex sdk array params", {
+  sanitizeOps: false,
+  sanitizeResources: false,
+}, async () => {
+  const feed =
+    "at://did:plc:cveom2iroj3mt747sd4qqnr2/so.sprk.feed.generator/discover";
+  const response = await fetch(
+    `${baseUrl}/xrpc/${feedGeneratorsQuery.nsid}?feeds=${
+      encodeURIComponent(feed)
+    }`,
+  );
+
+  assertEquals(await response.json(), { feeds: [feed] });
 });
 
 Deno.test("registers procedures from lex sdk methods", {
