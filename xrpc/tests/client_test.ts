@@ -146,6 +146,44 @@ Deno.test("keeps call as a compatibility alias for xrpc", async () => {
   assertEquals(result.data, { value: "ok" });
 });
 
+Deno.test("validates blob refs parsed from JSON responses", async () => {
+  const cid = "bafkreidgvpkjawlxzizq3pzkupkkm4o5mdujl6fpvl5twvyevezdsz3zua";
+  const method = l.procedure(
+    "io.example.uploadBlob",
+    l.params(),
+    l.payload("application/octet-stream"),
+    l.jsonPayload({ blob: l.blob() }),
+  );
+
+  const client = new Client((url, init) => {
+    assertEquals(url, "/xrpc/io.example.uploadBlob");
+    assertEquals(init.method, "post");
+    assertEquals(
+      new Headers(init.headers).get("content-type"),
+      "application/octet-stream",
+    );
+    return Promise.resolve(
+      Response.json({
+        blob: {
+          $type: "blob",
+          ref: { $link: cid },
+          mimeType: "video/mp4",
+          size: 1234,
+        },
+      }),
+    );
+  });
+
+  const result = await client.call(method, {
+    body: new Uint8Array([1, 2, 3]),
+  });
+
+  assertEquals(result.data.blob.$type, "blob");
+  assertEquals(result.data.blob.ref.toString(), cid);
+  assertEquals(result.data.blob.mimeType, "video/mp4");
+  assertEquals(result.data.blob.size, 1234);
+});
+
 Deno.test("serializes params using schema transforms", async () => {
   const method = l.query(
     "io.example.query",

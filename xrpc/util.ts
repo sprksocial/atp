@@ -1,9 +1,5 @@
-import {
-  jsonStringToLex,
-  type LexXrpcProcedure,
-  type LexXrpcQuery,
-  stringifyLex,
-} from "@atp/lexicon";
+import type { LexXrpcProcedure, LexXrpcQuery } from "@atp/lexicon";
+import { lexParse, lexStringify } from "@atp/lex/json";
 import {
   type CallOptions,
   type ErrorResponseBody,
@@ -301,7 +297,7 @@ export function encodeMethodCallBody(
     return new TextEncoder().encode(String(data));
   }
   if (contentType.startsWith("application/json")) {
-    const json = stringifyLex(data);
+    const json = lexStringify(data);
     // Server would return a 400 error if the JSON is invalid (e.g. trying to
     // JSONify a function, or an object that implements toJSON() poorly).
     if (json === undefined) {
@@ -361,7 +357,7 @@ export function httpResponseBodyParse(
     if (mimeType) {
       if (mimeType.includes("application/json")) {
         const str = new TextDecoder().decode(data);
-        return jsonStringToLex(str);
+        return lexParse(str);
       }
       if (mimeType.startsWith("text/")) {
         return new TextDecoder().decode(data);
