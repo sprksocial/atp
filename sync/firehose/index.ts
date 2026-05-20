@@ -111,8 +111,8 @@ export type FirehoseOptions = WebSocketOptions & {
  *
  * @example Simple indexing service
  * ```typescript
- * import { Firehose } from '@atproto/sync'
- * import { IdResolver } from '@atproto/identity'
+ * import { Firehose } from '@atp/sync'
+ * import { IdResolver } from '@atp/identity'
  *
  * const idResolver = new IdResolver()
  * const firehose = new Firehose({
@@ -158,8 +158,8 @@ export type FirehoseOptions = WebSocketOptions & {
  *
  * @example Indexing with MemoryRunner
  * ```typescript
- * import { Firehose, MemoryRunner } from '@atproto/sync'
- * import { IdResolver } from '@atproto/identity'
+ * import { Firehose, MemoryRunner } from '@atp/sync'
+ * import { IdResolver } from '@atp/identity'
  *
  * const idResolver = new IdResolver()
  * const runner = new MemoryRunner({

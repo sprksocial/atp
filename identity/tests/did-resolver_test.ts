@@ -1,8 +1,7 @@
 import * as plc from "@did-plc/lib";
 import { Database as DidPlcDb, PlcServer } from "@did-plc/server";
 import getPort from "get-port";
-// deno-lint-ignore no-import-prefix no-unversioned-import
-import { Secp256k1Keypair } from "npm:@atproto/crypto";
+import { Secp256k1Keypair } from "@atp/crypto";
 import { type DidDocument, DidResolver } from "../mod.ts";
 import { DidWebDb } from "./web/db.ts";
 import { DidWebServer } from "./web/server.ts";
@@ -45,6 +44,18 @@ let plcDid: string;
 let didWebDoc: DidDocument;
 let didPlcDoc: DidDocument;
 
+interface PlcSigner {
+  did(): string;
+  sign(msg: Uint8Array): Promise<Uint8Array>;
+}
+
+function toPlcSigner(keypair: Secp256k1Keypair): PlcSigner {
+  return {
+    did: () => keypair.did(),
+    sign: async (msg: Uint8Array) => keypair.sign(msg),
+  };
+}
+
 Deno.test({
   name: "creates the did on did:web & did:plc",
   async fn() {
@@ -56,7 +67,7 @@ Deno.test({
       handle,
       pds,
       rotationKeys: [rotationKey.did()],
-      signer: rotationKey,
+      signer: toPlcSigner(rotationKey),
     });
     didPlcDoc = await client.getDocument(plcDid);
     const domain = encodeURIComponent(`localhost:${webServer.port}`);

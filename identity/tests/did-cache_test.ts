@@ -2,8 +2,7 @@ import * as plc from "@did-plc/lib";
 import { Database as DidPlcDb, PlcServer } from "@did-plc/server";
 import getPort from "get-port";
 import { wait } from "@atp/common-web";
-// deno-lint-ignore no-import-prefix no-unversioned-import
-import { Secp256k1Keypair } from "npm:@atproto/crypto";
+import { Secp256k1Keypair } from "@atp/crypto";
 import { DidResolver } from "../mod.ts";
 import { MemoryCache } from "../did/memory-cache.ts";
 import { assert, assertEquals } from "@std/assert";
@@ -14,6 +13,18 @@ let did: string;
 
 let didCache: MemoryCache;
 let didResolver: DidResolver;
+
+interface PlcSigner {
+  did(): string;
+  sign(msg: Uint8Array): Promise<Uint8Array>;
+}
+
+function toPlcSigner(keypair: Secp256k1Keypair): PlcSigner {
+  return {
+    did: () => keypair.did(),
+    sign: async (msg: Uint8Array) => keypair.sign(msg),
+  };
+}
 
 Deno.test.beforeAll(async () => {
   const plcDB = DidPlcDb.mock();
@@ -31,7 +42,7 @@ Deno.test.beforeAll(async () => {
     handle: "alice.test",
     pds: "https://bsky.social",
     rotationKeys: [rotationKey.did()],
-    signer: rotationKey,
+    signer: toPlcSigner(rotationKey),
   });
 
   didCache = new MemoryCache();
